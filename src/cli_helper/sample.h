@@ -1,5 +1,5 @@
-#ifndef SAMPLE_H
-#define SAMPLE_H
+#ifndef CLI_HELPER_SAMPLE_H
+#define CLI_HELPER_SAMPLE_H
 
 #include <thread>
 #include <vector>
@@ -59,5 +59,5 @@ int sample_main(int argc, char** argv)
 }
 
 
-#endif /* SAMPLE_H */
+#endif /* CLI_HELPER_SAMPLE_H */
 

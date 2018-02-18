@@ -23,7 +23,7 @@ public:
      * @param required - The option cannot be omitted.
      * @param arg_name - A name of the option's argument.
      */
-    Option(const std::string& name, const std::string desc, bool required, const std::string arg_name)
+    Option(const std::string& name, const std::string& desc, bool required, const std::string& arg_name)
     : name(name), desc(desc), required(required), has_args(true), arg_name(arg_name)
     {
         validate_name(name);
@@ -37,7 +37,7 @@ public:
      * @param desc - A description of the options, must not be empty.
      * @param required - The option cannot be omitted.
      */
-    Option(const std::string& name, const std::string desc, bool required)
+    Option(const std::string& name, const std::string& desc, bool required)
     : name(name), desc(desc), required(required), has_args(false), arg_name()
     {
         validate_name(name);

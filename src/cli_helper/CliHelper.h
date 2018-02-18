@@ -11,14 +11,14 @@ namespace cli_helper {
 
 class CliHelper {
     std::string binary;
-    std::set<Option> opts;
+    std::map<std::string, Option> options;
     std::map<std::string, std::string> values;
     
 public:
     /**
      * @param binary - The name of the binary file.
      */
-    CliHelper(const char* binary) : binary(binary), opts(), values()
+    CliHelper(const char* binary) : binary(binary), options(), values()
     {
         assert(binary);
     }
@@ -31,26 +31,32 @@ public:
      */
     CliHelper& append(const Option& opt)
     {
-        assert(opts.find(opt) == opts.cend());
-        opts.insert(opt);
+        assert(options.find(opt.name) == options.cend());
+        options.insert(std::make_pair(opt.name, opt));
         return *this;
     }
 
     void print_usage(FILE* file = stdout) const
     {
         unsigned max_len = 0;
-        if (not opts.empty()) {
-            std::string name_req = option_full_names(true, &max_len);
-            std::string name_add = option_full_names(false, &max_len);
-            fprintf(file, "usage: %s %s [%s]\n", binary.c_str(), name_req.c_str(), name_add.c_str());
-            
-            for (auto it = opts.cbegin(); it != opts.cend(); ++it) {
-                const Option& opt = *it;
-                fprintf(file, "  %-*s  %s\n", max_len, opt.full_name().c_str(), opt.desc.c_str());
-            }
-        } else {
-            fprintf(file, "usage: %s\n", binary.c_str());
+        fprintf(file, "usage: %s ", binary.c_str());
+        
+        std::string name_req = option_full_names(true, &max_len);
+        std::string name_add = option_full_names(false, &max_len);
+        
+        if(name_req.length())
+            fprintf(file, "%s ", name_req.c_str());
+        
+        if(name_add.length())
+            fprintf(file, "[%s] ", name_add.c_str());
+        
+        fprintf(file, "\n");
+        
+        for (auto it = options.cbegin(); it != options.cend(); ++it) {
+            const Option& opt = (*it).second;
+            fprintf(file, "  %-*s  %s\n", max_len, opt.full_name().c_str(), opt.desc.c_str());
         }
+        fprintf(file, "\n");
     }
     
     int parse_args(int argc, char** argv, FILE* file = stdout)
@@ -98,15 +104,14 @@ public:
 private:
     int put_value(FILE* file, std::string name, std::string value, bool has_arg)
     {
-        Option tmp(name, "_", false);
-        auto it = opts.find(tmp);
+        auto it = options.find(name);
         
-        if(it == opts.cend()){
+        if(it == options.cend()){
             fprintf(file, "unknown option \"%s\"\n", name.c_str());
             return -1;
         }
         
-        const Option& opt = *it;
+        const Option& opt = (*it).second;
         if(opt.has_args != has_arg){
             if(opt.has_args)
                 fprintf(file, "option \"%s\" must have value\n", name.c_str());
@@ -128,8 +133,8 @@ private:
     int validate_values(FILE* file)
     {
         int result = 0;
-        for (auto it = opts.cbegin(); it != opts.cend(); ++it) {
-            const Option& opt = *it;
+        for (auto it = options.cbegin(); it != options.cend(); ++it) {
+            const Option& opt = (*it).second;
             if(opt.required && values.find(opt.name) == values.cend()){
                 fprintf(file, "option \"%s\" has been missed\n", opt.name.c_str());
                 result = -1;
@@ -141,8 +146,8 @@ private:
     std::string option_full_names(bool required, unsigned* max_len) const
     {
         std::string result;
-        for (auto it = opts.cbegin(); it != opts.cend(); ++it) {
-            const Option& opt = *it;
+        for (auto it = options.cbegin(); it != options.cend(); ++it) {
+            const Option& opt = (*it).second;
             if(opt.required == required){
                 if(result.length() > 0)
                     result += ",";

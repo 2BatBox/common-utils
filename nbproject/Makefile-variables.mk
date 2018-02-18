@@ -14,14 +14,6 @@ CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux/common-utils
 CND_PACKAGE_DIR_Debug=dist/Debug/GNU-Linux/package
 CND_PACKAGE_NAME_Debug=common-utils.tar
 CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux/package/common-utils.tar
-# Release configuration
-CND_PLATFORM_Release=GNU-Linux
-CND_ARTIFACT_DIR_Release=dist/Release/GNU-Linux
-CND_ARTIFACT_NAME_Release=common-utils
-CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux/common-utils
-CND_PACKAGE_DIR_Release=dist/Release/GNU-Linux/package
-CND_PACKAGE_NAME_Release=common-utils.tar
-CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux/package/common-utils.tar
 #
 # include compiler specific variables
 #
