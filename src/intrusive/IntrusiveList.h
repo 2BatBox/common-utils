@@ -6,9 +6,10 @@ class IntrusiveList {
 	T* head;
 	T* tail;
 	size_t list_size;
-	
+
 	template<typename V>
 	struct Iterator {
+		friend class IntrusiveList;
 
 		Iterator() noexcept : value(nullptr) { }
 
@@ -23,12 +24,12 @@ class IntrusiveList {
 		}
 
 		Iterator& operator++() noexcept {
-			value = value->next;
+			value = value->il_next;
 			return *this;
 		}
 
 		Iterator operator++(int) noexcept {
-			value = value->next;
+			value = value->il_next;
 			return Iterator(value);
 		}
 
@@ -39,7 +40,7 @@ class IntrusiveList {
 		V* operator->() noexcept {
 			return value;
 		}
-		
+
 		const V& operator*() const noexcept {
 			return *value;
 		}
@@ -51,30 +52,31 @@ class IntrusiveList {
 	private:
 		V* value;
 	};
-
+	
 	template<typename V>
-	struct ReverseIterator {
+	struct RecursiveIterator {
+		friend class IntrusiveList;
 
-		ReverseIterator() noexcept : value(nullptr) { }
+		RecursiveIterator() noexcept : value(nullptr) { }
 
-		ReverseIterator(V* value) noexcept : value(value) { }
+		RecursiveIterator(V* value) noexcept : value(value) { }
 
-		bool operator==(const ReverseIterator& it) const noexcept {
+		bool operator==(const RecursiveIterator& it) const noexcept {
 			return value == it.value;
 		}
 
-		bool operator!=(const ReverseIterator& it) const noexcept {
+		bool operator!=(const RecursiveIterator& it) const noexcept {
 			return value != it.value;
 		}
 
-		ReverseIterator& operator++() noexcept {
-			value = value->prev;
+		RecursiveIterator& operator++() noexcept {
+			value = value->il_prev;
 			return *this;
 		}
 
-		ReverseIterator operator++(int) noexcept {
-			value = value->prev;
-			return ReverseIterator(value);
+		RecursiveIterator operator++(int) noexcept {
+			value = value->il_prev;
+			return RecursiveIterator(value);
 		}
 
 		V& operator*() noexcept {
@@ -84,7 +86,7 @@ class IntrusiveList {
 		V* operator->() noexcept {
 			return value;
 		}
-		
+
 		const V& operator*() const noexcept {
 			return *value;
 		}
@@ -99,187 +101,235 @@ class IntrusiveList {
 
 	typedef Iterator<T> Iterator_t;
 	typedef Iterator<const T> ConstIterator_t;
-	typedef ReverseIterator<T> ReverseIterator_t;
-	typedef ReverseIterator<const T> ConstReverseIterator_t;
+	typedef RecursiveIterator<T> RecursiveIterator_t;
+	typedef RecursiveIterator<const T> ConstRecursiveIterator_t;
 
 public:
 
 	struct Hook {
-		T* next;
-		T* prev;
-		bool linked;
+		T* il_next;
+		T* il_prev;
+		bool il_linked;
 
-		Hook() noexcept : next(nullptr), prev(nullptr), linked(false) { }
+		Hook() noexcept : il_next(nullptr), il_prev(nullptr), il_linked(false) { }
 	};
 
 	IntrusiveList() noexcept : head(nullptr), tail(nullptr), list_size(0) { }
 
 	~IntrusiveList() noexcept = default;
 
-	void push_front(T* value) noexcept {
+	bool push_front(T& value) noexcept {
 		if (sanity_check(value)) {
 			if (head)
-				link_front(value, head);
+				link_head(value);
 			else
-				init(value);
+				link_first(value);
+
+			return true;
 		}
+		return false;
 	}
 
-	void push_back(T* value) noexcept {
+	bool push_back(T& value) noexcept {
 		if (sanity_check(value)) {
 			if (tail)
-				link_back(tail, value);
+				link_tail(value);
 			else
-				init(value);
+				link_first(value);
+
+			return true;
 		}
+		return false;
 	}
 
-	void pop_front() noexcept {
-		if (head != tail)
-			unlink_front();
-		else if (head)
-			clear();
+	bool pop_front() noexcept {
+		if (head != tail) {
+			unlink_head();
+			return true;
+		} else if (head) {
+			unlink_last();
+			return true;
+		}
+		return false;
 	}
 
-	void pop_back() noexcept {
-		if (head != tail)
-			unlink_back();
-		else if (head)
-			clear();
-	}
-
-	void remove(T* value) noexcept {
-		if (value == head)
-			pop_front();
-		else if (value == tail)
-			pop_back();
-		else
-			unlink(value);
-	}
-
-	T* front() noexcept {
-		return head;
-	}
-
-	T* back() noexcept {
-		return tail;
+	bool pop_back() noexcept {
+		if (head != tail) {
+			unlink_tail();
+			return true;
+		} else if (head) {
+			unlink_last();
+			return true;
+		}
+		return false;
 	}
 	
-	const T* front() const noexcept {
-		return head;
+	bool insert_before(T& before, T& value) noexcept {
+		if(before.il_linked && sanity_check(value)){
+			if(&before == head)
+				link_head(value);
+			else
+				link_before(before, value);
+			return true;
+		}
+		return false;
+	}
+	
+	bool insert_after(T& after, T& value) noexcept {
+		if(after.il_linked && sanity_check(value)){
+			if(&after == tail)
+				link_tail(value);
+			else
+				link_after(after, value);
+			return true;
+		}
+		return false;
 	}
 
-	const T* back() const noexcept {
-		return tail;
+
+	bool remove(T& value) noexcept {
+		if (head && value.il_linked) {
+			if (&value == head)
+				pop_front();
+			else if (&value == tail)
+				pop_back();
+			else
+				unlink(value);
+
+			return true;
+		}
+		return false;
+	}
+	
+	void reset(){
+		while(head)
+			pop_front();
 	}
 
 	inline size_t size() const noexcept {
 		return list_size;
 	}
 
-	// Iterators
 	Iterator_t begin() const noexcept {
 		return Iterator_t(head);
 	}
-	
-	ReverseIterator_t rbegin() const noexcept {
-		return ReverseIterator_t(tail);
-	}
-	
-	const ConstIterator_t cbegin() const noexcept {
+
+	ConstIterator_t cbegin() const noexcept {
 		return ConstIterator_t(head);
-	}
-	
-	const ConstReverseIterator_t crbegin() const noexcept {
-		return ConstReverseIterator_t(tail);
 	}
 
 	Iterator_t end() const noexcept {
 		return Iterator_t();
 	}
 
-	ReverseIterator_t rend() const noexcept {
-		return ReverseIterator_t();
-	}
-	
-	const ConstIterator_t cend() const noexcept {
+	ConstIterator_t cend() const noexcept {
 		return ConstIterator_t();
 	}
 	
-	const ConstReverseIterator_t crend() const noexcept {
-		return ConstReverseIterator_t();
+	
+	RecursiveIterator_t rbegin() const noexcept {
+		return RecursiveIterator_t(tail);
+	}
+
+	ConstRecursiveIterator_t crbegin() const noexcept {
+		return ConstRecursiveIterator_t(tail);
+	}
+
+	RecursiveIterator_t rend() const noexcept {
+		return RecursiveIterator_t();
+	}
+
+	ConstRecursiveIterator_t crend() const noexcept {
+		return ConstRecursiveIterator_t();
 	}
 
 private:
 
-	inline static bool sanity_check(const T* value) noexcept {
-		return value && (not value->linked);
+	inline static bool sanity_check(T& value) noexcept {
+		return (not value.il_linked);
 	}
 
-	inline void link_front(T* value, T* next) noexcept {
-		value->next = next;
-		value->prev = nullptr;
-		next->linked = true;
-		next->prev = value;
-		head = value;
+	inline void link_first(T& value) noexcept {
+		value.il_next = nullptr;
+		value.il_prev = nullptr;
+		value.il_linked = true;
+		head = tail = &value;
 		list_size++;
 	}
 
-	inline void link_back(T* prev, T* value) noexcept {
-		value->next = nullptr;
-		value->prev = prev;
-		value->linked = true;
-		prev->next = value;
-		tail = value;
+	inline void link_head(T& value) noexcept {
+		value.il_next = head;
+		value.il_prev = nullptr;
+		value.il_linked = true;
+		head->il_prev = &value;
+		head = &value;
 		list_size++;
 	}
 
-	inline void init(T* value) noexcept {
-		value->next = nullptr;
-		value->prev = nullptr;
-		value->linked = true;
-		head = tail = value;
+	inline void link_tail(T& value) noexcept {
+		value.il_next = nullptr;
+		value.il_prev = tail;
+		value.il_linked = true;
+		tail->il_next = &value;
+		tail = &value;
+		list_size++;
+	}
+	
+	inline void link_before(T& before, T& value) noexcept {
+		value.il_next = &before;
+		value.il_prev = before.il_prev;
+		value.il_linked = true;
+		before.il_prev->il_next = &value;
+		before.il_prev = &value;
+		list_size++;
+	}
+	
+	inline void link_after(T& after, T& value) noexcept {
+		value.il_next = after.il_next;
+		value.il_prev = &after;
+		value.il_linked = true;
+		after.il_next->il_prev = &value;
+		after.il_next = &value;
 		list_size++;
 	}
 
-	inline void clear() noexcept {
-		head->next = nullptr;
-		head->prev = nullptr;
-		head->linked = false;
+	inline void unlink_last() noexcept {
+		head->il_next = nullptr;
+		head->il_prev = nullptr;
+		head->il_linked = false;
 		head = tail = nullptr;
 		list_size--;
 	}
 
-	inline void unlink_front() noexcept {
-		T* tmp_head = head->next;
-		head->next = nullptr;
-		head->prev = nullptr;
-		head->linked = false;
+	inline void unlink_head() noexcept {
+		T* tmp_head = head->il_next;
+		head->il_next = nullptr;
+		head->il_prev = nullptr;
+		head->il_linked = false;
 		head = tmp_head;
-		head->prev = nullptr;
+		head->il_prev = nullptr;
 		list_size--;
 	}
 
-	inline void unlink_back() noexcept {
-		T* tmp_tail = tail->prev;
-		tail->next = nullptr;
-		tail->prev = nullptr;
-		tail->linked = false;
+	inline void unlink_tail() noexcept {
+		T* tmp_tail = tail->il_prev;
+		tail->il_next = nullptr;
+		tail->il_prev = nullptr;
+		tail->il_linked = false;
 		tail = tmp_tail;
-		tail->next = nullptr;
+		tail->il_next = nullptr;
 		list_size--;
 	}
 
-	inline void unlink(T* value) noexcept {
-		value->prev->next = value->next;
-		value->next->prev = value->prev;
-		value->next = nullptr;
-		value->prev = nullptr;
-		value->linked = true;
+	inline void unlink(T& value) noexcept {
+		value.il_prev->il_next = value.il_next;
+		value.il_next->il_prev = value.il_prev;
+		value.il_next = nullptr;
+		value.il_prev = nullptr;
+		value.il_linked = false;
 		list_size--;
 	}
 
 };
 
 #endif /* INTRUSIVELIST_H */
-
