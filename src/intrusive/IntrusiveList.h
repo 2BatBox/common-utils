@@ -209,8 +209,8 @@ public:
 	inline size_t size() const noexcept {
 		return list_size;
 	}
-
-	Iterator_t begin() const noexcept {
+	
+	Iterator_t begin() noexcept {
 		return Iterator_t(head);
 	}
 
@@ -218,7 +218,7 @@ public:
 		return ConstIterator_t(head);
 	}
 
-	Iterator_t end() const noexcept {
+	Iterator_t end() noexcept {
 		return Iterator_t();
 	}
 
@@ -226,8 +226,7 @@ public:
 		return ConstIterator_t();
 	}
 	
-	
-	RecursiveIterator_t rbegin() const noexcept {
+	RecursiveIterator_t rbegin() noexcept {
 		return RecursiveIterator_t(tail);
 	}
 
@@ -235,7 +234,7 @@ public:
 		return ConstRecursiveIterator_t(tail);
 	}
 
-	RecursiveIterator_t rend() const noexcept {
+	RecursiveIterator_t rend() noexcept {
 		return RecursiveIterator_t();
 	}
 

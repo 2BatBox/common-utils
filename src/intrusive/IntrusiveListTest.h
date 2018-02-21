@@ -190,15 +190,35 @@ public:
 		unsigned half = storage_size / 2;
 		for (unsigned i = half; i < storage_size; i++) {
 			assert(list.remove(storage[i]));
+			assert(not list.remove(storage[i]));
 		}
 		
 		for (unsigned i = 0; i < half; i++) {
 			assert(list.remove(storage[i]));
+			assert(not list.remove(storage[i]));
 		}
-		assert(not list.remove(storage[0]));
 		
 		assert(list.size() == 0);
 		test_sanity();
+	}
+	
+	void dump() const noexcept
+	{
+		std::cout << "list has " << list.size() << " elements \n";
+		for (auto it = list.cbegin(); it != list.cend(); ++it) {
+			std::cout << (*it).value << " ";
+		}
+		std::cout << "\n";
+	}
+	
+	template <typename T>
+	static void dump(const IntrusiveList<T>& list) noexcept
+	{
+		std::cout << "list has " << list.size() << " elements \n";
+		for (auto it = list.cbegin(); it != list.cend(); ++it) {
+			std::cout << *it << " ";
+		}
+		std::cout << "\n";
 	}
 
 };
