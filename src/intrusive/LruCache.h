@@ -8,56 +8,67 @@
 #include "IntrusiveList.h"
 #include "IntrusiveMap.h"
 
-template <typename K, typename V, typename H = DummyHasher<K> >
+template <typename K, typename V, typename H = std::hash<K> >
+struct Data : public IntrusiveMap<K, Data<K,V,H>, H>::Hook, IntrusiveList<Data<K,V,H> >::Hook {
+	
+	typedef K Key_t;
+	typedef V Value_t;
+	typedef IntrusiveList<Data> List_t;
+	typedef IntrusiveMap<K, Data<K,V,H>, H> Map_t;
+	typedef typename Map_t::Bucket_t Bucket_t;
+	
+	V value;
+	Data() : value() {}
+	Data(V v) : value(v) {}
+	bool operator==(const Data& data) const {
+		return value == data.value;
+	}
+};
+
+
+template <typename Data_t>
 class LruCache {
 	
 	friend class LruCacheTest;
 
-	struct Data : public IntrusiveMap<K, Data, H>::Hook, IntrusiveList<Data>::Hook {
-		V value;
-		Data() : value() {}
-		Data(V v) : value(v) {}
-		bool operator==(const Data& data) const {
-			return value == data.value;
-		}
-	};
+	typedef typename Data_t::Key_t K;
+	typedef typename Data_t::Value_t V;
+	typedef typename Data_t::List_t List_t;
+	typedef typename Data_t::Map_t Map_t;
+	typedef typename Data_t::Bucket_t Bucket_t;
 	
 public:
-	typedef Data Data_t;
-	typedef IntrusiveMap<K, Data, H> Map_t;
-	typedef IntrusiveList<Data> List_t;
-	typedef typename Map_t::Bucket Bucket_t;
 
+	const unsigned storage_size;
+	const unsigned bucket_list_size;
+	
 private:
-	const size_t storage_size;
-	Data* storage;
-	const size_t bucket_list_size;
+	Data_t* storage;
 	Bucket_t* bucket_list;
 	Map_t map;
 	List_t list_cached;
 	List_t list_freed;
 	
-public:
-	
 	LruCache(unsigned storage_size, float load_factor) noexcept
 		: storage_size(storage_size),
-			storage(new Data_t[storage_size]),
 			bucket_list_size((storage_size / load_factor) + 1),
-			bucket_list(new Bucket_t[bucket_list_size]),
-			map(bucket_list, bucket_list_size),
+			storage(nullptr),
+			bucket_list(nullptr),
+			map(bucket_list_size),
 			list_cached(),
 			list_freed()
 		{
 		for (unsigned i = 0; i < storage_size; i++) {
 			list_freed.push_back(storage[i]);
 		}
-
 	}
 	
-	LruCache(const LruCache&) = delete;
-	LruCache(LruCache&&) = delete;
+public:
 	
+	LruCache(const LruCache&) = delete;
 	LruCache operator=(const LruCache&) = delete;
+	
+	LruCache(LruCache&&) = delete;
 	LruCache operator=(LruCache&&) = delete;
 	
 	~LruCache() noexcept {
@@ -65,24 +76,48 @@ public:
 		delete [] bucket_list;
 	}
 	
+	bool aloocate(){
+		if(storage)
+			return false;
+	}
+	
 	void put(K key, const V& value) noexcept
 	{
-		auto it = map.find(key);
-		if(it == nullptr){
-			if(list_freed.size()){
-				push_back(key, value);
-			} else {
-				cycle(key, value);
-			}
+		Data_t* cell = map.find(key);
+		if(cell){
+			cell->value = value;
+			list_cached.remove(*cell);
+			list_cached.push_back(*cell);
 		} else {
-			update_value(*it, value);
+			Data_t* freed;
+			if(list_freed.size())
+				freed = list_freed.pop_front();
+			else {
+				freed = list_cached.pop_front();
+				map.remove(freed->im_key);
+			}
+			
+			freed->value = value;
+			list_cached.push_back(*freed);
+			map.put(key, *freed);
 		}
 	}
 	
 	bool get(K key, V& value) const noexcept {
-		auto it = map.find(key);
-		if(it != nullptr){
-			value = (*it).value;
+		const Data_t* cell = map.find(key);
+		if(cell){
+			value = cell->value;
+			return true;
+		}
+		return false;
+	}
+	
+	bool get_refresh(K key, V& value) noexcept {
+		Data_t* cell = map.find(key);
+		if(cell){
+			value = cell->value;
+			list_cached.remove(*cell);
+			list_cached.push_back(*cell);
 			return true;
 		}
 		return false;
@@ -112,38 +147,9 @@ public:
 	}
 	
 	size_t mem_used() const noexcept {
-		return storage_size * sizeof(Data) + bucket_list_size * sizeof(Bucket_t);
+		return storage_size * sizeof(Data_t) + bucket_list_size * sizeof(Bucket_t);
 	}
 	
-private:
-	
-	inline void cycle(K key, const V& value) noexcept
-	{
-		Data_t& last = *(list_cached.begin());
-		list_cached.pop_front();
-		last.value = value;
-		list_cached.push_back(last);
-		map.remove(last.im_key);
-		map.put(key, last);
-	}
-	
-	inline void push_back(K key, const V& value) noexcept
-	{
-		Data_t& freed = *(list_freed.begin());
-		list_freed.pop_front();
-		freed.value = value;
-		list_cached.push_back(freed);
-		map.put(key, freed);
-	}
-	
-	inline void update_value(Data_t& cell, const V& value) noexcept
-	{
-		cell.value = value;
-		list_cached.remove(cell);
-		list_cached.push_back(cell);
-	}
-		
-
 };
 
 #endif /* LRU_CACHE_H */

@@ -23,12 +23,11 @@ class IntrusiveMapTest {
 	
 	typedef Data<Key_t, Value_t> Data_t;
 	typedef IntrusiveMap<Key_t, Data_t> Map_t;
-	typedef Map_t::Bucket Bucket_t;
+	typedef Map_t::Bucket_t Bucket_t;
 	
 	const size_t storage_size;
 	Data_t* storage;
 	const size_t bucket_list_size;
-	Bucket_t* bucket_list;
 	Map_t map;
 	
 public:
@@ -37,12 +36,14 @@ public:
 		: storage_size(storage_size),
 			storage(new Data_t[storage_size]),
 			bucket_list_size((storage_size / load_factor) + 1),
-			bucket_list(new Bucket_t[bucket_list_size]),
-			map(bucket_list, bucket_list_size)
+			map(bucket_list_size)
 		{
-		for (unsigned i = 0; i < storage_size; i++) {
-			storage[i].value = i;
-		}
+			
+			if(not map.allocate())
+				throw std::logic_error("Cannot allocate IntrusiveMap instance");
+			for (unsigned i = 0; i < storage_size; i++) {
+				storage[i].value = i;
+			}
 	}
 	
 	IntrusiveMapTest(const IntrusiveMapTest&) = delete;
@@ -66,6 +67,7 @@ public:
 		printf("storage_size=%zu\n", storage_size);
 		printf("bucket_list_size=%zu\n", bucket_list_size);
 		printf("memory used %zu Kb\n", mem_used() / (1024));
+		test_raii();
 		test_put();
 		test_remove();
 		test_find();
@@ -76,16 +78,45 @@ public:
 			assert(not storage[i].im_linked);
 		}
 	}
+	
+	void test_raii() { 
+		assert(map.size() == 0);
+		
+		for (Key_t i = 0; i < storage_size; i++) {
+			assert(map.put(i, storage[i]));
+		}
+		
+		assert(map.size() == storage_size);
+		
+		Map_t tmp_map(std::move(map));
+		assert(map.size() == 0);
+		assert(tmp_map.size() == storage_size);
+		
+		for (Key_t i = 0; i < storage_size; i++) {
+			auto it = tmp_map.find(i);
+			assert(it);
+			assert((*it) == storage[i]);
+		}
+		
+		map = std::move(map);
+		map = std::move(tmp_map);
+		std::swap(map, tmp_map);
+		std::swap(map, tmp_map);
+		
+		map.reset();
+		assert(map.size() == 0);
+		test_sanity();
+	}
 
 	void test_put() { 
 		assert(map.size() == 0);
 		
-		for (unsigned i = 0; i < storage_size; i++) {
+		for (Key_t i = 0; i < storage_size; i++) {
 			assert(map.put(i, storage[i]));
 		}
 		assert(map.size() == storage_size);
 		
-		for (unsigned i = 0; i < storage_size; i++) {
+		for (Key_t i = 0; i < storage_size; i++) {
 			auto it = map.find(i);
 			assert(it);
 			assert((*it) == storage[i]);
@@ -99,13 +130,13 @@ public:
 	void test_find() { 
 		assert(map.size() == 0);
 		
-		unsigned half = storage_size / 2;
-		for (unsigned i = 0; i < half; i++) {
+		Key_t half = storage_size / 2;
+		for (Key_t i = 0; i < half; i++) {
 			assert(map.put(i, storage[i]));
 		}
 		assert(map.size() == half);
 		
-		for (unsigned i = 0; i < storage_size; i++) {
+		for (Key_t i = 0; i < storage_size; i++) {
 			auto it = map.find(i);
 			if(i < half){
 				assert(it);
@@ -123,18 +154,18 @@ public:
 	void test_remove() { 
 		assert(map.size() == 0);
 		
-		for (unsigned i = 0; i < storage_size; i++) {
+		for (Key_t i = 0; i < storage_size; i++) {
 			assert(map.put(i, storage[i]));
 		}
 		assert(map.size() == storage_size);
 		
-		unsigned half = storage_size / 2;
-		for (unsigned i = half; i < storage_size; i++) {
+		Key_t half = storage_size / 2;
+		for (Key_t i = half; i < storage_size; i++) {
 			assert(map.remove(i));
 			assert(not map.remove(i));
 		}
 		
-		for (unsigned i = 0; i < half; i++) {
+		for (Key_t i = 0; i < half; i++) {
 			assert(map.remove(i));
 			assert(not map.remove(i));
 		}
@@ -146,7 +177,7 @@ public:
 	void dump()
 	{
 		std::cout << "map has " << map.size() << " elements \n";
-		for (size_t bucket = 0; bucket < map.bucket_list_size; ++bucket) {
+		for (size_t bucket = 0; bucket < map.buckets(); ++bucket) {
 			std::cout << "B[" << bucket << "] ";
 			for (auto it = map.cbegin(bucket); it != map.cend(); ++it) {
 				std::cout << (*it).value << " ";
@@ -159,7 +190,7 @@ public:
 	static void dump(const IntrusiveMap<K,V>& map)
 	{
 		std::cout << "map has " << map.size() << " elements \n";
-		for (size_t bucket = 0; bucket < map.bucket_list_size; ++bucket) {
+		for (size_t bucket = 0; bucket < map.buckets(); ++bucket) {
 			std::cout << "B[" << bucket << "] ";
 			for (auto it = map.cbegin(bucket); it != map.cend(); ++it) {
 				std::cout << *it << " ";

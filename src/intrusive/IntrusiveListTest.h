@@ -18,10 +18,12 @@ class IntrusiveListTest {
 		}
 	};
 	
+	typedef unsigned Key_t;
 	typedef unsigned Value_t;
 	typedef Data<Value_t> Data_t;
+	typedef IntrusiveList<Data_t> List_t;
 	
-	IntrusiveList<Data_t> list;
+	List_t list;
 	const unsigned storage_size;
 	Data_t* storage;
 	
@@ -51,6 +53,7 @@ public:
 		printf("<IntrusiveListTest>...\n");
 		printf("sizeof(Data_t)=%zu\n", sizeof(Data_t));
 		printf("memory used %zu Kb\n", mem_used() / (1024));
+		test_raii();
 		test_push_front();
 		test_push_back();
 		test_pop_front();
@@ -65,12 +68,40 @@ public:
 			assert(not storage[i].il_linked);
 		}
 	}
-
-	void test_push_front() { 
-		unsigned index = 0;
+	
+	void test_raii() { 
+		Key_t index = 0;
 		assert(list.size() == 0);
 		
-		for (unsigned i = 0; i < storage_size; i++) {
+		List_t list_tmp(std::move(list));
+		
+		for (Key_t i = 0; i < storage_size; i++) {
+			assert(list_tmp.push_front(storage[i]));
+		}
+		assert(list.size() == 0);
+		assert(list_tmp.size() == storage_size);
+		
+		list = std::move(list);
+		list = std::move(list_tmp);
+		std::swap(list, list_tmp);
+		std::swap(list, list_tmp);
+		
+		for (auto it = list.crbegin(); it != list.crend(); ++it) {
+			assert((*it) == storage[index++]);
+		}
+		assert(list.size() == storage_size);
+		assert(list_tmp.size() == 0);
+		
+		list.reset();
+		assert(list.size() == 0);
+		test_sanity();
+	}
+
+	void test_push_front() { 
+		Key_t index = 0;
+		assert(list.size() == 0);
+		
+		for (Key_t i = 0; i < storage_size; i++) {
 			assert(list.push_front(storage[i]));
 		}
 		assert(list.size() == storage_size);
@@ -85,10 +116,10 @@ public:
 	}
 	
 	void test_push_back() { 
-		unsigned index = 0;
+		Key_t index = 0;
 		assert(list.size() == 0);
 		
-		for (unsigned i = 0; i < storage_size; i++) {
+		for (Key_t i = 0; i < storage_size; i++) {
 			assert(list.push_back(storage[i]));
 		}
 		assert(list.size() == storage_size);
@@ -105,17 +136,17 @@ public:
 	void test_pop_front() { 
 		assert(list.size() == 0);
 		
-		for (unsigned i = 0; i < storage_size; i++) {
+		for (Key_t i = 0; i < storage_size; i++) {
 			assert(list.push_back(storage[i]));
 		}
 		assert(list.size() == storage_size);
 		
-		for (unsigned i = 0; i < storage_size; i++) {
+		for (Key_t i = 0; i < storage_size; i++) {
 			auto it = list.cbegin();
 			assert((*it) == storage[i]);
-			assert(list.pop_front());
+			assert(list.pop_front() == &storage[i]);
 		}
-		assert(not list.pop_front());
+		assert(list.pop_front() == nullptr);
 		
 		assert(list.size() == 0);
 		test_sanity();
@@ -124,28 +155,28 @@ public:
 	void test_pop_back() { 
 		assert(list.size() == 0);
 		
-		for (unsigned i = 0; i < storage_size; i++) {
+		for (Key_t i = 0; i < storage_size; i++) {
 			list.push_front(storage[i]);
 		}
 		assert(list.size() == storage_size);
 		
-		for (unsigned i = 0; i < storage_size; i++) {
+		for (Key_t i = 0; i < storage_size; i++) {
 			auto it = list.crbegin();
 			assert((*it) == storage[i]);
-			assert(list.pop_back());
+			assert(list.pop_back() == &storage[i]);
 		}
-		assert(not list.pop_back());
+		assert(list.pop_back() == nullptr);
 		
 		assert(list.size() == 0);
 		test_sanity();
 	}
 	
 	void test_insert_before() { 
-		unsigned index = 0;
+		Key_t index = 0;
 		assert(list.size() == 0);
 		
 		list.push_front(storage[0]);
-		for (unsigned i = 1; i < storage_size; i++) {
+		for (Key_t i = 1; i < storage_size; i++) {
 			assert(list.insert_before(storage[i-1], storage[i]));
 		}
 		assert(list.size() == storage_size);
@@ -160,11 +191,11 @@ public:
 	}
 	
 	void test_insert_after() { 
-		unsigned index = 0;
+		Key_t index = 0;
 		assert(list.size() == 0);
 		
 		list.push_front(storage[0]);
-		for (unsigned i = 1; i < storage_size; i++) {
+		for (Key_t i = 1; i < storage_size; i++) {
 			assert(list.insert_after(storage[i-1], storage[i]));
 		}
 		assert(list.size() == storage_size);
@@ -182,18 +213,18 @@ public:
 	void test_remove() { 
 		assert(list.size() == 0);
 		
-		for (unsigned i = 0; i < storage_size; i++) {
+		for (Key_t i = 0; i < storage_size; i++) {
 			assert(list.push_front(storage[i]));
 		}
 		assert(list.size() == storage_size);
 		
-		unsigned half = storage_size / 2;
-		for (unsigned i = half; i < storage_size; i++) {
+		Key_t half = storage_size / 2;
+		for (Key_t i = half; i < storage_size; i++) {
 			assert(list.remove(storage[i]));
 			assert(not list.remove(storage[i]));
 		}
 		
-		for (unsigned i = 0; i < half; i++) {
+		for (Key_t i = 0; i < half; i++) {
 			assert(list.remove(storage[i]));
 			assert(not list.remove(storage[i]));
 		}

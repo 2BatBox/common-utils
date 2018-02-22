@@ -1,6 +1,8 @@
 #ifndef INTRUSIVELIST_H
 #define INTRUSIVELIST_H
 
+#include <cstdlib>
+
 template <typename T>
 class IntrusiveList {
 	T* head;
@@ -115,8 +117,29 @@ public:
 	};
 
 	IntrusiveList() noexcept : head(nullptr), tail(nullptr), list_size(0) { }
+	
+	IntrusiveList(const IntrusiveList&) = delete;
+	IntrusiveList& operator=(const IntrusiveList&) = delete;
+	
+	IntrusiveList(IntrusiveList&& rv) : head(rv.head), tail(rv.tail), list_size(rv.list_size) {
+		rv.head = rv.tail = nullptr;
+		rv.list_size = 0;
+	}
+	
+	IntrusiveList& operator=(IntrusiveList&& rv){
+		if(this != &rv){
+			head = rv.head;
+			tail = rv.tail;
+			list_size = rv.list_size;
+			rv.head = rv.tail = nullptr;
+			rv.list_size = 0;
+		}
+		return *this;
+	}
 
-	~IntrusiveList() noexcept = default;
+	virtual ~IntrusiveList() noexcept {
+		reset();
+	}
 
 	bool push_front(T& value) noexcept {
 		if (sanity_check(value)) {
@@ -142,26 +165,22 @@ public:
 		return false;
 	}
 
-	bool pop_front() noexcept {
+	T* pop_front() noexcept {
 		if (head != tail) {
-			unlink_head();
-			return true;
+			return unlink_head();
 		} else if (head) {
-			unlink_last();
-			return true;
+			return unlink_last();
 		}
-		return false;
+		return nullptr;
 	}
 
-	bool pop_back() noexcept {
+	T* pop_back() noexcept {
 		if (head != tail) {
-			unlink_tail();
-			return true;
+			return unlink_tail();
 		} else if (head) {
-			unlink_last();
-			return true;
+			return unlink_last();
 		}
-		return false;
+		return nullptr;
 	}
 	
 	bool insert_before(T& before, T& value) noexcept {
@@ -292,32 +311,36 @@ private:
 		list_size++;
 	}
 
-	inline void unlink_last() noexcept {
+	inline T* unlink_last() noexcept {
+		T* result = head;
 		head->il_next = nullptr;
 		head->il_prev = nullptr;
 		head->il_linked = false;
 		head = tail = nullptr;
 		list_size--;
+		return result;
 	}
 
-	inline void unlink_head() noexcept {
-		T* tmp_head = head->il_next;
-		head->il_next = nullptr;
+	inline T* unlink_head() noexcept {
+		T* result = head;
+		head = head->il_next;
 		head->il_prev = nullptr;
-		head->il_linked = false;
-		head = tmp_head;
-		head->il_prev = nullptr;
+		result->il_next = nullptr;
+		result->il_prev = nullptr;
+		result->il_linked = false;
 		list_size--;
+		return result;
 	}
 
-	inline void unlink_tail() noexcept {
-		T* tmp_tail = tail->il_prev;
+	inline T* unlink_tail() noexcept {
+		T* result = tail;
+		tail = tail->il_prev;
 		tail->il_next = nullptr;
-		tail->il_prev = nullptr;
-		tail->il_linked = false;
-		tail = tmp_tail;
-		tail->il_next = nullptr;
+		result->il_next = nullptr;
+		result->il_prev = nullptr;
+		result->il_linked = false;
 		list_size--;
+		return result;
 	}
 
 	inline void unlink(T& value) noexcept {
