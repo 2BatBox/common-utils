@@ -8,6 +8,9 @@
 
 class IntrusiveMapTest {
 
+	typedef unsigned Key_t;
+	typedef unsigned Value_t;
+	
 	template <typename K, typename V>
 	struct Data : public IntrusiveMap<K, Data<K,V> >::Hook {
 		V value;
@@ -18,8 +21,6 @@ class IntrusiveMapTest {
 		}
 	};
 	
-	typedef unsigned Key_t;
-	typedef unsigned Value_t;
 	typedef Data<Key_t, Value_t> Data_t;
 	typedef IntrusiveMap<Key_t, Data_t> Map_t;
 	typedef Map_t::Bucket Bucket_t;

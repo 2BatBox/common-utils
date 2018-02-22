@@ -8,12 +8,12 @@
 #include "IntrusiveList.h"
 #include "IntrusiveMap.h"
 
-template <typename K, typename V>
+template <typename K, typename V, typename H = DummyHasher<K> >
 class LruCache {
 	
 	friend class LruCacheTest;
 
-	struct Data : public IntrusiveMap<K, Data>::Hook, IntrusiveList<Data>::Hook {
+	struct Data : public IntrusiveMap<K, Data, H>::Hook, IntrusiveList<Data>::Hook {
 		V value;
 		Data() : value() {}
 		Data(V v) : value(v) {}
@@ -24,7 +24,7 @@ class LruCache {
 	
 public:
 	typedef Data Data_t;
-	typedef IntrusiveMap<K, Data> Map_t;
+	typedef IntrusiveMap<K, Data, H> Map_t;
 	typedef IntrusiveList<Data> List_t;
 	typedef typename Map_t::Bucket Bucket_t;
 
@@ -65,65 +65,66 @@ public:
 		delete [] bucket_list;
 	}
 	
-	bool put(K key, const V& value) noexcept
+	void put(K key, const V& value) noexcept
 	{
 		auto it = map.find(key);
 		if(it == nullptr){
-			if(list_freed.size() == 0){
-				cycle(value);
-			} else {
+			if(list_freed.size()){
 				push_back(key, value);
+			} else {
+				cycle(key, value);
 			}
 		} else {
 			update_value(*it, value);
 		}
+	}
+	
+	bool get(K key, V& value) const noexcept {
+		auto it = map.find(key);
+		if(it != nullptr){
+			value = (*it).value;
+			return true;
+		}
 		return false;
+	}
+	
+	bool remove(K key) noexcept {
+		auto it = map.find(key);
+		if(it != nullptr){
+			map.remove(key);
+			list_cached.remove(*it);
+			list_freed.push_back(*it);
+			return true;
+		}
+		return false;
+	}
+	
+	void reset() noexcept {
+		map.reset();
+		list_cached.reset();
+		for (unsigned i = 0; i < storage_size; i++) {
+			list_freed.push_back(storage[i]);
+		}
+	}
+	
+	size_t size() const noexcept {
+		return map.size();
 	}
 	
 	size_t mem_used() const noexcept {
 		return storage_size * sizeof(Data) + bucket_list_size * sizeof(Bucket_t);
 	}
 	
-	void test(){
-		printf("<LruCache>...\n");
-		printf("sizeof(Data)=%zu\n", sizeof(Data));
-		printf("sizeof(Bucket_t)=%zu\n", sizeof(Bucket_t));
-		printf("storage_size=%zu\n", storage_size);
-		printf("bucket_list_size=%zu\n", bucket_list_size);
-		printf("memory used %zu Kb\n", mem_used() / (1024));
-	}
-	
-	void dump()
-	{
-		std::cout << "map has " << map.size() << " elements \n";
-		for (size_t bucket = 0; bucket < map.bucket_list_size; ++bucket) {
-			std::cout << "B[" << bucket << "] ";
-			for (auto it = map.cbegin(bucket); it != map.cend(); ++it) {
-				std::cout << (*it).value << " ";
-			}
-			std::cout << "\n";
-		}
-		std::cout << "cached list has " << list_cached.size() << " elements \n";
-		for (auto it = list_cached.cbegin(); it != list_cached.cend(); ++it) {
-			std::cout << (*it).value << " ";
-		}
-		std::cout << "\n";
-		std::cout << "freed list has " << list_freed.size() << " elements \n";
-		for (auto it = list_freed.cbegin(); it != list_freed.cend(); ++it) {
-			std::cout << (*it).value << " ";
-		}
-		std::cout << "\n";
-
-	}
-	
 private:
 	
-	inline void cycle(const V& value) noexcept
+	inline void cycle(K key, const V& value) noexcept
 	{
 		Data_t& last = *(list_cached.begin());
 		list_cached.pop_front();
 		last.value = value;
 		list_cached.push_back(last);
+		map.remove(last.im_key);
+		map.put(key, last);
 	}
 	
 	inline void push_back(K key, const V& value) noexcept

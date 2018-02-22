@@ -5,16 +5,25 @@
 
 #include "../Log.h"
 
-template <typename K, typename V>
+template <typename K>
+struct DummyHasher {
+
+	size_t operator()(K key) {
+		return static_cast<size_t> (key);
+	}
+};
+
+template <typename K, typename V, typename H = DummyHasher<K> >
 class IntrusiveMap {
 public:
+
 	struct Bucket {
 		V* list;
 		size_t size;
 
 		Bucket() noexcept : list(nullptr), size(0) { }
 	};
-	
+
 	struct Hook {
 		V* im_next;
 		K im_key;
@@ -22,12 +31,13 @@ public:
 
 		Hook() noexcept : im_next(nullptr), im_key(), im_linked(false) { }
 	};
-	
+
 	const size_t bucket_list_size;
-	
+
 private:
 	Bucket * const bucket_list;
 	size_t elements;
+	H hasher;
 
 	template<typename ITV>
 	struct Iterator {
@@ -77,13 +87,14 @@ private:
 
 	typedef Iterator<V> Iterator_t;
 	typedef Iterator<const V> ConstIterator_t;
-	
+
 public:
 
 	IntrusiveMap(Bucket* bucket_list, size_t bucket_list_size) noexcept :
 	bucket_list_size(bucket_list_size),
 	bucket_list(bucket_list),
-	elements(0) {}
+	elements(0),
+	hasher() { }
 
 	IntrusiveMap(const IntrusiveMap&) = delete;
 	IntrusiveMap(IntrusiveMap&&) = delete;
@@ -92,11 +103,11 @@ public:
 	IntrusiveMap& operator=(IntrusiveMap&&) = delete;
 
 	~IntrusiveMap() noexcept = default;
-	
+
 	bool put(K key, V& value) noexcept {
 		if (sanity_check(value)) {
-			size_t index = key % bucket_list_size;
-			if(find(bucket_list[index], key) == nullptr){
+			size_t index = hasher(key) % bucket_list_size;
+			if (find(bucket_list[index], key) == nullptr) {
 				link_front(bucket_list[index], key, value);
 				return true;
 			}
@@ -104,13 +115,23 @@ public:
 		return false;
 	}
 	
-	bool remove(K key) noexcept {
+	V* find(K key) noexcept {
 		size_t index = key % bucket_list_size;
+		return find(bucket_list[index], key);
+	}
+	
+	const V* find(K key) const noexcept {
+		size_t index = key % bucket_list_size;
+		return find(bucket_list[index], key);
+	}
+
+	bool remove(K key) noexcept {
+		size_t index = hasher(key) % bucket_list_size;
 		Bucket& bucket = bucket_list[index];
 		V* prev = nullptr;
 		V* result = find(bucket, key, prev);
-		if(result){
-			if(result == bucket.list)
+		if (result) {
+			if (result == bucket.list)
 				unlink_front(bucket);
 			else
 				unlink_next(bucket, *prev);
@@ -118,23 +139,18 @@ public:
 		}
 		return false;
 	}
-	
+
 	void reset() noexcept {
 		for (size_t i = 0; i < bucket_list_size; i++) {
-			while(bucket_list[i].list)
+			while (bucket_list[i].list)
 				unlink_front(bucket_list[i]);
 		}
 	}
-	
-	V* find(K key) noexcept {
-		size_t index = key % bucket_list_size;
-		return find(bucket_list[index], key);
-	}
-	
+
 	size_t size() const noexcept {
 		return elements;
 	}
-	
+
 	Iterator_t begin(size_t bucket) noexcept {
 		return Iterator_t(bucket_list[bucket].list);
 	}
@@ -165,7 +181,7 @@ private:
 		bucket.size++;
 		elements++;
 	}
-	
+
 	inline void unlink_front(Bucket& bucket) noexcept {
 		V* tmp_value = bucket.list;
 		bucket.list = bucket.list->im_next;
@@ -174,7 +190,7 @@ private:
 		bucket.size--;
 		elements--;
 	}
-	
+
 	inline void unlink_next(Bucket& bucket, V& value) noexcept {
 		V* tmp_value = value.im_next;
 		value.im_next = value.im_next->im_next;
@@ -183,21 +199,31 @@ private:
 		bucket.size--;
 		elements--;
 	}
-	
+
 	inline V* find(Bucket& bucket, K key) noexcept {
 		V* cur = bucket.list;
-		while(cur){
-			if(cur->im_key == key)
+		while (cur) {
+			if (cur->im_key == key)
 				break;
 			cur = cur->im_next;
 		}
 		return cur;
 	}
 	
+	inline const V* find(Bucket& bucket, K key) const noexcept {
+		V* cur = bucket.list;
+		while (cur) {
+			if (cur->im_key == key)
+				break;
+			cur = cur->im_next;
+		}
+		return cur;
+	}
+
 	inline V* find(Bucket& bucket, K key, V*& prev) noexcept {
 		V* cur = bucket.list;
-		while(cur){
-			if(cur->im_key == key)
+		while (cur) {
+			if (cur->im_key == key)
 				break;
 			prev = cur;
 			cur = cur->im_next;
