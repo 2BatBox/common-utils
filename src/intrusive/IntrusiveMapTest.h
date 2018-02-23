@@ -12,7 +12,7 @@ class IntrusiveMapTest {
 	typedef unsigned Value_t;
 	
 	template <typename K, typename V>
-	struct Data : public IntrusiveMap<K, Data<K,V> >::Hook {
+	struct Data : public IntrusiveMapHook<K, Data<K, V> > {
 		V value;
 		Data() : value() {}
 		Data(V v) : value(v) {}

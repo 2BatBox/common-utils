@@ -9,7 +9,7 @@
 class IntrusiveListTest {
 
 	template <typename V>
-	struct Data : public IntrusiveList<Data<V> >::Hook {
+	struct Data : public IntrusiveListHook<Data<V> > {
 		V value;
 		Data() : value() {}
 		Data(V v) : value(v) {}

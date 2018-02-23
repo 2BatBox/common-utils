@@ -8,80 +8,84 @@
 #include "IntrusiveList.h"
 #include "IntrusiveMap.h"
 
-template <typename K, typename V, typename H = std::hash<K> >
-struct Data : public IntrusiveMap<K, Data<K,V,H>, H>::Hook, IntrusiveList<Data<K,V,H> >::Hook {
-	
+template <typename K, typename V>
+struct LruCacheData : public IntrusiveListHook<LruCacheData<K, V> >, IntrusiveMapHook<K, LruCacheData<K, V> > {
 	typedef K Key_t;
 	typedef V Value_t;
-	typedef IntrusiveList<Data> List_t;
-	typedef IntrusiveMap<K, Data<K,V,H>, H> Map_t;
-	typedef typename Map_t::Bucket_t Bucket_t;
-	
+	typedef IntrusiveList<LruCacheData<K,V> > List_t;
+	typedef IntrusiveMap<K, LruCacheData<K,V> > Map_t;
 	V value;
-	Data() : value() {}
-	Data(V v) : value(v) {}
-	bool operator==(const Data& data) const {
+	LruCacheData() : value() {}
+	LruCacheData(const V& v) : value(v) {}
+	bool operator==(const LruCacheData& data) const {
 		return value == data.value;
 	}
 };
 
-
-template <typename Data_t>
+template <
+	typename Data_t,
+	typename SA = std::allocator<Data_t>,
+	typename BA = std::allocator<IntrusiveMapBucket<Data_t> >,
+	typename H = std::hash<typename Data_t::Key_t>
+>
 class LruCache {
 	
 	friend class LruCacheTest;
 
-	typedef typename Data_t::Key_t K;
-	typedef typename Data_t::Value_t V;
+	typedef typename Data_t::Key_t Key_t;
+	typedef typename Data_t::Value_t Value_t;
 	typedef typename Data_t::List_t List_t;
 	typedef typename Data_t::Map_t Map_t;
-	typedef typename Data_t::Bucket_t Bucket_t;
-	
-public:
-
-	const unsigned storage_size;
-	const unsigned bucket_list_size;
+	typedef typename Map_t::Bucket_t Bucket_t;
 	
 private:
+	size_t cache_capacity;
 	Data_t* storage;
-	Bucket_t* bucket_list;
 	Map_t map;
 	List_t list_cached;
 	List_t list_freed;
+	SA allocator;
 	
-	LruCache(unsigned storage_size, float load_factor) noexcept
-		: storage_size(storage_size),
-			bucket_list_size((storage_size / load_factor) + 1),
+	LruCache(unsigned capacity, float load_factor) noexcept
+		: cache_capacity(capacity),
 			storage(nullptr),
-			bucket_list(nullptr),
-			map(bucket_list_size),
+			map((capacity / load_factor) + 1),
 			list_cached(),
-			list_freed()
+			list_freed(),
+			allocator()
 		{
-		for (unsigned i = 0; i < storage_size; i++) {
-			list_freed.push_back(storage[i]);
-		}
 	}
 	
 public:
 	
 	LruCache(const LruCache&) = delete;
-	LruCache operator=(const LruCache&) = delete;
+	LruCache& operator=(const LruCache&) = delete;
 	
-	LruCache(LruCache&&) = delete;
-	LruCache operator=(LruCache&&) = delete;
+	LruCache(LruCache&& rv) = delete;
+	LruCache& operator=(LruCache&&) = delete;
 	
-	~LruCache() noexcept {
-		delete [] storage;
-		delete [] bucket_list;
+	virtual ~LruCache() noexcept {
+		destroy();
 	}
 	
-	bool aloocate(){
+	bool allocate(){
 		if(storage)
 			return false;
+		
+		storage = allocator.allocate(cache_capacity);
+		if(storage == nullptr)
+			return false;
+		
+		Data_t empty;
+		for (unsigned i = 0; i < cache_capacity; i++) {
+			allocator.construct(storage + i, empty);
+			list_freed.push_back(storage[i]);
+		}
+		
+		return map.allocate();
 	}
 	
-	void put(K key, const V& value) noexcept
+	void put(Key_t key, const Value_t& value) noexcept
 	{
 		Data_t* cell = map.find(key);
 		if(cell){
@@ -103,7 +107,7 @@ public:
 		}
 	}
 	
-	bool get(K key, V& value) const noexcept {
+	bool get(Key_t key, Value_t& value) const noexcept {
 		const Data_t* cell = map.find(key);
 		if(cell){
 			value = cell->value;
@@ -112,7 +116,7 @@ public:
 		return false;
 	}
 	
-	bool get_refresh(K key, V& value) noexcept {
+	bool get_refresh(Key_t key, Value_t& value) noexcept {
 		Data_t* cell = map.find(key);
 		if(cell){
 			value = cell->value;
@@ -123,7 +127,7 @@ public:
 		return false;
 	}
 	
-	bool remove(K key) noexcept {
+	bool remove(Key_t key) noexcept {
 		auto it = map.find(key);
 		if(it != nullptr){
 			map.remove(key);
@@ -137,9 +141,13 @@ public:
 	void reset() noexcept {
 		map.reset();
 		list_cached.reset();
-		for (unsigned i = 0; i < storage_size; i++) {
+		for (unsigned i = 0; i < cache_capacity; i++) {
 			list_freed.push_back(storage[i]);
 		}
+	}
+	
+	size_t capacity() const noexcept {
+		return cache_capacity;
 	}
 	
 	size_t size() const noexcept {
@@ -147,7 +155,25 @@ public:
 	}
 	
 	size_t mem_used() const noexcept {
-		return storage_size * sizeof(Data_t) + bucket_list_size * sizeof(Bucket_t);
+		return cache_capacity * sizeof(Data_t) + map.buckets() * sizeof(Bucket_t);
+	}
+	
+private:
+	
+	void destroy() noexcept {
+		if (storage && cache_capacity) {
+			
+			list_freed.reset();
+			list_cached.reset();
+			map.reset();
+			
+			for (size_t i = 0; i < cache_capacity; i++) {
+				allocator.destroy(storage + i);
+			}
+			allocator.deallocate(storage, cache_capacity);
+			storage = nullptr;
+			cache_capacity = 0;
+		}
 	}
 	
 };

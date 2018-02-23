@@ -3,26 +3,28 @@
 
 #include <memory>
 
+template <typename K, typename V>
+struct IntrusiveMapHook {
+	V* im_next;
+	K im_key;
+	bool im_linked;
+
+	IntrusiveMapHook() noexcept : im_next(nullptr), im_key(), im_linked(false) { }
+};
+
 template <typename V>
 struct IntrusiveMapBucket {
-	V* list;
+	V* head;
 	size_t size;
 
-	IntrusiveMapBucket() noexcept : list(nullptr), size(0) { }
+	IntrusiveMapBucket() noexcept : head(nullptr), size(0) { }
 };
 
 template <typename K, typename V, typename A = std::allocator<IntrusiveMapBucket<V> >, typename H = std::hash<K> >
 class IntrusiveMap {
 public:
+	typedef IntrusiveMapHook<K, V> Hook_t;
 	typedef IntrusiveMapBucket<V> Bucket_t;
-
-	struct Hook {
-		V* im_next;
-		K im_key;
-		bool im_linked;
-
-		Hook() noexcept : im_next(nullptr), im_key(), im_linked(false) { }
-	};
 
 private:
 	Bucket_t * bucket_list;
@@ -163,7 +165,7 @@ public:
 		V* prev = nullptr;
 		V* result = find(bucket, key, prev);
 		if (result) {
-			if (result == bucket.list)
+			if (result == bucket.head)
 				unlink_front(bucket);
 			else
 				unlink_next(bucket, *prev);
@@ -174,7 +176,7 @@ public:
 
 	void reset() noexcept {
 		for (size_t i = 0; i < bucket_list_size; i++) {
-			while (bucket_list[i].list)
+			while (bucket_list[i].head)
 				unlink_front(bucket_list[i]);
 		}
 	}
@@ -188,11 +190,11 @@ public:
 	}
 
 	Iterator_t begin(size_t bucket) noexcept {
-		return Iterator_t(bucket_list[bucket].list);
+		return Iterator_t(bucket_list[bucket].head);
 	}
 
 	ConstIterator_t cbegin(size_t bucket) const noexcept {
-		return ConstIterator_t(bucket_list[bucket].list);
+		return ConstIterator_t(bucket_list[bucket].head);
 	}
 
 	Iterator_t end() noexcept {
@@ -210,17 +212,17 @@ private:
 	}
 
 	inline void link_front(Bucket_t& bucket, K key, V& value) noexcept {
-		value.im_next = bucket.list;
+		value.im_next = bucket.head;
 		value.im_linked = true;
 		value.im_key = key;
-		bucket.list = &value;
+		bucket.head = &value;
 		bucket.size++;
 		elements++;
 	}
 
 	inline void unlink_front(Bucket_t& bucket) noexcept {
-		V* tmp_value = bucket.list;
-		bucket.list = bucket.list->im_next;
+		V* tmp_value = bucket.head;
+		bucket.head = bucket.head->im_next;
 		tmp_value->im_next = nullptr;
 		tmp_value->im_linked = false;
 		bucket.size--;
@@ -237,7 +239,7 @@ private:
 	}
 
 	inline V* find(Bucket_t& bucket, K key) noexcept {
-		V* cur = bucket.list;
+		V* cur = bucket.head;
 		while (cur) {
 			if (cur->im_key == key)
 				break;
@@ -247,7 +249,7 @@ private:
 	}
 
 	inline const V* find(Bucket_t& bucket, K key) const noexcept {
-		V* cur = bucket.list;
+		V* cur = bucket.head;
 		while (cur) {
 			if (cur->im_key == key)
 				break;
@@ -257,7 +259,7 @@ private:
 	}
 
 	inline V* find(Bucket_t& bucket, K key, V*& prev) noexcept {
-		V* cur = bucket.list;
+		V* cur = bucket.head;
 		while (cur) {
 			if (cur->im_key == key)
 				break;
@@ -271,6 +273,7 @@ private:
 
 	void destroy() noexcept {
 		if (bucket_list) {
+			reset();
 			for (size_t i = 0; i < bucket_list_size; i++) {
 				allocator.destroy(bucket_list + i);
 			}

@@ -4,6 +4,15 @@
 #include <cstdlib>
 
 template <typename T>
+struct IntrusiveListHook {
+	T* il_next;
+	T* il_prev;
+	bool il_linked;
+
+	IntrusiveListHook() noexcept : il_next(nullptr), il_prev(nullptr), il_linked(false) { }
+};
+
+template <typename T>
 class IntrusiveList {
 	T* head;
 	T* tail;
@@ -107,14 +116,6 @@ class IntrusiveList {
 	typedef RecursiveIterator<const T> ConstRecursiveIterator_t;
 
 public:
-
-	struct Hook {
-		T* il_next;
-		T* il_prev;
-		bool il_linked;
-
-		Hook() noexcept : il_next(nullptr), il_prev(nullptr), il_linked(false) { }
-	};
 
 	IntrusiveList() noexcept : head(nullptr), tail(nullptr), list_size(0) { }
 	
@@ -220,7 +221,7 @@ public:
 		return false;
 	}
 	
-	void reset(){
+	void reset() noexcept {
 		while(head)
 			pop_front();
 	}
