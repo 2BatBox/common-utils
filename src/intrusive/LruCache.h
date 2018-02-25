@@ -12,8 +12,6 @@ template <typename K, typename V>
 struct LruCacheData : public IntrusiveListHook<LruCacheData<K, V> >, IntrusiveMapHook<K, LruCacheData<K, V> > {
 	typedef K Key_t;
 	typedef V Value_t;
-	typedef IntrusiveList<LruCacheData<K,V> > List_t;
-	typedef IntrusiveMap<K, LruCacheData<K,V> > Map_t;
 	V value;
 	LruCacheData() : value() {}
 	LruCacheData(const V& v) : value(v) {}
@@ -24,9 +22,9 @@ struct LruCacheData : public IntrusiveListHook<LruCacheData<K, V> >, IntrusiveMa
 
 template <
 	typename Data_t,
+	typename H = std::hash<typename Data_t::Key_t>,
 	typename SA = std::allocator<Data_t>,
-	typename BA = std::allocator<IntrusiveMapBucket<Data_t> >,
-	typename H = std::hash<typename Data_t::Key_t>
+	typename BA = std::allocator<IntrusiveMapBucket<Data_t> >
 >
 class LruCache {
 	
@@ -34,17 +32,18 @@ class LruCache {
 
 	typedef typename Data_t::Key_t Key_t;
 	typedef typename Data_t::Value_t Value_t;
-	typedef typename Data_t::List_t List_t;
-	typedef typename Data_t::Map_t Map_t;
+	typedef IntrusiveList<LruCacheData<Key_t,Value_t> > List_t;
+	typedef IntrusiveMap<Key_t, LruCacheData<Key_t,Value_t>, H, BA> Map_t;
 	typedef typename Map_t::Bucket_t Bucket_t;
 	
-private:
-	size_t cache_capacity;
+	const size_t cache_capacity;
 	Data_t* storage;
 	Map_t map;
 	List_t list_cached;
 	List_t list_freed;
 	SA allocator;
+	
+public:
 	
 	LruCache(unsigned capacity, float load_factor) noexcept
 		: cache_capacity(capacity),
@@ -82,7 +81,12 @@ public:
 			list_freed.push_back(storage[i]);
 		}
 		
-		return map.allocate();
+		if(not map.allocate()){
+			destroy();
+			return false;
+		}
+		
+		return true;
 	}
 	
 	void put(Key_t key, const Value_t& value) noexcept
@@ -154,14 +158,14 @@ public:
 		return map.size();
 	}
 	
-	size_t mem_used() const noexcept {
+	size_t memory_used() const noexcept {
 		return cache_capacity * sizeof(Data_t) + map.buckets() * sizeof(Bucket_t);
 	}
 	
 private:
 	
 	void destroy() noexcept {
-		if (storage && cache_capacity) {
+		if (storage) {
 			
 			list_freed.reset();
 			list_cached.reset();
@@ -172,7 +176,6 @@ private:
 			}
 			allocator.deallocate(storage, cache_capacity);
 			storage = nullptr;
-			cache_capacity = 0;
 		}
 	}
 	

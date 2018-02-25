@@ -8,8 +8,10 @@ struct IntrusiveListHook {
 	T* il_next;
 	T* il_prev;
 	bool il_linked;
-
 	IntrusiveListHook() noexcept : il_next(nullptr), il_prev(nullptr), il_linked(false) { }
+	IntrusiveListHook(const IntrusiveListHook&) noexcept = default;
+	IntrusiveListHook& operator=(const IntrusiveListHook&) noexcept = default;
+	virtual ~IntrusiveListHook() noexcept = default;
 };
 
 template <typename T>

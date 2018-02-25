@@ -7,9 +7,19 @@
 #include "IntrusiveMap.h"
 
 class IntrusiveMapTest {
+	
+	template<typename T>
+	struct StructValue {
+		T x;
+		StructValue() : x() {};
+		StructValue(unsigned int x) : x(x) {};
+		bool operator==(const StructValue& st_val) const {
+			return x == st_val.x;
+		}
+	};
 
 	typedef unsigned Key_t;
-	typedef unsigned Value_t;
+	typedef StructValue<long long unsigned> Value_t;
 	
 	template <typename K, typename V>
 	struct Data : public IntrusiveMapHook<K, Data<K, V> > {
@@ -180,7 +190,7 @@ public:
 		for (size_t bucket = 0; bucket < map.buckets(); ++bucket) {
 			std::cout << "B[" << bucket << "] ";
 			for (auto it = map.cbegin(bucket); it != map.cend(); ++it) {
-				std::cout << (*it).value << " ";
+//				std::cout << (*it).value << " ";
 			}
 			std::cout << "\n";
 		}

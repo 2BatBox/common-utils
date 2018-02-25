@@ -7,9 +7,19 @@
 #include "LruCache.h"
 
 class LruCacheTest {
+	
+	template <typename T>
+	struct StructValue {
+		T value;
+		StructValue() : value(0) {};
+		StructValue(T x) : value(x) {};
+		bool operator==(const StructValue& st_val) const {
+			return value == st_val.value;
+		}
+	};
 
 	typedef unsigned Key_t;
-	typedef unsigned Value_t;
+	typedef StructValue<long long unsigned> Value_t;
 	
 	typedef LruCacheData<Key_t, Value_t> Data_t;
 	typedef LruCache<Data_t> LruCache_t;
@@ -36,7 +46,7 @@ public:
 	}
 	
 	size_t mem_used(){
-		return cache.mem_used();
+		return cache.memory_used();
 	}
 	
 	void test(){
@@ -45,7 +55,7 @@ public:
 		printf("sizeof(Bucket_t)=%zu\n", sizeof(LruCache_t::Bucket_t));
 		printf("capacity=%zu\n", capacity);
 		printf("buckets=%zu\n", cache.map.buckets());
-		printf("memory used %zu Kb\n", cache.mem_used() / (1024));
+		printf("memory used %zu Kb\n", cache.memory_used() / (1024));
 		test_put();
 		test_get();
 		test_get_refresh();
@@ -113,7 +123,7 @@ public:
 		for (Key_t i = 1; i < capacity * 2; i++) {
 			cache.put(i, i);
 			assert(cache.get_refresh(0xabcd, value));
-			assert(value = 0xbcde);
+			assert(value.value = 0xbcde);
 		}
 		
 		assert(cache.size() == capacity);
@@ -195,18 +205,18 @@ public:
 		for (size_t bucket = 0; bucket < cache.map.buckets(); ++bucket) {
 			std::cout << "B[" << bucket << "] ";
 			for (auto it = cache.map.cbegin(bucket); it != cache.map.cend(); ++it) {
-				std::cout << (*it).value << " (" << (*it).im_key << "), ";
+				std::cout << (*it).value.value << " (" << (*it).im_key << "), ";
 			}
 			std::cout << "\n";
 		}
 		std::cout << "cached list has " << cache.list_cached.size() << " elements \n";
 		for (auto it = cache.list_cached.cbegin(); it != cache.list_cached.cend(); ++it) {
-			std::cout << (*it).value << ", ";
+			std::cout << (*it).value.value << ", ";
 		}
 		std::cout << "\n";
 		std::cout << "freed list has " << cache.list_freed.size() << " elements \n";
 		for (auto it = cache.list_freed.cbegin(); it != cache.list_freed.cend(); ++it) {
-			std::cout << (*it).value << ", ";
+			std::cout << (*it).value.value << ", ";
 		}
 		std::cout << "\n";
 	}

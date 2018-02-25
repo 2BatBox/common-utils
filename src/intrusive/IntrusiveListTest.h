@@ -7,6 +7,16 @@
 #include "IntrusiveList.h"
 
 class IntrusiveListTest {
+	
+	template<typename T>
+	struct StructValue {
+		T x;
+		StructValue() : x() {};
+		StructValue(unsigned int x) : x(x) {};
+		bool operator==(const StructValue& st_val) const {
+			return x == st_val.x;
+		}
+	};
 
 	template <typename V>
 	struct Data : public IntrusiveListHook<Data<V> > {
@@ -19,7 +29,7 @@ class IntrusiveListTest {
 	};
 	
 	typedef unsigned Key_t;
-	typedef unsigned Value_t;
+	typedef StructValue<long long unsigned> Value_t;
 	typedef Data<Value_t> Data_t;
 	typedef IntrusiveList<Data_t> List_t;
 	
@@ -31,7 +41,7 @@ public:
 	
 	IntrusiveListTest(unsigned storage_size) : list(), storage_size(storage_size), storage(new Data_t[storage_size]) {
 		for (unsigned i = 0; i < storage_size; i++) {
-			storage[i].value = i;
+			storage[i].value = Value_t(i);
 		}
 	}
 	
@@ -237,7 +247,7 @@ public:
 	{
 		std::cout << "list has " << list.size() << " elements \n";
 		for (auto it = list.cbegin(); it != list.cend(); ++it) {
-			std::cout << (*it).value << " ";
+//			std::cout << (*it).value << " ";
 		}
 		std::cout << "\n";
 	}

@@ -10,6 +10,9 @@ struct IntrusiveMapHook {
 	bool im_linked;
 
 	IntrusiveMapHook() noexcept : im_next(nullptr), im_key(), im_linked(false) { }
+	IntrusiveMapHook(const IntrusiveMapHook&) noexcept = default;
+	IntrusiveMapHook& operator=(const IntrusiveMapHook&) noexcept = default;
+	virtual ~IntrusiveMapHook() noexcept = default;
 };
 
 template <typename V>
@@ -20,7 +23,7 @@ struct IntrusiveMapBucket {
 	IntrusiveMapBucket() noexcept : head(nullptr), size(0) { }
 };
 
-template <typename K, typename V, typename A = std::allocator<IntrusiveMapBucket<V> >, typename H = std::hash<K> >
+template <typename K, typename V, typename H = std::hash<K>, typename A = std::allocator<IntrusiveMapBucket<V> > >
 class IntrusiveMap {
 public:
 	typedef IntrusiveMapHook<K, V> Hook_t;
@@ -30,8 +33,8 @@ private:
 	Bucket_t * bucket_list;
 	size_t bucket_list_size;
 	size_t elements;
-	A allocator;
 	H hasher;
+	A allocator;
 
 	template<typename ITV>
 	struct Iterator {
@@ -88,8 +91,8 @@ public:
 	bucket_list(nullptr),
 	bucket_list_size(bucket_list_size),
 	elements(0),
-	allocator(),
-	hasher() { }
+	hasher(),
+	allocator() { }
 
 	IntrusiveMap(const IntrusiveMap&) = delete;
 	IntrusiveMap& operator=(const IntrusiveMap&) = delete;
@@ -98,8 +101,8 @@ public:
 	bucket_list(rv.bucket_list),
 	bucket_list_size(rv.bucket_list_size),
 	elements(rv.elements),
-	allocator(rv.allocator),
-	hasher(rv.hasher) {
+	hasher(rv.hasher),
+	allocator(rv.allocator) {
 		rv.bucket_list = nullptr;
 		rv.destroy();
 	}
@@ -150,12 +153,12 @@ public:
 	}
 
 	V* find(K key) noexcept {
-		size_t index = key % bucket_list_size;
+		size_t index = hasher(key) % bucket_list_size;
 		return find(bucket_list[index], key);
 	}
 
 	const V* find(K key) const noexcept {
-		size_t index = key % bucket_list_size;
+		size_t index = hasher(key) % bucket_list_size;
 		return find(bucket_list[index], key);
 	}
 
@@ -180,7 +183,7 @@ public:
 				unlink_front(bucket_list[i]);
 		}
 	}
-
+	
 	size_t size() const noexcept {
 		return elements;
 	}
