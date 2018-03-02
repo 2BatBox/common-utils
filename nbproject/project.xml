@@ -19,7 +19,10 @@
                 </confElem>
             </confList>
             <formatting>
-                <project-formatting-style>false</project-formatting-style>
+                <project-formatting-style>true</project-formatting-style>
+                <c-style>KandR|K&amp;R</c-style>
+                <cpp-style>KandR_1|SilentJay</cpp-style>
+                <header-style>KandR_0_1|SilentJay</header-style>
             </formatting>
         </data>
     </configuration>

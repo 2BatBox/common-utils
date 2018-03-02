@@ -44,7 +44,8 @@ public:
             return -1;
         
         time_t cur_time = time(NULL);
-        struct tm local_time = *localtime(&cur_time);
+        struct tm local_time;
+        localtime_r(&cur_time, &local_time);
         
         std::string current_dir = dir_name(local_time);
         std::string current_file = file_name(local_time);
@@ -69,7 +70,7 @@ public:
     bool update()
     {
         time_t time_current = time(NULL);
-        if (time_current - time_last_update >= time_split_sec) {
+        if (time_current - time_last_update >= time_split_sec || not same_day(time_current, time_last_update)) {
             close();
             return open() == 0;
         }
@@ -123,6 +124,17 @@ private:
             time.tm_hour, time.tm_min, time.tm_sec
             );
         return std::string(buffer);
+    }
+    
+    static bool same_day(time_t first, time_t second)
+    {
+        struct tm fr;
+        struct tm sc;
+        
+        localtime_r(&first, &fr);
+        localtime_r(&second, &sc);
+        
+        return fr.tm_year == sc.tm_year && fr.tm_yday == sc.tm_yday;
     }
     
 };

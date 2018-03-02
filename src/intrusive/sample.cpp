@@ -1,12 +1,12 @@
 #include <iostream>
 
-#include "intrusive/ListTest.h"
-#include "intrusive/MapTest.h"
+#include "ListTest.h"
+#include "MapTest.h"
 
 typedef unsigned Key_t;
 typedef unsigned Value_t;
 
-int main(int, char**)
+int sample_intrusive(int, char**)
 {
     unsigned storage_size = 1024 * 1024;
     float load_factor = 0.7f;
