@@ -21,6 +21,10 @@ class LruCacheTest {
 		bool operator==(const StructValue& st_val) const {
 			return value == st_val.value;
 		}
+		
+		bool operator==(const T& val) const {
+			return value == val;
+		}
 	};
 
 	typedef unsigned Key_t;
@@ -57,7 +61,8 @@ public:
 		printf("memory used %zu Kb\n", cache.storage_bytes() / (1024));
 		test_put();
 		test_get();
-		test_get_refresh();
+		test_update();
+		test_get_update();
 		test_remove();
 		test_cycle();
 		test_update_value();
@@ -88,21 +93,40 @@ public:
 		}
 		clear();
 	}
-
-	void test_get_refresh() {
+	
+	void test_update() {
 		assert(cache.size() == 0);
 		Key_t max_key = ~static_cast<Key_t>(0);
+		Value_t max_value(0xABCD);
 		Value_t value;
-		cache.put(max_key, value);
+		cache.put(max_key, max_value);
 		for (Key_t i = 1; i < capacity * 2; i++) {
 			assert(cache.put(i, i));
-			assert(cache.get_refresh(max_key, value));
-			assert(value.value = 0xbcde);
+			assert(cache.update(max_key));
 		}
+		assert(cache.get(max_key, value));
+		assert(value.value == max_value.value);
 		assert(cache.size() == capacity);
 		clear();
 	}
 
+	void test_get_update() {
+		assert(cache.size() == 0);
+		Key_t max_key = ~static_cast<Key_t>(0);
+		Value_t max_value(0xABCD);
+		Value_t value;
+		cache.put(max_key, max_value);
+		for (Key_t i = 1; i < capacity * 2; i++) {
+			assert(cache.put(i, i));
+			assert(cache.get_update(max_key, value));
+			assert(value.value == max_value.value);
+		}
+		assert(cache.get(max_key, value));
+		assert(value.value == max_value.value);
+		assert(cache.size() == capacity);
+		clear();
+	}
+	
 	void test_remove() {
 		assert(cache.size() == 0);
 		fill();

@@ -128,8 +128,18 @@ public:
 		}
 		return false;
 	}
+	
+	bool update(Key_t key) noexcept {
+		LruCacheData_t* cell = map.find(key);
+		if (cell) {
+			list_cached.remove(*cell);
+			list_cached.push_back(*cell);
+			return true;
+		}
+		return false;
+	}
 
-	bool get_refresh(Key_t key, Value_t& value) noexcept {
+	bool get_update(Key_t key, Value_t& value) noexcept {
 		LruCacheData_t* cell = map.find(key);
 		if (cell) {
 			value = cell->value;
