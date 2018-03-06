@@ -17,19 +17,6 @@ struct MapHook {
 	virtual ~MapHook() noexcept = default;
 };
 
-template <typename K, typename V>
-struct MapData: public MapHook<K, MapData<K, V> > {
-	V value;
-
-	MapData(): value() { }
-
-	MapData(V v): value(v) { }
-
-	bool operator==(const MapData& data) const {
-		return value == data.value;
-	}
-};
-
 template <typename MapData_t>
 struct MapBucket {
 	MapData_t* head;
@@ -41,7 +28,6 @@ struct MapBucket {
 template <typename K, typename MapData_t, typename H = std::hash<K>, typename A = std::allocator<MapBucket<MapData_t> > >
 class Map {
 public:
-	typedef MapHook<K, MapData_t> Hook_t;
 	typedef MapBucket<MapData_t> Bucket_t;
 
 private:
@@ -51,13 +37,13 @@ private:
 	H hasher;
 	A allocator;
 
-	template<typename ITV>
+	template<typename V>
 	struct Iterator {
 		friend class Map;
 
 		Iterator() noexcept: value(nullptr) { }
 
-		Iterator(ITV* value) noexcept: value(value) { }
+		Iterator(V* value) noexcept: value(value) { }
 
 		bool operator==(const Iterator& it) const noexcept {
 			return value == it.value;
@@ -77,24 +63,24 @@ private:
 			return Iterator(value);
 		}
 
-		ITV& operator*() noexcept {
+		V& operator*() noexcept {
 			return *value;
 		}
 
-		ITV* operator->() noexcept {
+		V* operator->() noexcept {
 			return value;
 		}
 
-		const ITV& operator*() const noexcept {
+		const V& operator*() const noexcept {
 			return *value;
 		}
 
-		const ITV* operator->() const noexcept {
+		const V* operator->() const noexcept {
 			return value;
 		}
 
 	private:
-		ITV* value;
+		V* value;
 	};
 
 	typedef Iterator<MapData_t> Iterator_t;
@@ -156,28 +142,28 @@ public:
 		return bucket_list != nullptr;
 	}
 
-	bool put(K key, MapData_t& value) noexcept {
+	Iterator_t put(const K& key, MapData_t& value) noexcept {
+		MapData_t* result = nullptr;
 		if (sanity_check(value)) {
 			size_t index = hasher(key) % bucket_list_size;
-			if (find(bucket_list[index], key) == nullptr) {
+			result = find(bucket_list[index], key);
+			if (result == nullptr) 
 				link_front(bucket_list[index], key, value);
-				return true;
-			}
 		}
-		return false;
+		return Iterator_t(result);
 	}
 
-	MapData_t* find(K key) noexcept {
+	Iterator_t find(const K& key) noexcept {
 		size_t index = hasher(key) % bucket_list_size;
-		return find(bucket_list[index], key);
+		return Iterator_t(find(bucket_list[index], key));
 	}
 
-	const MapData_t* find(K key) const noexcept {
+	ConstIterator_t find(const K& key) const noexcept {
 		size_t index = hasher(key) % bucket_list_size;
-		return find(bucket_list[index], key);
+		return ConstIterator_t(find(bucket_list[index], key));
 	}
 
-	bool remove(K key) noexcept {
+	Iterator_t remove(const K& key) noexcept {
 		size_t index = hasher(key) % bucket_list_size;
 		Bucket_t& bucket = bucket_list[index];
 		MapData_t* prev = nullptr;
@@ -187,9 +173,8 @@ public:
 				unlink_front(bucket);
 			else
 				unlink_next(bucket, *prev);
-			return true;
 		}
-		return false;
+		return Iterator_t(result);
 	}
 
 	void reset() noexcept {
@@ -229,7 +214,7 @@ private:
 		return (not value.im_linked);
 	}
 
-	inline void link_front(Bucket_t& bucket, K key, MapData_t& value) noexcept {
+	inline void link_front(Bucket_t& bucket, const K& key, MapData_t& value) noexcept {
 		value.im_next = bucket.head;
 		value.im_linked = true;
 		value.im_key = key;
@@ -256,7 +241,7 @@ private:
 		elements--;
 	}
 
-	inline MapData_t* find(Bucket_t& bucket, K key) noexcept {
+	inline MapData_t* find(Bucket_t& bucket, const K& key) noexcept {
 		MapData_t* cur = bucket.head;
 		while (cur) {
 			if (cur->im_key == key)
@@ -266,7 +251,7 @@ private:
 		return cur;
 	}
 
-	inline const MapData_t* find(Bucket_t& bucket, K key) const noexcept {
+	inline const MapData_t* find(Bucket_t& bucket, const K& key) const noexcept {
 		MapData_t* cur = bucket.head;
 		while (cur) {
 			if (cur->im_key == key)
@@ -276,7 +261,7 @@ private:
 		return cur;
 	}
 
-	inline MapData_t* find(Bucket_t& bucket, K key, MapData_t*& prev) noexcept {
+	inline MapData_t* find(Bucket_t& bucket, const K& key, MapData_t*& prev) noexcept {
 		MapData_t* cur = bucket.head;
 		while (cur) {
 			if (cur->im_key == key)

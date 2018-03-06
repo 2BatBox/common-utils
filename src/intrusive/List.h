@@ -17,19 +17,6 @@ struct ListHook {
 	virtual ~ListHook() noexcept = default;
 };
 
-template <typename V>
-struct ListData: public ListHook<ListData<V> > {
-	V value;
-
-	ListData(): value() { }
-
-	ListData(V v): value(v) { }
-
-	bool operator==(const ListData& data) const {
-		return value == data.value;
-	}
-};
-
 template <typename ListData_t>
 class List {
 	ListData_t* head;
@@ -166,7 +153,6 @@ public:
 				link_head(value);
 			else
 				link_first(value);
-
 			return true;
 		}
 		return false;
@@ -178,7 +164,6 @@ public:
 				link_tail(value);
 			else
 				link_first(value);
-
 			return true;
 		}
 		return false;

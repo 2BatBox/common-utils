@@ -9,6 +9,7 @@
 namespace cache {
 
 class LruCacheTest {
+	static constexpr unsigned KEY_VALUE_RATIO = 4;
 
 	template <typename T>
 	struct StructValue {
@@ -21,7 +22,7 @@ class LruCacheTest {
 		bool operator==(const StructValue& st_val) const {
 			return value == st_val.value;
 		}
-		
+
 		bool operator==(const T& val) const {
 			return value == val;
 		}
@@ -62,10 +63,8 @@ public:
 		test_put();
 		test_get();
 		test_update();
-		test_get_update();
 		test_remove();
 		test_cycle();
-		test_update_value();
 	}
 
 	void test_put() {
@@ -79,21 +78,22 @@ public:
 		assert(cache.size() == 0);
 		Key_t half = capacity / 2;
 		for (Key_t i = 0; i < half; i++) {
-			assert(cache.put(i, i));
+			assert(cache.put(i, default_value(i)));
 		}
 		assert(cache.size() == half);
 		Value_t value;
 		for (Key_t i = 0; i < capacity; i++) {
+			auto it = cache.find(i);
 			if (i < half) {
-				assert(cache.get(i, value));
-				assert(value == i);
+				assert(it != cache.end());
+				assert(*it == default_value(i));
 			} else {
-				assert(not cache.get(i, value));
+				assert(it == cache.end());
 			}
 		}
 		clear();
 	}
-	
+
 	void test_update() {
 		assert(cache.size() == 0);
 		Key_t max_key = ~static_cast<Key_t>(0);
@@ -101,43 +101,29 @@ public:
 		Value_t value;
 		cache.put(max_key, max_value);
 		for (Key_t i = 1; i < capacity * 2; i++) {
+			auto it = cache.update(max_key);
 			assert(cache.put(i, i));
-			assert(cache.update(max_key));
+			assert(it != cache.end());
+			assert(*it == max_value);
 		}
-		assert(cache.get(max_key, value));
-		assert(value.value == max_value.value);
+		auto it = cache.find(max_key);
+		assert(it != cache.end());
+		assert(*it == max_value);
 		assert(cache.size() == capacity);
 		clear();
 	}
 
-	void test_get_update() {
-		assert(cache.size() == 0);
-		Key_t max_key = ~static_cast<Key_t>(0);
-		Value_t max_value(0xABCD);
-		Value_t value;
-		cache.put(max_key, max_value);
-		for (Key_t i = 1; i < capacity * 2; i++) {
-			assert(cache.put(i, i));
-			assert(cache.get_update(max_key, value));
-			assert(value.value == max_value.value);
-		}
-		assert(cache.get(max_key, value));
-		assert(value.value == max_value.value);
-		assert(cache.size() == capacity);
-		clear();
-	}
-	
 	void test_remove() {
 		assert(cache.size() == 0);
 		fill();
 		Key_t half = capacity / 2;
 		for (Key_t i = half; i < capacity; i++) {
-			assert(cache.remove(i));
-			assert(not cache.remove(i));
+			assert(cache.remove(i) != cache.end());
+			assert(cache.remove(i) == cache.end());
 		}
 		for (Key_t i = 0; i < half; i++) {
-			assert(cache.remove(i));
-			assert(not cache.remove(i));
+			assert(cache.remove(i) != cache.end());
+			assert(cache.remove(i) == cache.end());
 		}
 		assert(cache.size() == 0);
 		test_sanity();
@@ -151,27 +137,13 @@ public:
 		assert(cache.size() == capacity);
 		Value_t value;
 		for (Key_t i = 0; i < capacity * 2; i++) {
+			auto it = cache.find(i);
 			if (i < capacity) {
-				assert(not cache.get(i, value));
+				assert(it == cache.end());
 			} else {
-				assert(cache.get(i, value));
-				assert(value == i);
+				assert(it != cache.end());
+				assert(*it == i);
 			}
-		}
-		clear();
-	}
-
-	void test_update_value() {
-		assert(cache.size() == 0);
-		for (Key_t i = 0; i < capacity; i++) {
-			cache.put(i, i);
-			cache.put(i, i * 2);
-		}
-		assert(cache.size() == capacity);
-		Value_t value;
-		for (Key_t i = 0; i < capacity; i++) {
-			assert(cache.get(i, value));
-			assert(value == i * 2);
 		}
 		clear();
 	}
@@ -209,7 +181,7 @@ private:
 	void fill() {
 		for (Key_t i = 0; i < capacity; i++) {
 			assert(cache.put(i, i));
-			assert(not cache.put(i, i));
+			assert(not cache.put(i, default_value(i)));
 		}
 		assert(cache.size() == capacity);
 	}
@@ -217,8 +189,9 @@ private:
 	void compare() {
 		Value_t value;
 		for (Key_t i = 0; i < capacity; i++) {
-			assert(cache.get(i, value));
-			assert(value == i);
+			auto it = cache.find(i);
+			assert(it != cache.end());
+			assert(*it == default_value(i));
 		}
 	}
 
@@ -226,6 +199,11 @@ private:
 		cache.reset();
 		assert(cache.size() == 0);
 		test_sanity();
+	}
+
+	Value_t default_value(Key_t key) {
+		Value_t value = key;
+		return value.value * KEY_VALUE_RATIO;
 	}
 
 };

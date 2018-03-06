@@ -1,12 +1,10 @@
 #ifndef CACHE_LRU_CACHE_H
 #define CACHE_LRU_CACHE_H
 
+#include <bits/allocator.h>
+
 #include "../intrusive/List.h"
 #include "../intrusive/Map.h"
-
-#include <assert.h>
-#include <cstdio>
-#include <bits/allocator.h>
 
 namespace cache {
 
@@ -39,6 +37,44 @@ class LruCache {
 	typedef intrusive::List<LruCacheData<Key_t, Value_t> > List_t;
 	typedef intrusive::Map<Key_t, LruCacheData<Key_t, Value_t>, H, BA> Map_t;
 	typedef typename Map_t::Bucket_t Bucket_t;
+
+	template<typename V>
+	struct Iterator {
+
+		Iterator() noexcept: value(nullptr) { }
+
+		Iterator(V* value) noexcept: value(value) { }
+
+		bool operator==(const Iterator& it) const noexcept {
+			return value == it.value;
+		}
+
+		bool operator!=(const Iterator& it) const noexcept {
+			return value != it.value;
+		}
+
+		V& operator*() noexcept {
+			return *value;
+		}
+
+		V* operator->() noexcept {
+			return value;
+		}
+
+		const V& operator*() const noexcept {
+			return *value;
+		}
+
+		const V* operator->() const noexcept {
+			return value;
+		}
+
+	private:
+		V* value;
+	};
+
+	typedef Iterator<Value_t> Iterator_t;
+	typedef Iterator<const Value_t> ConstIterator_t;
 
 	const size_t cache_capacity;
 	LruCacheData_t* storage;
@@ -87,7 +123,6 @@ public:
 			destroy();
 			return false;
 		}
-
 		return true;
 	}
 
@@ -97,15 +132,10 @@ public:
 	 * @return Returns true if a new record has been added,
 	 * false - cache has a record with the key, so this record has been updated.
 	 */
-	bool put(Key_t key, const Value_t& value) noexcept {
+	bool put(const Key_t& key, const Value_t& value) noexcept {
 		bool result = true;
-		LruCacheData_t* cell = map.find(key);
-		if (cell) {
-			result = false;
-			cell->value = value;
-			list_cached.remove(*cell);
-			list_cached.push_back(*cell);
-		} else {
+		auto it = map.find(key);
+		if (it == map.end()) {
 			LruCacheData_t* freed;
 			if (list_freed.size())
 				freed = list_freed.pop_front();
@@ -116,49 +146,50 @@ public:
 			freed->value = value;
 			list_cached.push_back(*freed);
 			map.put(key, *freed);
+		} else {
+			result = false;
+			it->value = value;
+			list_cached.remove(*it);
+			list_cached.push_back(*it);
 		}
 		return result;
 	}
 
-	bool get(Key_t key, Value_t& value) const noexcept {
-		const LruCacheData_t* cell = map.find(key);
-		if (cell) {
-			value = cell->value;
-			return true;
-		}
-		return false;
-	}
-	
-	bool update(Key_t key) noexcept {
-		LruCacheData_t* cell = map.find(key);
-		if (cell) {
-			list_cached.remove(*cell);
-			list_cached.push_back(*cell);
-			return true;
-		}
-		return false;
+	Iterator_t find(const Key_t& key) noexcept {
+		auto cell = map.find(key);
+		if (cell == map.end())
+			return Iterator_t();
+		else
+			return Iterator_t(&(cell->value));
 	}
 
-	bool get_update(Key_t key, Value_t& value) noexcept {
-		LruCacheData_t* cell = map.find(key);
-		if (cell) {
-			value = cell->value;
-			list_cached.remove(*cell);
-			list_cached.push_back(*cell);
-			return true;
-		}
-		return false;
+	ConstIterator_t find(const Key_t& key) const noexcept {
+		auto cell = map.find(key);
+		if (cell == map.end())
+			return ConstIterator_t();
+		else
+			return ConstIterator_t(&(cell->value));
 	}
 
-	bool remove(Key_t key) noexcept {
-		auto it = map.find(key);
-		if (it != nullptr) {
+	Iterator_t update(const Key_t& key) noexcept {
+		auto cell = map.find(key);
+		if (cell != map.end()) {
+			list_cached.remove(*cell);
+			list_cached.push_back(*cell);
+			return Iterator_t(&(cell->value));
+		}
+		return Iterator_t();
+	}
+
+	Iterator_t remove(const Key_t& key) noexcept {
+		auto cell = map.find(key);
+		if (cell != map.end()) {
 			map.remove(key);
-			list_cached.remove(*it);
-			list_freed.push_back(*it);
-			return true;
+			list_cached.remove(*cell);
+			list_freed.push_back(*cell);
+			return Iterator_t(&(cell->value));
 		}
-		return false;
+		return Iterator_t();
 	}
 
 	void reset() noexcept {
@@ -181,15 +212,21 @@ public:
 		return cache_capacity * sizeof (LruCacheData_t) + map.buckets() * sizeof (Bucket_t);
 	}
 
+	Iterator_t end() noexcept {
+		return Iterator_t();
+	}
+
+	ConstIterator_t cend() const noexcept {
+		return ConstIterator_t();
+	}
+
 private:
 
 	void destroy() noexcept {
 		if (storage) {
-
 			list_freed.reset();
 			list_cached.reset();
 			map.reset();
-
 			for (size_t i = 0; i < cache_capacity; i++) {
 				allocator.destroy(storage + i);
 			}

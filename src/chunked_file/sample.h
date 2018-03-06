@@ -3,7 +3,7 @@
 
 #include "ChunkedFile.h"
 
-int sample_main(int, char**)
+int chunked_file_sample(int, char**)
 {
     ChunkedFile cfile("tmp", "pref", "log", 10);
     if(cfile.open()){
@@ -23,7 +23,6 @@ int sample_main(int, char**)
     std::cout << "<---- the end of main() ---->\n";
     return 0;
 }
-
 
 #endif /* CHUNKED_FILE_SAMPLE_H */
 

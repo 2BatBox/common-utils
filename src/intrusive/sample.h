@@ -1,3 +1,6 @@
+#ifndef INTRUSIVE_SAMPLE_H
+#define INTRUSIVE_SAMPLE_H
+
 #include <iostream>
 
 #include "ListTest.h"
@@ -6,7 +9,7 @@
 typedef unsigned Key_t;
 typedef unsigned Value_t;
 
-int sample_intrusive(int, char**)
+int intrusive_sample(int, char**)
 {
     unsigned storage_size = 1024 * 1024;
     float load_factor = 0.7f;
@@ -21,3 +24,6 @@ int sample_intrusive(int, char**)
     std::cout << "<---- the end of main() ---->\n";
     return 0;
 }
+
+#endif /* INTRUSIVE_SAMPLE_H */
+

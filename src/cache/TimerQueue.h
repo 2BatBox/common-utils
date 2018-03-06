@@ -1,8 +1,6 @@
 #ifndef CACHE_TIMER_QUEUE_H
 #define CACHE_TIMER_QUEUE_H
 
-#include <assert.h>
-#include <cstdio>
 #include <ctime>
 #include <bits/allocator.h>
 
@@ -41,6 +39,44 @@ class TimerQueue {
 	typedef intrusive::List<TimerQueueData_t > List_t;
 	typedef intrusive::Map<Key_t, TimerQueueData_t, H, BA> Map_t;
 	typedef typename Map_t::Bucket_t Bucket_t;
+
+	template<typename V>
+	struct Iterator {
+
+		Iterator() noexcept: value(nullptr) { }
+
+		Iterator(V* value) noexcept: value(value) { }
+
+		bool operator==(const Iterator& it) const noexcept {
+			return value == it.value;
+		}
+
+		bool operator!=(const Iterator& it) const noexcept {
+			return value != it.value;
+		}
+
+		V& operator*() noexcept {
+			return *value;
+		}
+
+		V* operator->() noexcept {
+			return value;
+		}
+
+		const V& operator*() const noexcept {
+			return *value;
+		}
+
+		const V* operator->() const noexcept {
+			return value;
+		}
+
+	private:
+		V* value;
+	};
+
+	typedef Iterator<Value_t> Iterator_t;
+	typedef Iterator<const Value_t> ConstIterator_t;
 
 	const size_t cache_capacity;
 	TimerQueueData_t* storage;
@@ -101,14 +137,8 @@ public:
 	 */
 	bool push_back(Key_t key, const Value_t& value) noexcept {
 		std::time_t time = std::time(nullptr);
-		TimerQueueData_t* cell = map.find(key);
-		if (cell) {
-			cell->value = value;
-			cell->time = time;
-			list_cached.remove(*cell);
-			list_cached.push_back(*cell);
-			return true;
-		} else {
+		auto cell = map.find(key);
+		if (cell == map.end()) {
 			TimerQueueData_t* freed;
 			if (list_freed.size()) {
 				freed = list_freed.pop_front();
@@ -118,10 +148,16 @@ public:
 				map.put(key, *freed);
 				return true;
 			}
+		} else {
+			cell->value = value;
+			cell->time = time;
+			list_cached.remove(*cell);
+			list_cached.push_back(*cell);
+			return true;
 		}
 		return false;
 	}
-	
+
 	/**
 	 * head                         tail 
 	 * |--cells to pop-|             |
@@ -138,7 +174,7 @@ public:
 	bool pop_front(Key_t& key, Value_t& value, int timeout) noexcept {
 		std::time_t time = std::time(nullptr) - timeout;
 		auto it = list_cached.cbegin();
-		if(it != list_cached.cend() && (*it).time < time){
+		if (it != list_cached.cend() && (*it).time < time) {
 			TimerQueueData_t* cell = list_cached.pop_front();
 			key = cell->im_key;
 			value = cell->value;
@@ -149,24 +185,31 @@ public:
 		return false;
 	}
 
-	bool get(Key_t key, Value_t& value) const noexcept {
-		const TimerQueueData_t* cell = map.find(key);
-		if (cell) {
-			value = cell->value;
-			return true;
-		}
-		return false;
+	Iterator_t find(const Key_t& key) noexcept {
+		auto cell = map.find(key);
+		if (cell == map.end())
+			return Iterator_t();
+		else
+			return Iterator_t(&(cell->value));
 	}
-	
-	bool remove(Key_t key) noexcept {
-		auto it = map.find(key);
-		if (it != nullptr) {
+
+	ConstIterator_t find(const Key_t& key) const noexcept {
+		auto cell = map.find(key);
+		if (cell == map.end())
+			return ConstIterator_t();
+		else
+			return ConstIterator_t(&(cell->value));
+	}
+
+	Iterator_t remove(const Key_t& key) noexcept {
+		auto cell = map.find(key);
+		if (cell != map.end()) {
 			map.remove(key);
-			list_cached.remove(*it);
-			list_freed.push_back(*it);
-			return true;
+			list_cached.remove(*cell);
+			list_freed.push_back(*cell);
+			return Iterator_t(&(cell->value));
 		}
-		return false;
+		return Iterator_t();
 	}
 
 	void reset() noexcept {
@@ -183,6 +226,14 @@ public:
 
 	size_t size() const noexcept {
 		return map.size();
+	}
+
+	Iterator_t end() noexcept {
+		return Iterator_t();
+	}
+
+	ConstIterator_t cend() const noexcept {
+		return ConstIterator_t();
 	}
 
 	size_t storage_bytes() const noexcept {

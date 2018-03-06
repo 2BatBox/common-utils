@@ -23,15 +23,28 @@ class MapTest {
 		}
 	};
 
-	typedef unsigned Key_t;
-	typedef StructValue<long long unsigned> Value_t;
+	template <typename K, typename V>
+	struct MapData: public MapHook<K, MapData<K, V> > {
+		V value;
 
-	typedef MapData<Key_t, Value_t> Data_t;
-	typedef Map<Key_t, Data_t> Map_t;
+		MapData(): value() { }
+
+		MapData(V v): value(v) { }
+
+		bool operator==(const MapData& data) const {
+			return value == data.value;
+		}
+	};
+
+	typedef unsigned Key_t;
+	typedef StructValue<unsigned> Value_t;
+
+	typedef MapData<Key_t, Value_t> MapData_t;
+	typedef Map<Key_t, MapData_t> Map_t;
 	typedef Map_t::Bucket_t Bucket_t;
 
 	const size_t storage_size;
-	Data_t* storage;
+	MapData_t* storage;
 	const size_t bucket_list_size;
 	Map_t map;
 
@@ -39,10 +52,10 @@ public:
 
 	MapTest(unsigned storage_size, float load_factor)
 	: storage_size(storage_size),
-	storage(new Data_t[storage_size]),
+	storage(new MapData_t[storage_size]),
 	bucket_list_size((storage_size / load_factor) + 1),
 	map(bucket_list_size) {
-		
+
 		if (not map.allocate())
 			throw std::logic_error("Cannot allocate Map instance");
 		for (unsigned i = 0; i < storage_size; i++) {
@@ -61,12 +74,13 @@ public:
 	}
 
 	size_t storage_bytes() {
-		return storage_size * sizeof (Data_t) + bucket_list_size * sizeof (Bucket_t);
+		return storage_size * sizeof (MapData_t) + bucket_list_size * sizeof (Bucket_t);
 	}
 
 	void test() {
 		printf("<intrusive::MapTest>...\n");
-		printf("sizeof(Data_t)=%zu\n", sizeof (Data_t));
+		printf("sizeof(Value_t)=%zu\n", sizeof (Value_t));
+		printf("sizeof(MapData_t)=%zu\n", sizeof (MapData_t));
 		printf("sizeof(Bucket_t)=%zu\n", sizeof (Bucket_t));
 		printf("storage_size=%zu\n", storage_size);
 		printf("bucket_list_size=%zu\n", bucket_list_size);
@@ -85,7 +99,7 @@ public:
 		assert(tmp_map.size() == storage_size);
 		for (Key_t i = 0; i < storage_size; i++) {
 			auto it = tmp_map.find(i);
-			assert(it);
+			assert(it != tmp_map.end());
 			assert((*it) == storage[i]);
 		}
 		map = std::move(map);
@@ -100,7 +114,7 @@ public:
 		fill(map);
 		for (Key_t i = 0; i < storage_size; i++) {
 			auto it = map.find(i);
-			assert(it);
+			assert(it != map.end());
 			assert((*it) == storage[i]);
 		}
 		clear(map);
@@ -110,13 +124,13 @@ public:
 		assert(map.size() == 0);
 		Key_t half = storage_size / 2;
 		for (Key_t i = 0; i < half; i++) {
-			assert(map.put(i, storage[i]));
+			assert(map.put(i, storage[i]) == map.end());
 		}
 		assert(map.size() == half);
 		for (Key_t i = 0; i < storage_size; i++) {
 			auto it = map.find(i);
 			if (i < half) {
-				assert(it);
+				assert(it!= map.end());
 				assert((*it) == storage[i]);
 			} else {
 				assert(it == nullptr);
@@ -130,12 +144,12 @@ public:
 		fill(map);
 		Key_t half = storage_size / 2;
 		for (Key_t i = half; i < storage_size; i++) {
-			assert(map.remove(i));
-			assert(not map.remove(i));
+			assert(map.remove(i) != map.end());
+			assert(map.remove(i) == map.end());
 		}
 		for (Key_t i = 0; i < half; i++) {
-			assert(map.remove(i));
-			assert(not map.remove(i));
+			assert(map.remove(i) != map.end());
+			assert(map.remove(i) == map.end());
 		}
 		assert(map.size() == 0);
 		test_sanity();
@@ -162,7 +176,7 @@ private:
 
 	void fill(Map_t& map) {
 		for (Key_t i = 0; i < storage_size; i++) {
-			assert(map.put(i, storage[i]));
+			assert(map.put(i, storage[i]) == map.end());
 		}
 		assert(map.size() == storage_size);
 	}

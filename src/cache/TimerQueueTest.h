@@ -10,6 +10,7 @@ namespace cache {
 
 class TimerQueueTest {
 	static constexpr unsigned TIMEOUT_SEC = 3;
+	static constexpr unsigned KEY_VALUE_RATIO = 4;
 
 	template <typename T>
 	struct StructValue {
@@ -59,8 +60,7 @@ public:
 		test_put();
 		test_get();
 		test_remove();
-		test_update_value();
-        test_timeout();
+		test_timeout();
 	}
 
 	void test_put() {
@@ -74,42 +74,36 @@ public:
 		assert(queue.size() == 0);
 		Key_t half = capacity / 2;
 		for (Key_t i = 0; i < half; i++) {
-			assert(queue.push_back(i, i));
+			assert(queue.push_back(i, default_value(i)));
 		}
 		assert(queue.size() == half);
 		Value_t value;
 		for (Key_t i = 0; i < capacity; i++) {
+			auto it = queue.find(i);
 			if (i < half) {
-				assert(queue.get(i, value));
-				assert(value == i);
+				assert(it != queue.end());
+				assert(*it == default_value(i));
 			} else {
-				assert(not queue.get(i, value));
+				assert(it == queue.end());
 			}
 		}
 		clear();
 	}
-	
+
 	void test_remove() {
 		assert(queue.size() == 0);
 		fill();
 		Key_t half = capacity / 2;
 		for (Key_t i = half; i < capacity; i++) {
-			assert(queue.remove(i));
-			assert(not queue.remove(i));
+			assert(queue.remove(i) != queue.end());
+			assert(queue.remove(i) == queue.end());
 		}
 		for (Key_t i = 0; i < half; i++) {
-			assert(queue.remove(i));
-			assert(not queue.remove(i));
+			assert(queue.remove(i) != queue.end());
+			assert(queue.remove(i) == queue.end());
 		}
 		assert(queue.size() == 0);
 		test_sanity();
-	}
-
-	void test_update_value() {
-		assert(queue.size() == 0);
-		fill();
-		compare();
-		clear();
 	}
 
 	void test_timeout() {
@@ -122,21 +116,21 @@ public:
 		for (Key_t i = 0; i < capacity; i++) {
 			assert(queue.pop_front(key, value, -1 /*timeout all*/));
 			assert(key == i);
-			assert(value == i * 2);
+			assert(value == default_value(i));
 		}
-		
+
 		assert(queue.size() == 0);
 		test_sanity();
-		
+
 		// test timeout
 		Key_t key_exp = 1;
 		Value_t value_exp = 1;
 		std::time_t before = std::time(nullptr);
 		assert(queue.push_back(key_exp, value_exp));
 		assert(queue.size() == 1);
-		while(not queue.pop_front(key, value, TIMEOUT_SEC/*timeout all*/));
+		while (not queue.pop_front(key, value, TIMEOUT_SEC/*timeout all*/));
 		std::time_t after = std::time(nullptr);
-		
+
 		assert(after - before >= TIMEOUT_SEC);
 		assert(key == key_exp);
 		assert(value == value_exp);
@@ -178,17 +172,17 @@ private:
 	void fill() {
 		for (Key_t i = 0; i < capacity; i++) {
 			assert(queue.push_back(i, i));
-			assert(queue.push_back(i, i * 2));
+			assert(queue.push_back(i, default_value(i)));
 		}
-		assert(not queue.push_back(capacity, 0));
 		assert(queue.size() == capacity);
 	}
 
 	void compare() {
 		Value_t value;
 		for (Key_t i = 0; i < capacity; i++) {
-			assert(queue.get(i, value));
-			assert(value == i * 2);
+			auto it = queue.find(i);
+			assert(it != queue.end());
+			assert(*it == default_value(i));
 		}
 	}
 
@@ -198,7 +192,10 @@ private:
 		test_sanity();
 	}
 
-
+	Value_t default_value(Key_t key) {
+		Value_t value = key;
+		return value.value * KEY_VALUE_RATIO;
+	}
 };
 
 }; // namespace cache

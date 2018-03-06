@@ -31,7 +31,7 @@ void append_options(CliHelper& helper)
     helper.append(opt_mtu).append(opt_skip).append(opt_verbose);
 }
 
-int sample_main(int argc, char** argv)
+int cli_helper_sample(int argc, char** argv)
 {
 
     CliHelper helper(argv[0]);

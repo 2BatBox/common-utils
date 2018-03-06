@@ -5,10 +5,26 @@
 
 #include <assert.h>
 #include <cstdio>
+#include <cstddef>
 
 namespace intrusive {
 
 class ListTest {
+
+	template <typename V>
+	struct ListData: public ListHook<ListData<V> > {
+		V value;
+
+		ListData(): value() { }
+
+		ListData(V v): value(v) { }
+
+		bool operator==(const ListData& data) const {
+			return value == data.value;
+		}
+		
+		~ListData() = default;
+	};
 
 	template<typename T>
 	struct StructValue {
@@ -56,7 +72,12 @@ public:
 
 	void test() {
 		printf("<intrusive::ListTest>...\n");
+		printf("sizeof(Value_t)=%zu\n", sizeof (Value_t));
 		printf("sizeof(ListData_t)=%zu\n", sizeof (ListData_t));
+//		printf("offsetof(ListData_t, il_next)=%zu\n", offsetof(ListData_t, il_next));
+//		printf("offsetof(ListData_t, il_prev)=%zu\n", offsetof(ListData_t, il_prev));
+//		printf("offsetof(ListData_t, il_linked)=%zu\n", offsetof(ListData_t, il_linked));
+//		printf("offsetof(ListData_t, value)=%zu\n", offsetof(ListData_t, value));
 		printf("memory used %zu Kb\n", storage_bytes() / (1024));
 		test_raii();
 		test_push_front();
@@ -89,20 +110,14 @@ public:
 
 	void test_push_front() {
 		assert(list.size() == 0);
-		for (Key_t i = 0; i < storage_size; i++) {
-			assert(list.push_front(storage[i]));
-			assert(not list.push_front(storage[i]));
-		}
+		fill_backward(list);
 		compare_backward(list);
 		clear_list(list);
 	}
 
 	void test_push_back() {
 		assert(list.size() == 0);
-		for (Key_t i = 0; i < storage_size; i++) {
-			assert(list.push_back(storage[i]));
-			assert(not list.push_back(storage[i]));
-		}
+		fill_forward(list);
 		compare_forward(list);
 		clear_list(list);
 	}
@@ -187,6 +202,7 @@ private:
 	void fill_forward(List_t& list) {
 		for (Key_t i = 0; i < storage_size; i++) {
 			assert(list.push_back(storage[i]));
+			assert(not list.push_back(storage[i]));
 		}
 		assert(list.size() == storage_size);
 	}
@@ -194,6 +210,7 @@ private:
 	void fill_backward(List_t& list) {
 		for (Key_t i = 0; i < storage_size; i++) {
 			assert(list.push_front(storage[i]));
+			assert(not list.push_front(storage[i]));
 		}
 		assert(list.size() == storage_size);
 	}
