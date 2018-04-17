@@ -2,6 +2,8 @@
 #define BINIO_RAW_BUFFER_TEST_H
 
 #include <assert.h>
+#include <memory>
+#include <iostream>
 
 #include "RawBuffer.h"
 
@@ -218,7 +220,7 @@ class RawBuffersTest {
 		copy = DataSet();
 		ConstRawBuffer const_buffer2;
 		const_buffer2 = buffer2;
-		
+
 		assert(const_buffer2.rewind());
 		assert(const_buffer2.bounds());
 		assert(const_buffer2.read(copy));
@@ -228,6 +230,59 @@ class RawBuffersTest {
 		assert(const_buffer2.bounds());
 	}
 
+	static void test_read_write_memory() noexcept {
+		using RawType = size_t;
+		constexpr int buf_size = 32;
+		RawType raw_buffer[buf_size];
+		int raw_input[buf_size];
+		int raw_output[buf_size];
+		for (int i = 0; i < buf_size; i++) {
+			raw_input[i] = i;
+		}
+
+		RawBuffer buffer(raw_buffer, buf_size);
+		assert(buffer.size() == sizeof (RawType) * buf_size);
+		assert(buffer.bounds());
+		for (int i = 0; i < buf_size; i += 4) {
+			assert(buffer.write_memory(raw_input + i, 4));
+		}
+		assert(buffer.bounds());
+		assert(buffer.rewind());
+		for (int i = 0; i < buf_size; i += 4) {
+			assert(buffer.read_memory(raw_output + i, 4));
+		}
+		assert(buffer.bounds());
+		for (int i = 0; i < buf_size; i++) {
+			assert(raw_input[i] == raw_output[i]);
+		}
+	}
+
+	static void test_region() noexcept {
+		using RawType = size_t;
+		constexpr int buf_size = 32;
+		RawType raw_buffer[buf_size];
+		for (RawType i = 0; i < buf_size; i++) {
+			raw_buffer[i] = i;
+		}
+
+		RawType value;
+		RawBuffer buffer(raw_buffer, buf_size);
+		for (RawType i = 0; i < buf_size; i++) {
+			assert(buffer.read(value));
+			assert(value == i);
+			buffer = buffer.region();
+		}
+		assert(buffer.bounds());
+
+		ConstRawBuffer buffer_const(raw_buffer, buf_size);
+		for (RawType i = 0; i < buf_size; i++) {
+			assert(buffer_const.read(value));
+			assert(value == i);
+			buffer_const = buffer_const.region();
+		}
+		assert(buffer_const.bounds());
+	}
+
 public:
 
 	static void test() {
@@ -235,7 +290,8 @@ public:
 		test_bounds();
 		test_skip_rewind();
 		test_raii();
-		//test_array(); TODO:
+		test_read_write_memory();
+		test_region();
 	}
 
 };
