@@ -7,114 +7,185 @@
 namespace binio {
 
 /**
- *
- *   | <- offset ->  | <- left ->|
- *   |B|B|B|B|B|B|B|B|B|B|B|B|B|B|
- *                 |
- *             assign point
- */
+ * The RawBuffer design.
+ * 
+ *                 head               tail
+ *                   |                 |   
+ *   | <- offset ->  | <- available -> | <- padding -> |
+ *   |B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|
+ *   | <-------------------- size -------------------> |
+ * begin                                              end
+ * 
+ * Points of 'begin', 'end' and 'size' are constant,
+ * that means they cannot be changed with public methods.
+ * 
+ * Any operations with RawBuffer data can be done only in available area.
+ * 
+ **/
 
-template <typename RawPtr>
+
+template <typename RawPtr, typename SizeType>
 class Buffer {
 	friend class RawBuffer;
 	friend class ConstRawBuffer;
 
 protected:
 	RawPtr* buffer_ptr;
-	size_t left_bytes;
-	size_t size_bytes;
+	SizeType bytes_available;
+	SizeType bytes_padding;
+	SizeType bytes_size;
 	bool in_bounds;
 
-	Buffer() noexcept:
+	Buffer() noexcept :
 	buffer_ptr(nullptr),
-	left_bytes(0),
-	size_bytes(0),
+	bytes_available(0),
+	bytes_padding(0),
+	bytes_size(0),
 	in_bounds(true) { }
 
-	Buffer(RawPtr* buf, size_t len) noexcept:
+	Buffer(RawPtr* buf, SizeType len) noexcept :
 	buffer_ptr(buf),
-	left_bytes(len),
-	size_bytes(len),
+	bytes_available(len),
+	bytes_padding(0),
+	bytes_size(len),
 	in_bounds(true) { }
 
-	Buffer& operator=(const Buffer&)noexcept = default;
+	Buffer& operator =(const Buffer&) noexcept = default;
 
 public:
 
-	inline decltype(size_bytes)offset() const noexcept {
-		return size_bytes - left_bytes;
-	}
-
-	inline decltype(left_bytes)left() const noexcept {
-		return left_bytes;
-	}
-
-	inline decltype(in_bounds)bounds() const noexcept {
-		return in_bounds;
-	}
-
-	inline decltype(size_bytes)size() const noexcept {
-		return size_bytes;
+	/**
+	 * @return The distance between 'begin' and 'end'
+	 */
+	inline SizeType size() const noexcept {
+		return bytes_size;
 	}
 
 	/**
-	 * Set the assign point to the beginning of the buffer.
-	 * @param bytes - bytes to move
-	 * @return true - if the buffer is in bounds after moving
+	 * @return The distance between 'begin' and 'head'
 	 */
-	bool rewind() noexcept {
+	inline SizeType offset() const noexcept {
+		return bytes_size - bytes_available - bytes_padding;
+	}
+
+	/**
+	 * @return The distance between 'head' and 'tail'
+	 */
+	inline SizeType available() const noexcept {
+		return bytes_available;
+	}
+
+	/**
+	 * @return The distance between 'tail' and 'end'
+	 */
+	inline SizeType padding() const noexcept {
+		return bytes_padding;
+	}
+
+	/**
+	 * @return true - if at least @bytes are available.
+	 */
+	inline bool available(SizeType bytes) const noexcept {
+		return bytes <= bytes_available;
+	}
+
+	/**
+	 * @return true - if the buffer is its bounds.
+	 */
+	inline bool bounds() const noexcept {
+		return in_bounds;
+	}
+
+	/**
+	 * Reset the state of the buffer.
+	 * @return true - if the buffer is in its bounds.
+	 */
+	bool reset() noexcept {
 		if (in_bounds) {
-			size_t offset = size_bytes - left_bytes;
-			buffer_ptr -= offset;
-			left_bytes += offset;
+			SizeType off = offset();
+			buffer_ptr -= off;
+			bytes_available += off;
 		}
 		return in_bounds;
 	}
 
 	/**
-	 * Set the assign point to a new position.
-	 * @param bytes - bytes to move
-	 * @return true - if the buffer is in bounds after moving
+	 * Move the head @bytes forward.
+	 * @param bytes - bytes to move.
+	 * @return true - if the buffer is in its bounds after moving.
 	 */
-	bool rewind(size_t bytes) noexcept {
+	bool head_move(SizeType bytes) noexcept {
+		if (in_bounds) {
+			if (bytes > bytes_available) {
+				in_bounds = false;
+			} else {
+				buffer_ptr += bytes;
+				bytes_available -= bytes;
+			}
+		}
+		return in_bounds;
+	}
+
+	/**
+	 * Move the head @bytes backward.
+	 * @param bytes - bytes to move.
+	 * @return true - if the buffer is in its bounds after moving.
+	 */
+	bool head_move_back(SizeType bytes) noexcept {
 		if (in_bounds) {
 			if (bytes > offset()) {
 				in_bounds = false;
 			} else {
 				buffer_ptr -= bytes;
-				left_bytes += bytes;
+				bytes_available += bytes;
 			}
 		}
 		return in_bounds;
 	}
 
 	/**
-	 * Set the assign point to a new position.
-	 * @param bytes - bytes to move
-	 * @return true - if the buffer is in bounds after moving
+	 * Move the tail @bytes forward.
+	 * @param bytes - bytes to move.
+	 * @return true - if the buffer is in its bounds after moving.
 	 */
-	bool skip(size_t bytes) noexcept {
+	bool tail_move(SizeType bytes) noexcept {
 		if (in_bounds) {
-			if (bytes > left_bytes) {
+			if (bytes > bytes_padding) {
 				in_bounds = false;
 			} else {
-				buffer_ptr += bytes;
-				left_bytes -= bytes;
+				bytes_available += bytes;
+				bytes_padding -= bytes;
 			}
 		}
 		return in_bounds;
 	}
 
 	/**
-	 * Read one variable from the buffer and set it at the new position.
-	 * An assignment operator of the type will be used to read a value.
-	 * @param value - variable to read to
-	 * @return true - if the buffer is in bounds after reading
+	 * Move the tail @bytes backward.
+	 * @param bytes - bytes to move.
+	 * @return true - if the buffer is in its bounds after moving.
+	 */
+	bool tail_move_back(SizeType bytes) noexcept {
+		if (in_bounds) {
+			if (bytes > bytes_available) {
+				in_bounds = false;
+			} else {
+				bytes_available -= bytes;
+				bytes_padding += bytes;
+			}
+		}
+		return in_bounds;
+	}
+
+	/**
+	 * Read @value from the buffer and set the head to a new position.
+	 * @param value - variable to read to.
+	 * @return true - if the buffer is in its bounds after reading.
 	 */
 	template <typename T>
 	bool read(T& value) noexcept {
 		if (in_bounds) {
-			if (sizeof (T) > left_bytes) {
+			if (sizeof (T) > bytes_available) {
 				in_bounds = false;
 			} else {
 				read_no_bounds(value);
@@ -124,16 +195,15 @@ public:
 	}
 
 	/**
-	 * Read the variables from the buffer and set it at the new position.
-	 * Assignment operators of the types will be used to read values.
-	 * @param value - variable to read to
-	 * @param args - variables to read to
-	 * @return true - if the buffer is in bounds after reading
+	 * Read @value and @args from the buffer and set the head to a new position.
+	 * @param value - a variable to read to.
+	 * @param args - variables to read to.
+	 * @return true - if the buffer is in its bounds after reading.
 	 */
 	template <typename T, typename... Args>
 	bool read(T& value, Args&... args) noexcept {
 		if (in_bounds) {
-			if (args_size(value, args...) > left_bytes) {
+			if (sizeof_args(value, args...) > bytes_available) {
 				in_bounds = false;
 			} else {
 				read_no_bounds(value, args...);
@@ -143,51 +213,61 @@ public:
 	}
 
 	/**
-	 * Read an array from the buffer and set it at the new position.
-	 * @param value - variable to read to
-	 * @return true - if the buffer is in bounds after reading
+	 * Read an array from the buffer and set the head to a new position.
+	 * @param array - an array to read to.
+	 * @param array_len - amount of @array elements.
+	 * @return true - if the buffer is in its bounds after reading.
 	 */
 	template <typename T>
-	bool read_memory(T* array, const size_t array_len) noexcept {
+	bool read_memory(T* array, const SizeType array_len) noexcept {
 		if (in_bounds) {
-			size_t array_nb = array_len * sizeof (T);
-			if (array_nb > left_bytes) {
+			SizeType array_nb = array_len * sizeof (T);
+			if (array_nb > bytes_available) {
 				in_bounds = false;
 			} else {
 				memcpy(array, buffer_ptr, array_nb);
 				buffer_ptr += array_nb;
-				left_bytes -= array_nb;
+				bytes_available -= array_nb;
 			}
 		}
 		return in_bounds;
 	}
 
 	/**
-	 * Assign the pointers to the buffer and set it at the new position.
-	 * @param value - variable to assign to
-	 * @param args - variables to assign to
-	 * @return true - if the buffer is in bounds after assigning
+	 * Assign an array of pointers to the buffer set the head to a new position.
+	 * @param array - an array to assign.
+	 * @param array_len - amount of @array elements.
+	 * @return true - if the buffer is in its bounds after assigning.
 	 */
-	template <typename T, typename... Args>
-	bool assign(T*& value, Args*&... args) noexcept {
-		return assign(value) && assign(args...);
+	template <typename T>
+	bool assign(T*& array, SizeType array_len) noexcept {
+		array_len *= sizeof (T);
+		if (in_bounds) {
+			if (array_len > bytes_available) {
+				in_bounds = false;
+			} else {
+				array = reinterpret_cast<T*> (buffer_ptr);
+				buffer_ptr += array_len;
+				bytes_available -= array_len;
+			}
+		}
+		return in_bounds;
 	}
 
 	/**
-	 * Assign one pointer to the buffer and set it at the new position.
-	 * @param value - variable to assign to
-	 * @param args - variables to assign to
-	 * @return true - if the buffer is in bounds after assigning
+	 * Assign one pointer to the buffer and set the head to a new position.
+	 * @param pointer - a pointer to assign.
+	 * @return true - if the buffer is in its bounds after assigning.
 	 */
 	template <typename T>
-	bool assign(T*& value) noexcept {
+	bool assign(T*& pointer) noexcept {
 		if (in_bounds) {
-			if (sizeof (T) > left_bytes) {
+			if (sizeof (T) > bytes_available) {
 				in_bounds = false;
 			} else {
-				value = reinterpret_cast<T*>(buffer_ptr);
+				pointer = reinterpret_cast<T*> (buffer_ptr);
 				buffer_ptr += sizeof (T);
-				left_bytes -= sizeof (T);
+				bytes_available -= sizeof (T);
 			}
 		}
 		return in_bounds;
@@ -195,20 +275,20 @@ public:
 
 protected:
 
-	static inline constexpr size_t args_size() noexcept {
+	static inline constexpr SizeType sizeof_args() noexcept {
 		return 0;
 	}
 
 	template <typename T, typename... Args>
-	static inline constexpr size_t args_size(T& value, Args&... args) noexcept {
-		return sizeof (value) + args_size(args...);
+	static inline constexpr SizeType sizeof_args(T& value, Args&... args) noexcept {
+		return sizeof (value) + sizeof_args(args...);
 	}
 
 	template <typename T>
 	inline void read_no_bounds(T& value) noexcept {
-		value = *reinterpret_cast<const T*>(buffer_ptr);
+		value = *reinterpret_cast<const T*> (buffer_ptr);
 		buffer_ptr += sizeof (T);
-		left_bytes -= sizeof (T);
+		bytes_available -= sizeof (T);
 	}
 
 	template <typename T, typename... Args>
@@ -221,32 +301,33 @@ protected:
 
 using RawType_t = uint8_t;
 using ConstRawType_t = const uint8_t;
+using SizeType_t = size_t;
 
-class RawBuffer: public Buffer<RawType_t> {
-	using Base = Buffer<RawType_t>;
+class RawBuffer : public Buffer<RawType_t, SizeType_t> {
+	using Base = Buffer<RawType_t, SizeType_t>;
 
 public:
 
-	RawBuffer() noexcept: Base() { }
+	RawBuffer() noexcept : Base() { }
 
 	template <typename T>
-	RawBuffer(T* buf, size_t buf_len) noexcept:
-	Base(reinterpret_cast<RawType_t*>(buf), buf_len * sizeof (T)) { }
+	RawBuffer(T* buf, SizeType_t buf_len) noexcept :
+	Base(reinterpret_cast<RawType_t*> (buf), buf_len * sizeof (T)) { }
 
 	inline RawBuffer region() noexcept {
-		return RawBuffer(buffer_ptr, left_bytes);
+		return RawBuffer(buffer_ptr, bytes_available);
 	}
 
 	/**
-	 * Write the variables to the buffer and set it at the new position.
-	 * Assignment operators of the types will be used to write values.
-	 * @param value - variable to write from
-	 * @return true - if the buffer is in bounds after writing
+	 * Write @value and @args to the buffer and set it at the new position.
+	 * @param value - variable to write from.
+	 * @param args - variables to write from.
+	 * @return true - if the buffer is in its bounds after writing.
 	 */
 	template <typename T, typename... Args>
 	bool write(const T& value, const Args&... args) noexcept {
 		if (in_bounds) {
-			if (args_size(value, args...) > left_bytes) {
+			if (sizeof_args(value, args...) > bytes_available) {
 				in_bounds = false;
 			} else {
 				write_no_bounds(value, args...);
@@ -256,42 +337,40 @@ public:
 	}
 
 	/**
-	 * Write one variable to the buffer and set it at the new position.
-	 * An assignment operator of the type will be used to write a value.
-	 * @param value - variable to write from
-	 * @param args - variables to write from
-	 * @return true - if the buffer is in bounds after writing
+	 * Write one variable to the buffer and set the head to a new position.
+	 * @param value - variable to write from.
+	 * @return true - if the buffer is in its bounds after writing.
 	 */
 	template <typename T>
 	bool write(const T& value) noexcept {
 		if (in_bounds) {
-			if (sizeof (T) > left_bytes) {
+			if (sizeof (T) > bytes_available) {
 				in_bounds = false;
 			} else {
-				*reinterpret_cast<T*>(buffer_ptr) = value;
+				*reinterpret_cast<T*> (buffer_ptr) = value;
 				buffer_ptr += sizeof (T);
-				left_bytes -= sizeof (T);
+				bytes_available -= sizeof (T);
 			}
 		}
 		return in_bounds;
 	}
 
 	/**
-	 * Write an array to the buffer and set it at the new position.
+	 * Write an array to the buffer and set the head to a new position.
 	 * @param value - variable to write from
-	 * @param args - variables to write from
-	 * @return true - if the buffer is in bounds after writing
+	 * @param array_len - amount of @array elements.
+	 * @return true - if the buffer is in its bounds after writing
 	 */
 	template <typename T>
-	bool write_memory(const T* array, const size_t array_len) noexcept {
+	bool write_memory(const T* array, const SizeType_t array_len) noexcept {
 		if (in_bounds) {
-			size_t array_nb = array_len * sizeof (T);
-			if (array_nb > left_bytes) {
+			SizeType_t array_nb = array_len * sizeof (T);
+			if (array_nb > bytes_available) {
 				in_bounds = false;
 			} else {
 				memcpy(buffer_ptr, array, array_nb);
 				buffer_ptr += array_nb;
-				left_bytes -= array_nb;
+				bytes_available -= array_nb;
 			}
 		}
 		return in_bounds;
@@ -301,9 +380,9 @@ protected:
 
 	template <typename T>
 	inline void write_no_bounds(const T& value) noexcept {
-		*reinterpret_cast<T*>(buffer_ptr) = value;
+		*reinterpret_cast<T*> (buffer_ptr) = value;
 		buffer_ptr += sizeof (T);
-		left_bytes -= sizeof (T);
+		bytes_available -= sizeof (T);
 	}
 
 	template <typename T, typename... Args>
@@ -313,26 +392,27 @@ protected:
 	}
 };
 
-class ConstRawBuffer: public Buffer<ConstRawType_t> {
-	using Base = Buffer<ConstRawType_t>;
+class ConstRawBuffer : public Buffer<ConstRawType_t, SizeType_t> {
+	using Base = Buffer<ConstRawType_t, SizeType_t>;
 
 public:
 
-	ConstRawBuffer() noexcept: Base() { }
+	ConstRawBuffer() noexcept : Base() { }
 
-	ConstRawBuffer(const RawBuffer& raw) noexcept: Base() {
+	ConstRawBuffer(const RawBuffer& raw) noexcept : Base() {
 		Base::buffer_ptr = raw.buffer_ptr;
-		Base::left_bytes = raw.left_bytes;
-		Base::size_bytes = raw.size_bytes;
+		Base::bytes_available = raw.bytes_available;
+		Base::bytes_padding = raw.bytes_padding;
+		Base::bytes_size = raw.bytes_size;
 		Base::in_bounds = raw.in_bounds;
 	}
 
 	template <typename T>
-	ConstRawBuffer(T* buf, size_t buf_len) noexcept:
-	Base(reinterpret_cast<ConstRawType_t*>(buf), buf_len * sizeof (T)) { }
+	ConstRawBuffer(T* buf, SizeType_t buf_len) noexcept :
+	Base(reinterpret_cast<ConstRawType_t*> (buf), buf_len * sizeof (T)) { }
 
 	inline ConstRawBuffer region() noexcept {
-		return ConstRawBuffer(buffer_ptr, left_bytes);
+		return ConstRawBuffer(buffer_ptr, bytes_available);
 	}
 
 };

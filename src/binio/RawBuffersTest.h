@@ -17,11 +17,11 @@ class RawBuffersTest {
 		int i;
 		long l;
 
-		DataSet(): c(0), s(0), i(0), l(0) { }
+		DataSet() : c(0), s(0), i(0), l(0) { }
 
-		DataSet(char c, short s, int i, long l): c(c), s(s), i(i), l(l) { }
+		DataSet(char c, short s, int i, long l) : c(c), s(s), i(i), l(l) { }
 
-		bool operator==(const DataSet& ds) {
+		bool operator ==(const DataSet& ds) {
 			return c == ds.c && s == ds.s && i == ds.i && l == ds.l;
 		}
 	};
@@ -38,7 +38,7 @@ class RawBuffersTest {
 		assert(buffer.write(set));
 		assert(buffer.write(set.c, set.s, set.i, set.l));
 		assert(buffer.bounds());
-		assert(buffer.rewind());
+		assert(buffer.reset());
 
 		// reading
 		assert(buffer.bounds());
@@ -66,14 +66,17 @@ class RawBuffersTest {
 		assert(buffer.write(set));
 		assert(buffer.write(set.c, set.s, set.i, set.l));
 		assert(buffer.bounds());
-		assert(buffer.rewind());
+		assert(buffer.reset());
 
 		// reading
 		assert(buffer.bounds());
 		assert(buffer.assign(copy));
 		assert(*copy == set);
 
-		assert(buffer.assign(c_cptr, s_cptr, i_ptr, l_ptr));
+		assert(buffer.assign(c_cptr));
+		assert(buffer.assign(s_cptr));
+		assert(buffer.assign(i_ptr));
+		assert(buffer.assign(l_ptr));
 		assert(buffer.bounds());
 		assert(*c_cptr == set.c);
 		assert(*s_cptr == set.s);
@@ -155,34 +158,34 @@ class RawBuffersTest {
 
 		RawBuffer buffer(raw_buffer, raw_buffer_size);
 		assert(buffer.write(w1));
-		assert(buffer.skip(1));
-		assert(buffer.rewind(2));
-		assert(buffer.skip(2));
+		assert(buffer.head_move(1));
+		assert(buffer.head_move_back(2));
+		assert(buffer.head_move(2));
 		assert(buffer.write(w3));
-		assert(buffer.rewind());
+		assert(buffer.reset());
 		assert(buffer.bounds());
 
-		assert(buffer.skip(1));
+		assert(buffer.head_move(1));
 		assert(buffer.write(w2));
-		assert(buffer.rewind(2));
-		assert(buffer.skip(2));
+		assert(buffer.head_move_back(2));
+		assert(buffer.head_move(2));
 		assert(buffer.write(w3));
-		assert(buffer.rewind());
+		assert(buffer.reset());
 		assert(buffer.bounds());
 
 		assert(buffer.read(r1));
-		assert(buffer.skip(1));
-		assert(buffer.rewind(2));
-		assert(buffer.skip(2));
+		assert(buffer.head_move(1));
+		assert(buffer.head_move_back(2));
+		assert(buffer.head_move(2));
 		assert(buffer.read(r3));
-		assert(buffer.rewind());
+		assert(buffer.reset());
 		assert(buffer.bounds());
 
-		assert(buffer.skip(1));
-		assert(buffer.rewind(1));
-		assert(buffer.skip(1));
+		assert(buffer.head_move(1));
+		assert(buffer.head_move_back(1));
+		assert(buffer.head_move(1));
 		assert(buffer.read(r2));
-		assert(buffer.skip(1));
+		assert(buffer.head_move(1));
 
 		assert(buffer.bounds());
 
@@ -209,7 +212,7 @@ class RawBuffersTest {
 		assert(buffer.bounds());
 
 		ConstRawBuffer const_buffer(buffer2);
-		assert(const_buffer.rewind());
+		assert(const_buffer.reset());
 		assert(const_buffer.bounds());
 		assert(const_buffer.read(copy));
 		assert(copy == set_first);
@@ -221,7 +224,7 @@ class RawBuffersTest {
 		ConstRawBuffer const_buffer2;
 		const_buffer2 = buffer2;
 
-		assert(const_buffer2.rewind());
+		assert(const_buffer2.reset());
 		assert(const_buffer2.bounds());
 		assert(const_buffer2.read(copy));
 		assert(copy == set_first);
@@ -240,6 +243,7 @@ class RawBuffersTest {
 			raw_input[i] = i;
 		}
 
+		// TODO: doesn't look good
 		RawBuffer buffer(raw_buffer, buf_size);
 		assert(buffer.size() == sizeof (RawType) * buf_size);
 		assert(buffer.bounds());
@@ -247,7 +251,7 @@ class RawBuffersTest {
 			assert(buffer.write_memory(raw_input + i, 4));
 		}
 		assert(buffer.bounds());
-		assert(buffer.rewind());
+		assert(buffer.reset());
 		for (int i = 0; i < buf_size; i += 4) {
 			assert(buffer.read_memory(raw_output + i, 4));
 		}
@@ -283,6 +287,49 @@ class RawBuffersTest {
 		assert(buffer_const.bounds());
 	}
 
+	static void test_distances() noexcept {
+		unsigned raw_buffer_size = 8;
+		unsigned char raw_buffer[raw_buffer_size];
+		ConstRawBuffer buf(raw_buffer, raw_buffer_size);
+
+		assert(buf.reset());
+		assert(buf.bounds());
+		for (unsigned i = 0; i < raw_buffer_size; i++) {
+			assert(buf.offset() == i);
+			assert(buf.available() == raw_buffer_size - i);
+			assert(buf.padding() == 0);
+			assert(buf.size() == raw_buffer_size);
+			assert(buf.head_move(1));
+		}
+
+		for (unsigned i = 0; i < raw_buffer_size; i++) {
+			assert(buf.offset() == raw_buffer_size - i);
+			assert(buf.available() == i);
+			assert(buf.padding() == 0);
+			assert(buf.size() == raw_buffer_size);
+			assert(buf.head_move_back(1));
+		}
+
+		assert(buf.reset());
+		assert(buf.bounds());
+		for (unsigned i = 0; i < raw_buffer_size; i++) {
+			assert(buf.offset() == 0);
+			assert(buf.available() == raw_buffer_size - i);
+			assert(buf.padding() == i);
+			assert(buf.size() == raw_buffer_size);
+			assert(buf.tail_move_back(1));
+		}
+
+		for (unsigned i = 0; i < raw_buffer_size; i++) {
+			assert(buf.offset() == 0);
+			assert(buf.available() == i);
+			assert(buf.padding() == raw_buffer_size - i);
+			assert(buf.size() == raw_buffer_size);
+			assert(buf.tail_move(1));
+		}
+
+	}
+
 public:
 
 	static void test() {
@@ -292,6 +339,7 @@ public:
 		test_raii();
 		test_read_write_memory();
 		test_region();
+		test_distances();
 	}
 
 };
