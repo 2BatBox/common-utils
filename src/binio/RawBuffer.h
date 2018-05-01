@@ -12,45 +12,63 @@ namespace binio {
  *                 head               tail
  *                   |                 |   
  *   | <- offset ->  | <- available -> | <- padding -> |
- *   |B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|B|
+ *   |R|R|R|R|R|R|R|R|A|A|A|A|A|A|A|A|A|P|P|P|P|P|P|P|P|
  *   | <-------------------- size -------------------> |
  * begin                                              end
  * 
- * Points of 'begin', 'end' and 'size' are constant,
- * that means they cannot be changed with public methods.
+ * R - already read/written.
+ * A - available to read/write.
+ * P - padding bytes, they're not available to read/write.
  * 
- * Any operations with RawBuffer data can be done only in available area.
+ * The head moves forward with following methods:
+ * read(), read_memory(), write(), write_memory(), assign() and head_move().
+ * The head also can be moved backward with head_move_back().
+ * Tail can be moved with tail_move() and tail_move_back().
+ * 
+ * RawBuffer has two state, 'In bounds' and 'Out of bounds'.
+ * Any operation which tries to leave the bounds of the buffer
+ * will set the buffer to 'Out of bounds' state.
+ * For instance reading, writing, assigning more bytes than the available area has
+ * or moving the head of a buffer before 'begin' point will set the buffer to 'Out of bounds' state.
+ * It's an one-way operation, that means there is no way to set the buffer back to 'In bounds' state.
+ * All the non-const methods return state of the buffer they are called with.
+ * All the read, write or assign operations work with the available area of the buffer only.
  * 
  **/
 
-
 template <typename RawPtr, typename SizeType>
-class Buffer {
-	friend class RawBuffer;
-	friend class ConstRawBuffer;
-
+class BaseBuffer {
 protected:
 	RawPtr* buffer_ptr;
+	bool in_bounds;
 	SizeType bytes_available;
 	SizeType bytes_padding;
 	SizeType bytes_size;
-	bool in_bounds;
 
-	Buffer() noexcept :
+	BaseBuffer() noexcept :
 	buffer_ptr(nullptr),
+	in_bounds(true),
 	bytes_available(0),
 	bytes_padding(0),
-	bytes_size(0),
-	in_bounds(true) { }
+	bytes_size(0) { }
 
-	Buffer(RawPtr* buf, SizeType len) noexcept :
+	BaseBuffer(RawPtr* buf, SizeType len) noexcept :
 	buffer_ptr(buf),
+	in_bounds(true),
 	bytes_available(len),
 	bytes_padding(0),
-	bytes_size(len),
-	in_bounds(true) { }
+	bytes_size(len) { }
 
-	Buffer& operator =(const Buffer&) noexcept = default;
+	BaseBuffer(RawPtr* buf, SizeType ava, SizeType pad, SizeType size, bool bounds) noexcept :
+	buffer_ptr(buf),
+	in_bounds(bounds),
+	bytes_available(ava),
+	bytes_padding(pad),
+	bytes_size(size) { }
+
+	BaseBuffer(const BaseBuffer&) noexcept = default;
+
+	BaseBuffer& operator =(const BaseBuffer&) noexcept = default;
 
 public:
 
@@ -105,6 +123,18 @@ public:
 			SizeType off = offset();
 			buffer_ptr -= off;
 			bytes_available += off;
+		}
+		return in_bounds;
+	}
+
+	/**
+	 * Shrink the buffer to the available area.
+	 * @return true - if the buffer is in its bounds.
+	 */
+	bool trim() noexcept {
+		if (in_bounds) {
+			bytes_size = bytes_available;
+			bytes_padding = 0;
 		}
 		return in_bounds;
 	}
@@ -299,23 +329,45 @@ protected:
 
 };
 
-using RawType_t = uint8_t;
-using ConstRawType_t = const uint8_t;
-using SizeType_t = size_t;
+template <typename SizeType>
+class ROBuffer;
 
-class RawBuffer : public Buffer<RawType_t, SizeType_t> {
-	using Base = Buffer<RawType_t, SizeType_t>;
+template <typename SizeType>
+class RWBuffer : public BaseBuffer<uint8_t, SizeType> {
+	using Base = BaseBuffer<uint8_t, SizeType>;
+	friend class ROBuffer<SizeType>;
 
 public:
 
-	RawBuffer() noexcept : Base() { }
+	RWBuffer() noexcept : Base() { }
 
 	template <typename T>
-	RawBuffer(T* buf, SizeType_t buf_len) noexcept :
-	Base(reinterpret_cast<RawType_t*> (buf), buf_len * sizeof (T)) { }
+	RWBuffer(T* buf, SizeType buf_len) noexcept :
+	Base(reinterpret_cast<uint8_t*> (buf), buf_len * sizeof (T)) { }
 
-	inline RawBuffer region() noexcept {
-		return RawBuffer(buffer_ptr, bytes_available);
+	RWBuffer region() const noexcept {
+		RWBuffer result(*this);
+		result.trim();
+		return result;
+	}
+
+	/**
+	 * Write one variable to the buffer and set the head to a new position.
+	 * @param value - variable to write from.
+	 * @return true - if the buffer is in its bounds after writing.
+	 */
+	template <typename T>
+	bool write(const T& value) noexcept {
+		if (Base::in_bounds) {
+			if (sizeof (T) > Base::bytes_available) {
+				Base::in_bounds = false;
+			} else {
+				*reinterpret_cast<T*> (Base::buffer_ptr) = value;
+				Base::buffer_ptr += sizeof (T);
+				Base::bytes_available -= sizeof (T);
+			}
+		}
+		return Base::in_bounds;
 	}
 
 	/**
@@ -326,33 +378,14 @@ public:
 	 */
 	template <typename T, typename... Args>
 	bool write(const T& value, const Args&... args) noexcept {
-		if (in_bounds) {
-			if (sizeof_args(value, args...) > bytes_available) {
-				in_bounds = false;
+		if (Base::in_bounds) {
+			if (Base::sizeof_args(value, args...) > Base::bytes_available) {
+				Base::in_bounds = false;
 			} else {
 				write_no_bounds(value, args...);
 			}
 		}
-		return in_bounds;
-	}
-
-	/**
-	 * Write one variable to the buffer and set the head to a new position.
-	 * @param value - variable to write from.
-	 * @return true - if the buffer is in its bounds after writing.
-	 */
-	template <typename T>
-	bool write(const T& value) noexcept {
-		if (in_bounds) {
-			if (sizeof (T) > bytes_available) {
-				in_bounds = false;
-			} else {
-				*reinterpret_cast<T*> (buffer_ptr) = value;
-				buffer_ptr += sizeof (T);
-				bytes_available -= sizeof (T);
-			}
-		}
-		return in_bounds;
+		return Base::in_bounds;
 	}
 
 	/**
@@ -362,27 +395,27 @@ public:
 	 * @return true - if the buffer is in its bounds after writing
 	 */
 	template <typename T>
-	bool write_memory(const T* array, const SizeType_t array_len) noexcept {
-		if (in_bounds) {
-			SizeType_t array_nb = array_len * sizeof (T);
-			if (array_nb > bytes_available) {
-				in_bounds = false;
+	bool write_memory(const T* array, SizeType array_len) noexcept {
+		if (Base::in_bounds) {
+			size_t array_nb = array_len * sizeof (T);
+			if (array_nb > Base::bytes_available) {
+				Base::in_bounds = false;
 			} else {
-				memcpy(buffer_ptr, array, array_nb);
-				buffer_ptr += array_nb;
-				bytes_available -= array_nb;
+				memcpy(Base::buffer_ptr, array, array_nb);
+				Base::buffer_ptr += array_nb;
+				Base::bytes_available -= array_nb;
 			}
 		}
-		return in_bounds;
+		return Base::in_bounds;
 	}
 
 protected:
 
 	template <typename T>
 	inline void write_no_bounds(const T& value) noexcept {
-		*reinterpret_cast<T*> (buffer_ptr) = value;
-		buffer_ptr += sizeof (T);
-		bytes_available -= sizeof (T);
+		*reinterpret_cast<T*> (Base::buffer_ptr) = value;
+		Base::buffer_ptr += sizeof (T);
+		Base::bytes_available -= sizeof (T);
 	}
 
 	template <typename T, typename... Args>
@@ -392,31 +425,46 @@ protected:
 	}
 };
 
-class ConstRawBuffer : public Buffer<ConstRawType_t, SizeType_t> {
-	using Base = Buffer<ConstRawType_t, SizeType_t>;
+template <typename SizeType>
+class ROBuffer : public BaseBuffer<const uint8_t, SizeType> {
+	using Base = BaseBuffer<const uint8_t, SizeType>;
 
 public:
 
-	ConstRawBuffer() noexcept : Base() { }
+	ROBuffer() noexcept : Base() { }
 
-	ConstRawBuffer(const RawBuffer& raw) noexcept : Base() {
-		Base::buffer_ptr = raw.buffer_ptr;
-		Base::bytes_available = raw.bytes_available;
-		Base::bytes_padding = raw.bytes_padding;
-		Base::bytes_size = raw.bytes_size;
-		Base::in_bounds = raw.in_bounds;
-	}
+	ROBuffer(const RWBuffer<SizeType>& raw) noexcept :
+	Base(raw.buffer_ptr, raw.available(), raw.padding(), raw.size(), raw.bounds()) { }
 
 	template <typename T>
-	ConstRawBuffer(T* buf, SizeType_t buf_len) noexcept :
-	Base(reinterpret_cast<ConstRawType_t*> (buf), buf_len * sizeof (T)) { }
+	ROBuffer(T* buf, size_t buf_len) noexcept :
+	Base(reinterpret_cast<const uint8_t*> (buf), buf_len * sizeof (T)) { }
 
-	inline ConstRawBuffer region() noexcept {
-		return ConstRawBuffer(buffer_ptr, bytes_available);
+	ROBuffer region() const noexcept {
+		ROBuffer result(*this);
+		result.trim();
+		return result;
 	}
 
 };
 
+/**
+ * Public aliases;
+ */
+using RawBuffer = RWBuffer<size_t>;
+using RawBufferConst = ROBuffer<size_t>;
+
+using RawBuffer8 = RWBuffer<uint8_t>;
+using RawBufferConst8 = ROBuffer<uint8_t>;
+
+using RawBuffer16 = RWBuffer<uint16_t>;
+using RawBufferConst16 = ROBuffer<uint16_t>;
+
+using RawBuffer32 = RWBuffer<uint32_t>;
+using RawBufferConst32 = ROBuffer<uint32_t>;
+
+using RawBuffer64 = RWBuffer<uint64_t>;
+using RawBufferConst64 = ROBuffer<uint64_t>;
 
 }; // namespace binio
 
