@@ -23,7 +23,7 @@ namespace binio {
  * The head moves forward with following methods:
  * read(), read_memory(), write(), write_memory(), assign() and head_move().
  * The head also can be moved backward with head_move_back().
- * Tail can be moved with tail_move() and tail_move_back().
+ * The tail can be moved with tail_move() and tail_move_back().
  * 
  * RawBuffer has two state, 'In bounds' and 'Out of bounds'.
  * Any operation which tries to leave the bounds of the buffer
@@ -36,35 +36,41 @@ namespace binio {
  * 
  **/
 
+template <typename SizeType>
+class ROBuffer;
+
+template <typename SizeType>
+class RWBuffer;
+
 template <typename RawPtr, typename SizeType>
 class BaseBuffer {
 protected:
 	RawPtr* buffer_ptr;
-	bool in_bounds;
 	SizeType bytes_available;
 	SizeType bytes_padding;
 	SizeType bytes_size;
+	bool in_bounds;
 
 	BaseBuffer() noexcept :
 	buffer_ptr(nullptr),
-	in_bounds(true),
 	bytes_available(0),
 	bytes_padding(0),
-	bytes_size(0) { }
+	bytes_size(0),
+	in_bounds(true) { }
 
 	BaseBuffer(RawPtr* buf, SizeType len) noexcept :
 	buffer_ptr(buf),
-	in_bounds(true),
 	bytes_available(len),
 	bytes_padding(0),
-	bytes_size(len) { }
+	bytes_size(len),
+	in_bounds(true) { }
 
 	BaseBuffer(RawPtr* buf, SizeType ava, SizeType pad, SizeType size, bool bounds) noexcept :
 	buffer_ptr(buf),
-	in_bounds(bounds),
 	bytes_available(ava),
 	bytes_padding(pad),
-	bytes_size(size) { }
+	bytes_size(size),
+	in_bounds(bounds) { }
 
 	BaseBuffer(const BaseBuffer&) noexcept = default;
 
@@ -249,15 +255,15 @@ public:
 	 * @return true - if the buffer is in its bounds after reading.
 	 */
 	template <typename T>
-	bool read_memory(T* array, const SizeType array_len) noexcept {
+	bool read_memory(T* array, SizeType array_len) noexcept {
 		if (in_bounds) {
-			SizeType array_nb = array_len * sizeof (T);
-			if (array_nb > bytes_available) {
+			array_len *= sizeof (T);
+			if (array_len > bytes_available) {
 				in_bounds = false;
 			} else {
-				memcpy(array, buffer_ptr, array_nb);
-				buffer_ptr += array_nb;
-				bytes_available -= array_nb;
+				memcpy(array, buffer_ptr, array_len);
+				buffer_ptr += array_len;
+				bytes_available -= array_len;
 			}
 		}
 		return in_bounds;
@@ -271,8 +277,8 @@ public:
 	 */
 	template <typename T>
 	bool assign(T*& array, SizeType array_len) noexcept {
-		array_len *= sizeof (T);
 		if (in_bounds) {
+			array_len *= sizeof (T);
 			if (array_len > bytes_available) {
 				in_bounds = false;
 			} else {
@@ -328,9 +334,6 @@ protected:
 	}
 
 };
-
-template <typename SizeType>
-class ROBuffer;
 
 template <typename SizeType>
 class RWBuffer : public BaseBuffer<uint8_t, SizeType> {
@@ -397,13 +400,13 @@ public:
 	template <typename T>
 	bool write_memory(const T* array, SizeType array_len) noexcept {
 		if (Base::in_bounds) {
-			size_t array_nb = array_len * sizeof (T);
-			if (array_nb > Base::bytes_available) {
+			array_len *= sizeof (T);
+			if (array_len > Base::bytes_available) {
 				Base::in_bounds = false;
 			} else {
-				memcpy(Base::buffer_ptr, array, array_nb);
-				Base::buffer_ptr += array_nb;
-				Base::bytes_available -= array_nb;
+				memcpy(Base::buffer_ptr, array, array_len);
+				Base::buffer_ptr += array_len;
+				Base::bytes_available -= array_len;
 			}
 		}
 		return Base::in_bounds;
@@ -437,7 +440,7 @@ public:
 	Base(raw.buffer_ptr, raw.available(), raw.padding(), raw.size(), raw.bounds()) { }
 
 	template <typename T>
-	ROBuffer(T* buf, size_t buf_len) noexcept :
+	ROBuffer(T* buf, SizeType buf_len) noexcept :
 	Base(reinterpret_cast<const uint8_t*> (buf), buf_len * sizeof (T)) { }
 
 	ROBuffer region() const noexcept {

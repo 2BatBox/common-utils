@@ -262,7 +262,6 @@ class RawBuffersTest {
 			raw_input[i] = i;
 		}
 
-		// TODO: doesn't look good
 		RawBuffer buffer(raw_buffer, buf_size);
 		assert(buffer.size() == sizeof (RawType) * buf_size);
 		assert(buffer.bounds());
@@ -319,14 +318,6 @@ class RawBuffersTest {
 		assert(const_buffer2.bounds());
 	}
 	
-	static void print_stat() noexcept {
-		printf("sizeof(RawBuffer8)=%zu\n", sizeof(RawBuffer8));
-		printf("sizeof(RawBuffer16)=%zu\n", sizeof(RawBuffer16));
-		printf("sizeof(RawBuffer32)=%zu\n", sizeof(RawBuffer32));
-		printf("sizeof(RawBuffer64)=%zu\n", sizeof(RawBuffer64));
-		printf("sizeof(RawBuffer)=%zu\n", sizeof(RawBuffer));
-	}
-
 public:
 
 	static void test() {
@@ -338,7 +329,6 @@ public:
 		test_read_write_assign();
 		test_read_write_memory();
 		test_raii();
-		print_stat();
 	}
 
 };
