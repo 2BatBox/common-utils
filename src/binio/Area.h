@@ -1,5 +1,5 @@
-#ifndef BINIO_RAW_BUFFER_H
-#define BINIO_RAW_BUFFER_H
+#ifndef BINIO_AREA_H
+#define BINIO_AREA_H
 
 #include <cstdlib>
 #include <cstring>
@@ -7,7 +7,7 @@
 namespace binio {
 
 /**
- * The RawBuffer design.
+ * The binio::ReadableArea / binio::WritableArea design.
  * 
  *                 head               tail
  *                   |                 |   
@@ -25,7 +25,7 @@ namespace binio {
  * The head also can be moved backward with head_move_back().
  * The tail can be moved with tail_move() and tail_move_back().
  * 
- * RawBuffer has two state, 'In bounds' and 'Out of bounds'.
+ * Area has two state, 'In bounds' and 'Out of bounds'.
  * Any operation which tries to leave the bounds of the buffer
  * will set the buffer to 'Out of bounds' state.
  * For instance reading, writing, assigning more bytes than the available area has
@@ -37,44 +37,44 @@ namespace binio {
  **/
 
 template <typename SizeType>
-class ROBuffer;
+class ReadableAreaTemplate;
 
 template <typename SizeType>
-class RWBuffer;
+class WritableAreaTemplate;
 
 template <typename RawPtr, typename SizeType>
-class BaseBuffer {
+class BaseAreaTemplate {
 protected:
-	RawPtr* buffer_ptr;
+	RawPtr* ptr_head;
 	SizeType bytes_available;
 	SizeType bytes_padding;
 	SizeType bytes_size;
 	bool in_bounds;
 
-	BaseBuffer() noexcept :
-	buffer_ptr(nullptr),
+	BaseAreaTemplate() noexcept :
+	ptr_head(nullptr),
 	bytes_available(0),
 	bytes_padding(0),
 	bytes_size(0),
 	in_bounds(true) { }
 
-	BaseBuffer(RawPtr* buf, SizeType len) noexcept :
-	buffer_ptr(buf),
+	BaseAreaTemplate(RawPtr* buf, SizeType len) noexcept :
+	ptr_head(buf),
 	bytes_available(len),
 	bytes_padding(0),
 	bytes_size(len),
 	in_bounds(true) { }
 
-	BaseBuffer(RawPtr* buf, SizeType ava, SizeType pad, SizeType size, bool bounds) noexcept :
-	buffer_ptr(buf),
+	BaseAreaTemplate(RawPtr* buf, SizeType ava, SizeType pad, SizeType size, bool bounds) noexcept :
+	ptr_head(buf),
 	bytes_available(ava),
 	bytes_padding(pad),
 	bytes_size(size),
 	in_bounds(bounds) { }
 
-	BaseBuffer(const BaseBuffer&) noexcept = default;
+	BaseAreaTemplate(const BaseAreaTemplate&) noexcept = default;
 
-	BaseBuffer& operator =(const BaseBuffer&) noexcept = default;
+	BaseAreaTemplate& operator =(const BaseAreaTemplate&) noexcept = default;
 
 public:
 
@@ -127,8 +127,9 @@ public:
 	bool reset() noexcept {
 		if (in_bounds) {
 			SizeType off = offset();
-			buffer_ptr -= off;
-			bytes_available += off;
+			ptr_head -= off;
+			bytes_available += off + bytes_padding;
+			bytes_padding = 0;
 		}
 		return in_bounds;
 	}
@@ -155,7 +156,7 @@ public:
 			if (bytes > bytes_available) {
 				in_bounds = false;
 			} else {
-				buffer_ptr += bytes;
+				ptr_head += bytes;
 				bytes_available -= bytes;
 			}
 		}
@@ -172,7 +173,7 @@ public:
 			if (bytes > offset()) {
 				in_bounds = false;
 			} else {
-				buffer_ptr -= bytes;
+				ptr_head -= bytes;
 				bytes_available += bytes;
 			}
 		}
@@ -261,8 +262,8 @@ public:
 			if (array_len > bytes_available) {
 				in_bounds = false;
 			} else {
-				memcpy(array, buffer_ptr, array_len);
-				buffer_ptr += array_len;
+				memcpy(array, ptr_head, array_len);
+				ptr_head += array_len;
 				bytes_available -= array_len;
 			}
 		}
@@ -282,8 +283,8 @@ public:
 			if (array_len > bytes_available) {
 				in_bounds = false;
 			} else {
-				array = reinterpret_cast<T*> (buffer_ptr);
-				buffer_ptr += array_len;
+				array = reinterpret_cast<T*> (ptr_head);
+				ptr_head += array_len;
 				bytes_available -= array_len;
 			}
 		}
@@ -301,8 +302,8 @@ public:
 			if (sizeof (T) > bytes_available) {
 				in_bounds = false;
 			} else {
-				pointer = reinterpret_cast<T*> (buffer_ptr);
-				buffer_ptr += sizeof (T);
+				pointer = reinterpret_cast<T*> (ptr_head);
+				ptr_head += sizeof (T);
 				bytes_available -= sizeof (T);
 			}
 		}
@@ -322,8 +323,8 @@ protected:
 
 	template <typename T>
 	inline void read_no_bounds(T& value) noexcept {
-		value = *reinterpret_cast<const T*> (buffer_ptr);
-		buffer_ptr += sizeof (T);
+		value = *reinterpret_cast<const T*> (ptr_head);
+		ptr_head += sizeof (T);
 		bytes_available -= sizeof (T);
 	}
 
@@ -336,20 +337,20 @@ protected:
 };
 
 template <typename SizeType>
-class RWBuffer : public BaseBuffer<uint8_t, SizeType> {
-	using Base = BaseBuffer<uint8_t, SizeType>;
-	friend class ROBuffer<SizeType>;
+class WritableAreaTemplate : public BaseAreaTemplate<uint8_t, SizeType> {
+	using Base = BaseAreaTemplate<uint8_t, SizeType>;
+	friend class ReadableAreaTemplate<SizeType>;
 
 public:
 
-	RWBuffer() noexcept : Base() { }
+	WritableAreaTemplate() noexcept : Base() { }
 
 	template <typename T>
-	RWBuffer(T* buf, SizeType buf_len) noexcept :
-	Base(reinterpret_cast<uint8_t*> (buf), buf_len * sizeof (T)) { }
+	WritableAreaTemplate(T* buf, SizeType buf_len) noexcept :
+	Base(reinterpret_cast<uint8_t*> (buf), buf_len) { }
 
-	RWBuffer region() const noexcept {
-		RWBuffer result(*this);
+	WritableAreaTemplate region() const noexcept {
+		WritableAreaTemplate result(*this);
 		result.trim();
 		return result;
 	}
@@ -365,8 +366,8 @@ public:
 			if (sizeof (T) > Base::bytes_available) {
 				Base::in_bounds = false;
 			} else {
-				*reinterpret_cast<T*> (Base::buffer_ptr) = value;
-				Base::buffer_ptr += sizeof (T);
+				*reinterpret_cast<T*> (Base::ptr_head) = value;
+				Base::ptr_head += sizeof (T);
 				Base::bytes_available -= sizeof (T);
 			}
 		}
@@ -404,8 +405,8 @@ public:
 			if (array_len > Base::bytes_available) {
 				Base::in_bounds = false;
 			} else {
-				memcpy(Base::buffer_ptr, array, array_len);
-				Base::buffer_ptr += array_len;
+				memcpy(Base::ptr_head, array, array_len);
+				Base::ptr_head += array_len;
 				Base::bytes_available -= array_len;
 			}
 		}
@@ -416,8 +417,8 @@ protected:
 
 	template <typename T>
 	inline void write_no_bounds(const T& value) noexcept {
-		*reinterpret_cast<T*> (Base::buffer_ptr) = value;
-		Base::buffer_ptr += sizeof (T);
+		*reinterpret_cast<T*> (Base::ptr_head) = value;
+		Base::ptr_head += sizeof (T);
 		Base::bytes_available -= sizeof (T);
 	}
 
@@ -429,22 +430,22 @@ protected:
 };
 
 template <typename SizeType>
-class ROBuffer : public BaseBuffer<const uint8_t, SizeType> {
-	using Base = BaseBuffer<const uint8_t, SizeType>;
+class ReadableAreaTemplate : public BaseAreaTemplate<const uint8_t, SizeType> {
+	using Base = BaseAreaTemplate<const uint8_t, SizeType>;
 
 public:
 
-	ROBuffer() noexcept : Base() { }
+	ReadableAreaTemplate() noexcept : Base() { }
 
-	ROBuffer(const RWBuffer<SizeType>& raw) noexcept :
-	Base(raw.buffer_ptr, raw.available(), raw.padding(), raw.size(), raw.bounds()) { }
+	ReadableAreaTemplate(const WritableAreaTemplate<SizeType>& raw) noexcept :
+	Base(raw.ptr_head, raw.available(), raw.padding(), raw.size(), raw.bounds()) { }
 
 	template <typename T>
-	ROBuffer(T* buf, SizeType buf_len) noexcept :
-	Base(reinterpret_cast<const uint8_t*> (buf), buf_len * sizeof (T)) { }
+	ReadableAreaTemplate(T* buf, SizeType buf_len) noexcept :
+	Base(reinterpret_cast<const uint8_t*> (buf), buf_len) { }
 
-	ROBuffer region() const noexcept {
-		ROBuffer result(*this);
+	ReadableAreaTemplate region() const noexcept {
+		ReadableAreaTemplate result(*this);
 		result.trim();
 		return result;
 	}
@@ -454,21 +455,21 @@ public:
 /**
  * Public aliases;
  */
-using RawBuffer = RWBuffer<size_t>;
-using RawBufferConst = ROBuffer<size_t>;
+using ReadableArea = ReadableAreaTemplate<size_t>;
+using WritableArea = WritableAreaTemplate<size_t>;
 
-using RawBuffer8 = RWBuffer<uint8_t>;
-using RawBufferConst8 = ROBuffer<uint8_t>;
+using ReadableArea8 = ReadableAreaTemplate<uint8_t>;
+using WritableArea8 = WritableAreaTemplate<uint8_t>;
 
-using RawBuffer16 = RWBuffer<uint16_t>;
-using RawBufferConst16 = ROBuffer<uint16_t>;
+using ReadableArea16 = ReadableAreaTemplate<uint16_t>;
+using WritableArea16 = WritableAreaTemplate<uint16_t>;
 
-using RawBuffer32 = RWBuffer<uint32_t>;
-using RawBufferConst32 = ROBuffer<uint32_t>;
+using ReadableArea32 = ReadableAreaTemplate<uint32_t>;
+using WritableArea32 = WritableAreaTemplate<uint32_t>;
 
-using RawBuffer64 = RWBuffer<uint64_t>;
-using RawBufferConst64 = ROBuffer<uint64_t>;
+using ReadableArea64 = ReadableAreaTemplate<uint64_t>;
+using WritableArea64 = WritableAreaTemplate<uint64_t>;
 
 }; // namespace binio
 
-#endif /* BINIO_RAW_BUFFER_H */
+#endif /* BINIO_AREA_H */

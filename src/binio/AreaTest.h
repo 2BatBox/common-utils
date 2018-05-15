@@ -1,16 +1,16 @@
-#ifndef BINIO_RAW_BUFFER_TEST_H
-#define BINIO_RAW_BUFFER_TEST_H
+#ifndef BINIO_AREA_TEST_H
+#define BINIO_AREA_TEST_H
 
 #include <assert.h>
 #include <memory>
 #include <iostream>
 #include <cstdio>
 
-#include "RawBuffer.h"
+#include "Area.h"
 
 namespace binio {
 
-class RawBuffersTest {
+class AreaTest {
 
 	struct DataSet {
 		char c;
@@ -22,7 +22,7 @@ class RawBuffersTest {
 
 		DataSet(char c, short s, int i, long l) noexcept : c(c), s(s), i(i), l(l) { }
 
-		bool operator ==(const DataSet& ds) noexcept {
+		bool operator==(const DataSet& ds) noexcept {
 			return c == ds.c && s == ds.s && i == ds.i && l == ds.l;
 		}
 	};
@@ -30,7 +30,7 @@ class RawBuffersTest {
 	static void test_distances_head() noexcept {
 		unsigned raw_buffer_size = 8;
 		unsigned char raw_buffer[raw_buffer_size];
-		RawBufferConst buf(raw_buffer, raw_buffer_size);
+		ReadableArea buf(raw_buffer, raw_buffer_size);
 
 		assert(buf.reset());
 		assert(buf.bounds());
@@ -57,7 +57,7 @@ class RawBuffersTest {
 	static void test_distances_tail() noexcept {
 		unsigned raw_buffer_size = 8;
 		unsigned char raw_buffer[raw_buffer_size];
-		RawBufferConst buf(raw_buffer, raw_buffer_size);
+		ReadableArea buf(raw_buffer, raw_buffer_size);
 
 		assert(buf.reset());
 		assert(buf.bounds());
@@ -85,7 +85,7 @@ class RawBuffersTest {
 		using DataType = unsigned long long;
 		unsigned raw_buffer_size = 32;
 		DataType raw_buffer[raw_buffer_size];
-		RawBufferConst buf(raw_buffer, raw_buffer_size);
+		ReadableArea buf(raw_buffer, raw_buffer_size * sizeof(DataType));
 
 		DataType value0;
 		DataType value1;
@@ -118,7 +118,7 @@ class RawBuffersTest {
 		using DataType = unsigned long long;
 		unsigned raw_buffer_size = 32;
 		DataType raw_buffer[raw_buffer_size];
-		RawBuffer buf(raw_buffer, raw_buffer_size);
+		WritableArea buf(raw_buffer, raw_buffer_size * sizeof(DataType));
 
 		DataType value0;
 		DataType value1;
@@ -150,7 +150,7 @@ class RawBuffersTest {
 	static void test_distances_trim() noexcept {
 		unsigned raw_buffer_size = 8;
 		unsigned char raw_buffer[raw_buffer_size];
-		RawBufferConst buf(raw_buffer, raw_buffer_size);
+		ReadableArea buf(raw_buffer, raw_buffer_size);
 
 		assert(buf.reset());
 		assert(buf.bounds());
@@ -164,7 +164,7 @@ class RawBuffersTest {
 			assert(buf.trim());
 		}
 
-		buf = RawBufferConst(raw_buffer, raw_buffer_size);
+		buf = ReadableArea(raw_buffer, raw_buffer_size);
 		for (unsigned i = 0; i < raw_buffer_size; i++) {
 			assert(buf.offset() == 0);
 			assert(buf.available() == raw_buffer_size - i);
@@ -177,12 +177,35 @@ class RawBuffersTest {
 		assert(buf.bounds());
 	}
 
+	static void test_distances_reset() noexcept {
+		unsigned raw_buffer_size = 8;
+		unsigned char raw_buffer[raw_buffer_size];
+		ReadableArea buf(raw_buffer, raw_buffer_size);
+
+		assert(buf.offset() == 0);
+		assert(buf.available() == raw_buffer_size);
+		assert(buf.padding() == 0);
+
+		assert(buf.head_move(1));
+		assert(buf.tail_move_back(1));
+
+		assert(buf.offset() == 1);
+		assert(buf.available() == raw_buffer_size - 2);
+		assert(buf.padding() == 1);
+
+		assert(buf.reset());
+
+		assert(buf.offset() == 0);
+		assert(buf.available() == raw_buffer_size);
+		assert(buf.padding() == 0);
+	}
+
 	static void test_read_write(DataSet& set) noexcept {
 		DataSet copy;
 
 		unsigned raw_buffer_size = sizeof (DataSet) * 2;
 		char raw_buffer[raw_buffer_size];
-		RawBuffer buffer(raw_buffer, raw_buffer_size);
+		WritableArea buffer(raw_buffer, raw_buffer_size);
 
 		// writing
 		assert(buffer.bounds());
@@ -210,7 +233,7 @@ class RawBuffersTest {
 
 		unsigned raw_buffer_size = sizeof (DataSet) * 2;
 		char raw_buffer[raw_buffer_size];
-		RawBuffer buffer(raw_buffer, raw_buffer_size);
+		WritableArea buffer(raw_buffer, raw_buffer_size);
 
 		// writing
 		assert(buffer.bounds());
@@ -262,7 +285,7 @@ class RawBuffersTest {
 			raw_input[i] = i;
 		}
 
-		RawBuffer buffer(raw_buffer, buf_size);
+		WritableArea buffer(raw_buffer, buf_size * sizeof(RawType));
 		assert(buffer.size() == sizeof (RawType) * buf_size);
 		assert(buffer.bounds());
 		for (int i = 0; i < buf_size; i += 4) {
@@ -288,15 +311,15 @@ class RawBuffersTest {
 		unsigned raw_buffer_size = sizeof (DataSet) * 2;
 		unsigned char raw_buffer[raw_buffer_size];
 
-		RawBuffer buffer(raw_buffer, raw_buffer_size);
+		WritableArea buffer(raw_buffer, raw_buffer_size);
 		assert(buffer.write(set_first));
 		assert(buffer.bounds());
 
-		RawBuffer buffer2(buffer);
+		WritableArea buffer2(buffer);
 		assert(buffer.write(set_second));
 		assert(buffer.bounds());
 
-		RawBufferConst const_buffer(buffer2);
+		ReadableArea const_buffer(buffer2);
 		assert(const_buffer.reset());
 		assert(const_buffer.bounds());
 		assert(const_buffer.read(copy));
@@ -306,7 +329,7 @@ class RawBuffersTest {
 		assert(const_buffer.bounds());
 
 		copy = DataSet();
-		RawBufferConst const_buffer2;
+		ReadableArea const_buffer2;
 		const_buffer2 = buffer2;
 
 		assert(const_buffer2.reset());
@@ -317,7 +340,7 @@ class RawBuffersTest {
 		assert(copy == set_second);
 		assert(const_buffer2.bounds());
 	}
-	
+
 public:
 
 	static void test() {
@@ -326,6 +349,7 @@ public:
 		test_distances_read();
 		test_distances_write();
 		test_distances_trim();
+		test_distances_reset();
 		test_read_write_assign();
 		test_read_write_memory();
 		test_raii();
@@ -335,4 +359,4 @@ public:
 
 }; // namespace binio
 
-#endif /* BINIO_RAW_BUFFER_TEST_H */
+#endif /* BINIO_AREA_TEST_H */
