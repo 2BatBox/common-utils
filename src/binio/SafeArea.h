@@ -1,13 +1,22 @@
-#ifndef BINIO_AREA_H
-#define BINIO_AREA_H
+#ifndef BINIO_SAFE_AREA_H
+#define BINIO_SAFE_AREA_H
 
 #include <cstdlib>
 #include <cstring>
 
+#include "binio.h"
+
 namespace binio {
 
+template <typename SizeType>
+class BasicReadableArea;
+
+template <typename SizeType>
+class BasicWritableArea;
+
 /**
- * The binio::ReadableArea / binio::WritableArea design.
+ * The binio::BasicSafeArea design.
+ *  BasicSafeArea provides bounds checking.
  * 
  *                 head               tail
  *                   |                 |   
@@ -20,30 +29,29 @@ namespace binio {
  * A - available to read/write.
  * P - padding bytes, they're not available to read/write.
  * 
+ * The main data area is divided into three subareas called 'offset', 'available' and 'padding'.
+ * 
+ * There is no way to move 'begin' and 'end' points but 'head' and 'tail' can be moved.
+ * Moving 'head' and 'tail' points affect the subareas they start or end with.
+ * 
  * The head moves forward with following methods:
  * read(), read_memory(), write(), write_memory(), assign() and head_move().
  * The head also can be moved backward with head_move_back().
  * The tail can be moved with tail_move() and tail_move_back().
  * 
- * Area has two state, 'In bounds' and 'Out of bounds'.
- * Any operation which tries to leave the bounds of the buffer
- * will set the buffer to 'Out of bounds' state.
- * For instance reading, writing, assigning more bytes than the available area has
- * or moving the head of a buffer before 'begin' point will set the buffer to 'Out of bounds' state.
- * It's an one-way operation, that means there is no way to set the buffer back to 'In bounds' state.
- * All the non-const methods return state of the buffer they are called with.
- * All the read, write or assign operations work with the available area of the buffer only.
+ * An Area object might be in two states at the same time 'In bounds' and 'Out of bounds'.
+ * Any operation which tries to leave the bounds of the Area object
+ * sets the Area object to 'Out of bounds' state.
+ * For instance reading, writing, assigning more bytes than the available subarea has
+ * or moving the head of the area before 'begin' point sets the area to 'Out of bounds' state.
+ * It's an one-way operation, that means there is no way to set the Area object back to 'In bounds' state.
+ * All the non-const methods return state of the Area object they are called with.
+ * All the read, write or assign operations work with the 'available' subarea of the Area object only.
  * 
  **/
 
-template <typename SizeType>
-class ReadableAreaTemplate;
-
-template <typename SizeType>
-class WritableAreaTemplate;
-
 template <typename RawPtr, typename SizeType>
-class BaseAreaTemplate {
+class BasicSafeArea {
 protected:
 	RawPtr* ptr_head;
 	SizeType bytes_available;
@@ -51,30 +59,26 @@ protected:
 	SizeType bytes_size;
 	bool in_bounds;
 
-	BaseAreaTemplate() noexcept :
+	BasicSafeArea() noexcept :
 	ptr_head(nullptr),
 	bytes_available(0),
 	bytes_padding(0),
 	bytes_size(0),
-	in_bounds(true) { }
+	in_bounds(false) { }
 
-	BaseAreaTemplate(RawPtr* buf, SizeType len) noexcept :
+	BasicSafeArea(RawPtr* buf, SizeType len) noexcept :
 	ptr_head(buf),
 	bytes_available(len),
 	bytes_padding(0),
 	bytes_size(len),
-	in_bounds(true) { }
+	in_bounds(buf != nullptr) { }
 
-	BaseAreaTemplate(RawPtr* buf, SizeType ava, SizeType pad, SizeType size, bool bounds) noexcept :
+	BasicSafeArea(RawPtr* buf, SizeType ava, SizeType pad, SizeType size, bool bounds) noexcept :
 	ptr_head(buf),
 	bytes_available(ava),
 	bytes_padding(pad),
 	bytes_size(size),
-	in_bounds(bounds) { }
-
-	BaseAreaTemplate(const BaseAreaTemplate&) noexcept = default;
-
-	BaseAreaTemplate& operator =(const BaseAreaTemplate&) noexcept = default;
+	in_bounds(bounds && buf != nullptr) { }
 
 public:
 
@@ -114,6 +118,28 @@ public:
 	}
 
 	/**
+	 * @return offset subarea as a Range object.
+	 */
+	inline BasicByteRange<RawPtr> offset_range() const noexcept {
+		SizeType offset = offset();
+		return BasicByteRange<RawPtr>(ptr_head - offset, offset);
+	}
+
+	/**
+	 * @return available subarea as a Range object.
+	 */
+	inline BasicByteRange<RawPtr> available_range() const noexcept {
+		return BasicByteRange<RawPtr>(ptr_head, bytes_available);
+	}
+
+	/**
+	 * @return padding subarea as a Range object.
+	 */
+	inline BasicByteRange<RawPtr> padding_range() const noexcept {
+		return BasicByteRange<RawPtr>(ptr_head + available(), bytes_padding);
+	}
+
+	/**
 	 * @return true - if the buffer is its bounds.
 	 */
 	inline bool bounds() const noexcept {
@@ -129,18 +155,6 @@ public:
 			SizeType off = offset();
 			ptr_head -= off;
 			bytes_available += off + bytes_padding;
-			bytes_padding = 0;
-		}
-		return in_bounds;
-	}
-
-	/**
-	 * Shrink the buffer to the available area.
-	 * @return true - if the buffer is in its bounds.
-	 */
-	bool trim() noexcept {
-		if (in_bounds) {
-			bytes_size = bytes_available;
 			bytes_padding = 0;
 		}
 		return in_bounds;
@@ -283,7 +297,7 @@ public:
 			if (array_len > bytes_available) {
 				in_bounds = false;
 			} else {
-				array = reinterpret_cast<T*> (ptr_head);
+				array = reinterpret_cast<T*>(ptr_head);
 				ptr_head += array_len;
 				bytes_available -= array_len;
 			}
@@ -302,7 +316,7 @@ public:
 			if (sizeof (T) > bytes_available) {
 				in_bounds = false;
 			} else {
-				pointer = reinterpret_cast<T*> (ptr_head);
+				pointer = reinterpret_cast<T*>(ptr_head);
 				ptr_head += sizeof (T);
 				bytes_available -= sizeof (T);
 			}
@@ -323,7 +337,7 @@ protected:
 
 	template <typename T>
 	inline void read_no_bounds(T& value) noexcept {
-		value = *reinterpret_cast<const T*> (ptr_head);
+		value = *reinterpret_cast<const T*>(ptr_head);
 		ptr_head += sizeof (T);
 		bytes_available -= sizeof (T);
 	}
@@ -337,23 +351,20 @@ protected:
 };
 
 template <typename SizeType>
-class WritableAreaTemplate : public BaseAreaTemplate<uint8_t, SizeType> {
-	using Base = BaseAreaTemplate<uint8_t, SizeType>;
-	friend class ReadableAreaTemplate<SizeType>;
+class BasicWritableArea : public BasicSafeArea<uint8_t, SizeType> {
+	using Base = BasicSafeArea<uint8_t, SizeType>;
+	friend class BasicReadableArea<SizeType>;
 
 public:
 
-	WritableAreaTemplate() noexcept : Base() { }
+	BasicWritableArea() noexcept : Base() { }
+
+	BasicWritableArea(const WritableByteRange& range) noexcept :
+	Base(range.data(), range.bytes()) { }
 
 	template <typename T>
-	WritableAreaTemplate(T* buf, SizeType buf_len) noexcept :
-	Base(reinterpret_cast<uint8_t*> (buf), buf_len) { }
-
-	WritableAreaTemplate region() const noexcept {
-		WritableAreaTemplate result(*this);
-		result.trim();
-		return result;
-	}
+	BasicWritableArea(T* buf, SizeType bytes) noexcept :
+	Base(reinterpret_cast<uint8_t*>(buf), bytes) { }
 
 	/**
 	 * Write one variable to the buffer and set the head to a new position.
@@ -366,7 +377,7 @@ public:
 			if (sizeof (T) > Base::bytes_available) {
 				Base::in_bounds = false;
 			} else {
-				*reinterpret_cast<T*> (Base::ptr_head) = value;
+				*reinterpret_cast<T*>(Base::ptr_head) = value;
 				Base::ptr_head += sizeof (T);
 				Base::bytes_available -= sizeof (T);
 			}
@@ -417,7 +428,7 @@ protected:
 
 	template <typename T>
 	inline void write_no_bounds(const T& value) noexcept {
-		*reinterpret_cast<T*> (Base::ptr_head) = value;
+		*reinterpret_cast<T*>(Base::ptr_head) = value;
 		Base::ptr_head += sizeof (T);
 		Base::bytes_available -= sizeof (T);
 	}
@@ -430,46 +441,46 @@ protected:
 };
 
 template <typename SizeType>
-class ReadableAreaTemplate : public BaseAreaTemplate<const uint8_t, SizeType> {
-	using Base = BaseAreaTemplate<const uint8_t, SizeType>;
+class BasicReadableArea : public BasicSafeArea<const uint8_t, SizeType> {
+	using Base = BasicSafeArea<const uint8_t, SizeType>;
 
 public:
 
-	ReadableAreaTemplate() noexcept : Base() { }
+	BasicReadableArea() noexcept : Base() { }
 
-	ReadableAreaTemplate(const WritableAreaTemplate<SizeType>& raw) noexcept :
-	Base(raw.ptr_head, raw.available(), raw.padding(), raw.size(), raw.bounds()) { }
+	BasicReadableArea(const ReadableByteRange& range) noexcept :
+	Base(range.data(), range.bytes()) { }
+	
+	BasicReadableArea(const WritableByteRange& range) noexcept :
+	Base(range.data(), range.bytes()) { }
 
 	template <typename T>
-	ReadableAreaTemplate(T* buf, SizeType buf_len) noexcept :
-	Base(reinterpret_cast<const uint8_t*> (buf), buf_len) { }
+	BasicReadableArea(T* buf, SizeType bytes) noexcept :
+	Base(reinterpret_cast<const uint8_t*>(buf), bytes) { }
 
-	ReadableAreaTemplate region() const noexcept {
-		ReadableAreaTemplate result(*this);
-		result.trim();
-		return result;
-	}
+	BasicReadableArea(const BasicWritableArea<SizeType>& raw) noexcept :
+	Base(raw.ptr_head, raw.available(), raw.padding(), raw.size(), raw.bounds()) { }
 
 };
 
 /**
  * Public aliases;
  */
-using ReadableArea = ReadableAreaTemplate<size_t>;
-using WritableArea = WritableAreaTemplate<size_t>;
+using ReadableArea = BasicReadableArea<size_t>;
+using WritableArea = BasicWritableArea<size_t>;
 
-using ReadableArea8 = ReadableAreaTemplate<uint8_t>;
-using WritableArea8 = WritableAreaTemplate<uint8_t>;
+using ReadableArea8 = BasicReadableArea<uint8_t>;
+using WritableArea8 = BasicWritableArea<uint8_t>;
 
-using ReadableArea16 = ReadableAreaTemplate<uint16_t>;
-using WritableArea16 = WritableAreaTemplate<uint16_t>;
+using ReadableArea16 = BasicReadableArea<uint16_t>;
+using WritableArea16 = BasicWritableArea<uint16_t>;
 
-using ReadableArea32 = ReadableAreaTemplate<uint32_t>;
-using WritableArea32 = WritableAreaTemplate<uint32_t>;
+using ReadableArea32 = BasicReadableArea<uint32_t>;
+using WritableArea32 = BasicWritableArea<uint32_t>;
 
-using ReadableArea64 = ReadableAreaTemplate<uint64_t>;
-using WritableArea64 = WritableAreaTemplate<uint64_t>;
+using ReadableArea64 = BasicReadableArea<uint64_t>;
+using WritableArea64 = BasicWritableArea<uint64_t>;
 
 }; // namespace binio
 
-#endif /* BINIO_AREA_H */
+#endif /* BINIO_SAFE_AREA_H */

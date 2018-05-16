@@ -1,12 +1,12 @@
-#ifndef BINIO_AREA_TEST_H
-#define BINIO_AREA_TEST_H
+#ifndef BINIO_SAFE_AREA_TEST_H
+#define BINIO_SAFE_AREA_TEST_H
 
 #include <assert.h>
 #include <memory>
 #include <iostream>
 #include <cstdio>
 
-#include "Area.h"
+#include "SafeArea.h"
 
 namespace binio {
 
@@ -85,7 +85,7 @@ class AreaTest {
 		using DataType = unsigned long long;
 		unsigned raw_buffer_size = 32;
 		DataType raw_buffer[raw_buffer_size];
-		ReadableArea buf(raw_buffer, raw_buffer_size * sizeof(DataType));
+		ReadableArea buf(raw_buffer, raw_buffer_size * sizeof (DataType));
 
 		DataType value0;
 		DataType value1;
@@ -118,7 +118,7 @@ class AreaTest {
 		using DataType = unsigned long long;
 		unsigned raw_buffer_size = 32;
 		DataType raw_buffer[raw_buffer_size];
-		WritableArea buf(raw_buffer, raw_buffer_size * sizeof(DataType));
+		WritableArea buf(raw_buffer, raw_buffer_size * sizeof (DataType));
 
 		DataType value0;
 		DataType value1;
@@ -147,7 +147,7 @@ class AreaTest {
 		assert(buf.bounds());
 	}
 
-	static void test_distances_trim() noexcept {
+	static void test_distances_range() noexcept {
 		unsigned raw_buffer_size = 8;
 		unsigned char raw_buffer[raw_buffer_size];
 		ReadableArea buf(raw_buffer, raw_buffer_size);
@@ -161,7 +161,7 @@ class AreaTest {
 			assert(buf.padding() == 0);
 			assert(buf.size() == raw_buffer_size - i);
 			assert(buf.head_move(1));
-			assert(buf.trim());
+			buf = ReadableArea(buf.available_range());
 		}
 
 		buf = ReadableArea(raw_buffer, raw_buffer_size);
@@ -172,7 +172,7 @@ class AreaTest {
 			assert(buf.padding() == 0);
 			assert(buf.size() == raw_buffer_size - i);
 			assert(buf.tail_move_back(1));
-			assert(buf.trim());
+			buf = ReadableArea(buf.available_range());
 		}
 		assert(buf.bounds());
 	}
@@ -285,7 +285,7 @@ class AreaTest {
 			raw_input[i] = i;
 		}
 
-		WritableArea buffer(raw_buffer, buf_size * sizeof(RawType));
+		WritableArea buffer(raw_buffer, buf_size * sizeof (RawType));
 		assert(buffer.size() == sizeof (RawType) * buf_size);
 		assert(buffer.bounds());
 		for (int i = 0; i < buf_size; i += 4) {
@@ -341,6 +341,42 @@ class AreaTest {
 		assert(const_buffer2.bounds());
 	}
 
+	static void test_input_data() noexcept {
+		int i;
+		int* iptr = &i;
+		int* iptr_null = nullptr;
+
+		ReadableArea ra;
+		assert(not ra.bounds());
+
+		ra = ReadableArea(iptr_null, 1);
+		assert(not ra.bounds());
+
+		ra = ReadableArea(make_readable_byte_range(iptr_null, 1));
+		assert(not ra.bounds());
+
+		ra = ReadableArea(iptr, 1);
+		assert(ra.bounds());
+
+		ra = ReadableArea(make_readable_byte_range(iptr, 1));
+		assert(ra.bounds());
+
+		WritableArea wa;
+		assert(not wa.bounds());
+
+		wa = WritableArea(iptr_null, 1);
+		assert(not wa.bounds());
+
+		wa = WritableArea(make_writable_byte_range(iptr_null, 1));
+		assert(not wa.bounds());
+
+		wa = WritableArea(iptr, 1);
+		assert(wa.bounds());
+
+		wa = WritableArea(make_writable_byte_range(iptr, 1));
+		assert(wa.bounds());
+	}
+
 public:
 
 	static void test() {
@@ -348,15 +384,16 @@ public:
 		test_distances_tail();
 		test_distances_read();
 		test_distances_write();
-		test_distances_trim();
+		test_distances_range();
 		test_distances_reset();
 		test_read_write_assign();
 		test_read_write_memory();
 		test_raii();
+		test_input_data();
 	}
 
 };
 
 }; // namespace binio
 
-#endif /* BINIO_AREA_TEST_H */
+#endif /* BINIO_SAFE_AREA_TEST_H */
