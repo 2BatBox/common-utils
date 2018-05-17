@@ -15,9 +15,10 @@ public:
 	virtual bool begin() = 0;
 	virtual bool end() = 0;
 
-	virtual bool start_opt_short(char opt) = 0;
-	virtual bool start_opt_long(std::string opt) = 0;
-	virtual bool start_opt_long(std::string opt, std::string arg) = 0;
+	virtual bool start_short(char opt) = 0;
+	virtual bool start_short(char opt, std::string arg) = 0;
+	virtual bool start_long(std::string opt) = 0;
+	virtual bool start_long(std::string opt, std::string arg) = 0;
 	virtual bool start_argument(std::string arg) = 0;
 
 };
@@ -76,13 +77,13 @@ public:
 				return false;
 			}
 
-			if (not eh->start_opt_long(option, option_argument)) {
+			if (not eh->start_long(option, option_argument)) {
 				return false;
 			}
 
 			// with no argument
 		} else {
-			if (not (validate_long_option(argument) && eh->start_opt_long(argument))) {
+			if (not (validate_long_option(argument) && eh->start_long(argument))) {
 				return false;
 			}
 		}
@@ -90,16 +91,16 @@ public:
 	}
 
 	bool parser_short_option(std::string argument, EventHandler* eh) {
-		for (auto elem : argument) {
-			if (not (validate_short_option(elem) && eh->start_opt_short(elem))) {
-				return false;
-			}
+		if(argument.length() == 0 || not isalpha(argument.at(0))){
+			return false;
+		}
+		
+		if(argument.length() == 1){
+			return eh->start_short(argument.at(0));
+		} else {
+			return eh->start_short(argument.at(0), argument.substr(1));
 		}
 		return true;
-	}
-
-	bool validate_short_option(char opt) noexcept {
-		return isalpha(opt);
 	}
 
 	bool validate_long_option(std::string opt) noexcept {
@@ -111,7 +112,7 @@ public:
 
 		for (unsigned i = 1; i < opt.length(); i++) {
 			char ch = opt.c_str()[i];
-			if (not (isalnum(ch) || ch == '_' || ch == '-'))
+			if (not (isalpha(ch) || ch == '-'))
 				return false;
 		}
 		return true;

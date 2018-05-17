@@ -70,29 +70,29 @@ class List {
 	};
 
 	template<typename V>
-	struct RecursiveIterator {
+	struct ReverseIterator {
 		friend class List;
 
-		RecursiveIterator() noexcept: value(nullptr) { }
+		ReverseIterator() noexcept: value(nullptr) { }
 
-		RecursiveIterator(V* value) noexcept: value(value) { }
+		ReverseIterator(V* value) noexcept: value(value) { }
 
-		bool operator==(const RecursiveIterator& it) const noexcept {
+		bool operator==(const ReverseIterator& it) const noexcept {
 			return value == it.value;
 		}
 
-		bool operator!=(const RecursiveIterator& it) const noexcept {
+		bool operator!=(const ReverseIterator& it) const noexcept {
 			return value != it.value;
 		}
 
-		RecursiveIterator& operator++() noexcept {
+		ReverseIterator& operator++() noexcept {
 			value = value->il_prev;
 			return *this;
 		}
 
-		RecursiveIterator operator++(int)noexcept {
+		ReverseIterator operator++(int)noexcept {
 			value = value->il_prev;
-			return RecursiveIterator(value);
+			return ReverseIterator(value);
 		}
 
 		V& operator*() noexcept {
@@ -117,8 +117,8 @@ class List {
 
 	typedef Iterator<ListData_t> Iterator_t;
 	typedef Iterator<const ListData_t> ConstIterator_t;
-	typedef RecursiveIterator<ListData_t> RecursiveIterator_t;
-	typedef RecursiveIterator<const ListData_t> ConstRecursiveIterator_t;
+	typedef ReverseIterator<ListData_t> ReverseIterator_t;
+	typedef ReverseIterator<const ListData_t> ConstReverseIterator_t;
 
 public:
 
@@ -248,20 +248,20 @@ public:
 		return ConstIterator_t();
 	}
 
-	RecursiveIterator_t rbegin() noexcept {
-		return RecursiveIterator_t(tail);
+	ReverseIterator_t rbegin() noexcept {
+		return ReverseIterator_t(tail);
 	}
 
-	ConstRecursiveIterator_t crbegin() const noexcept {
-		return ConstRecursiveIterator_t(tail);
+	ConstReverseIterator_t crbegin() const noexcept {
+		return ConstReverseIterator_t(tail);
 	}
 
-	RecursiveIterator_t rend() noexcept {
-		return RecursiveIterator_t();
+	ReverseIterator_t rend() noexcept {
+		return ReverseIterator_t();
 	}
 
-	ConstRecursiveIterator_t crend() const noexcept {
-		return ConstRecursiveIterator_t();
+	ConstReverseIterator_t crend() const noexcept {
+		return ConstReverseIterator_t();
 	}
 
 private:

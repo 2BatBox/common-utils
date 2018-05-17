@@ -83,10 +83,10 @@ private:
 		V* value;
 	};
 
+public:
+	
 	typedef Iterator<MapData_t> Iterator_t;
 	typedef Iterator<const MapData_t> ConstIterator_t;
-
-public:
 
 	Map(size_t bucket_list_size) noexcept:
 	bucket_list(nullptr),

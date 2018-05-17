@@ -73,9 +73,6 @@ class LruCache {
 		V* value;
 	};
 
-	typedef Iterator<Value_t> Iterator_t;
-	typedef Iterator<const Value_t> ConstIterator_t;
-
 	const size_t cache_capacity;
 	LruCacheData_t* storage;
 	Map_t map;
@@ -84,6 +81,8 @@ class LruCache {
 	SA allocator;
 
 public:
+	typedef Iterator<Value_t> Iterator_t;
+	typedef Iterator<const Value_t> ConstIterator_t;
 
 	LruCache(unsigned capacity, float load_factor) noexcept
 	: cache_capacity(capacity),

@@ -11,6 +11,9 @@
 
 namespace cli {
 
+/**
+ * GNU Command Line Interface.
+ */
 class Cli : public cli::EventHandler {
 	const Config m_config;
 	std::vector<Option> m_options;
@@ -19,18 +22,12 @@ class Cli : public cli::EventHandler {
 
 public:
 
-	/**
-	 * @param binary - The name of the binary file.
-	 */
 	Cli() noexcept :
 	m_config(),
 	m_options(),
 	m_current_option(nullptr),
 	m_arguments() { }
 
-	/**
-	 * @param binary - The name of the binary file.
-	 */
 	Cli(Config config) noexcept :
 	m_config(config),
 	m_options(),
@@ -42,7 +39,7 @@ public:
 
 	/**
 	 * Appends an option to the parser.
-	 * Options with the same name cannot be appended.
+	 * Options with the same names cannot be appended.
 	 * @param opt
 	 * @return 
 	 */
@@ -61,7 +58,7 @@ public:
 			fprintf(stderr, "option '%c' has short name with an optional argument\n", opt.short_name());
 			throw std::logic_error("option has short name and optional argument");
 		}
-		
+
 		return *this;
 	}
 
@@ -152,37 +149,32 @@ private:
 	}
 
 	bool end() {
-		for (auto opt : m_options) {
-			if (opt.required() && (not opt.value().presented())) {
-				if (opt.has_short_name()) {
-					fprintf(stderr, "required option '%c' has not been presented\n", opt.short_name());
-				} else {
-					fprintf(stderr, "required option '%s' has not been presented\n", opt.long_name().c_str());
-				}
-				return false;
-			}
-
-			if (opt.value().presented() && opt.arg_type() == Option::MANDATORY && (not opt.value().has_argument())) {
-				if (opt.has_short_name()) {
-					fprintf(stderr, "argument of option '%c' has not been presented\n", opt.short_name());
-				} else {
-					fprintf(stderr, "argument of option '%s' has not been presented\n", opt.long_name().c_str());
-				}
-				return false;
-			}
-		}
+//		for (auto opt : m_options) {
+//			if (opt.required() && (not opt.value().presented())) {
+//				if (opt.has_short_name()) {
+//					fprintf(stderr, "required option '%c' has not been presented\n", opt.short_name());
+//				} else {
+//					fprintf(stderr, "required option '%s' has not been presented\n", opt.long_name().c_str());
+//				}
+//				return false;
+//			}
+//
+//			if (opt.value().presented() && opt.arg_type() == Option::MANDATORY && (not opt.value().has_argument())) {
+//				if (opt.has_short_name()) {
+//					fprintf(stderr, "argument of option '%c' has not been presented\n", opt.short_name());
+//				} else {
+//					fprintf(stderr, "argument of option '%s' has not been presented\n", opt.long_name().c_str());
+//				}
+//				return false;
+//			}
+//		}
 		return true;
 	}
 
-	bool start_opt_short(char name) {
+	bool start_short(char name) {
 		Option* opt = find_short_name(name);
 		if (opt == nullptr) {
 			fprintf(stderr, "unknown option '%c'\n", name);
-			return false;
-		}
-
-		if (opt->value().presented()) {
-			fprintf(stderr, "option '%c' has already been presented\n", name);
 			return false;
 		}
 
@@ -191,7 +183,24 @@ private:
 		return true;
 	}
 
-	bool start_opt_long(std::string name) {
+	bool start_short(char name, std::string arg) {
+		Option* opt = find_short_name(name);
+		if (opt == nullptr) {
+			fprintf(stderr, "unknown option '%c'\n", name);
+			return false;
+		}
+		
+		if(opt->arg_type() == Option::MANDATORY){
+			opt->value().set_presented();
+			opt->value().set_argument(arg);
+		} else {
+			fprintf(stderr, "option '%c' has no argument\n", name);
+			return false;
+		}
+		return true;
+	}
+
+	bool start_long(std::string name) {
 		Option* opt = find_long_name(name);
 		if (opt == nullptr) {
 			fprintf(stderr, "unknown option '%s'\n", name.c_str());
@@ -207,7 +216,7 @@ private:
 		return true;
 	}
 
-	bool start_opt_long(std::string name, std::string arg) {
+	bool start_long(std::string name, std::string arg) {
 		Option* opt = find_long_name(name);
 		if (opt == nullptr) {
 			fprintf(stderr, "unknown option '%s'\n", name.c_str());

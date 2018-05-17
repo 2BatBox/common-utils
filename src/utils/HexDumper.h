@@ -22,17 +22,6 @@ public:
         }
     }
 
-    static void hex_ascii(const void* mem, unsigned size, FILE* file = stdout)
-    {
-        fprintf(file, "\n");
-        const uint8_t* data = (const uint8_t*) mem;
-        unsigned offset = 0;
-        while (offset < size) {
-            fprintf(file, "0x%08x ", offset);
-            offset += print_hex_ascii(data + offset, size - offset, file);
-        }
-    }
-
     static void hex(const void* mem, unsigned size, FILE* file = stdout)
     {
         const uint8_t* data = (const uint8_t*) mem;
@@ -40,6 +29,16 @@ public:
             fprintf(file, "%02x", data[i]);
         }
         fprintf(file, "\n");
+    }
+
+    static void hex_ascii(const void* mem, unsigned size, FILE* file = stdout)
+    {
+        fprintf(file, "\n");
+        const uint8_t* data = (const uint8_t*) mem;
+        unsigned offset = 0;
+        while (offset < size) {
+            offset += print_hex_ascii(data + offset, size - offset, file);
+        }
     }
 
 private:
