@@ -1,22 +1,23 @@
-#ifndef BINIO_SAFE_AREA_H
-#define BINIO_SAFE_AREA_H
+#ifndef BINIO_BYTE_BUFFER_H
+#define BINIO_BYTE_BUFFER_H
 
 #include <cstdlib>
 #include <cstring>
 
-#include "binio.h"
+#include "ArrayPointer.h"
 
 namespace binio {
 
 template <typename SizeType>
-class BasicReadableArea;
+class BasicReadableBuffer;
 
 template <typename SizeType>
-class BasicWritableArea;
+class BasicWritableBuffer;
 
 /**
- * The binio::BasicSafeArea design.
- *  BasicSafeArea provides bounds checking.
+ * The binio::BasicByteBuffer design.
+ * BasicByteBuffer provides bounds checking.
+ * No memory management is provided.
  * 
  *                 head               tail
  *                   |                 |   
@@ -51,7 +52,7 @@ class BasicWritableArea;
  **/
 
 template <typename RawPtr, typename SizeType>
-class BasicSafeArea {
+class BasicByteBuffer {
 protected:
 	RawPtr* ptr_head;
 	SizeType bytes_available;
@@ -59,21 +60,21 @@ protected:
 	SizeType bytes_size;
 	bool in_bounds;
 
-	BasicSafeArea() noexcept :
+	BasicByteBuffer() noexcept :
 	ptr_head(nullptr),
 	bytes_available(0),
 	bytes_padding(0),
 	bytes_size(0),
 	in_bounds(false) { }
 
-	BasicSafeArea(RawPtr* buf, SizeType len) noexcept :
+	BasicByteBuffer(RawPtr* buf, SizeType len) noexcept :
 	ptr_head(buf),
 	bytes_available(len),
 	bytes_padding(0),
 	bytes_size(len),
 	in_bounds(buf != nullptr) { }
 
-	BasicSafeArea(RawPtr* buf, SizeType ava, SizeType pad, SizeType size, bool bounds) noexcept :
+	BasicByteBuffer(RawPtr* buf, SizeType ava, SizeType pad, SizeType size, bool bounds) noexcept :
 	ptr_head(buf),
 	bytes_available(ava),
 	bytes_padding(pad),
@@ -118,25 +119,61 @@ public:
 	}
 
 	/**
-	 * @return offset subarea as a Range object.
+	 * @return offset subarea as an ArrayPointer object.
 	 */
-	inline BasicByteRange<RawPtr> offset_range() const noexcept {
+	inline BasicByteArrayPtr<const RawPtr> offset_array() const noexcept {
 		SizeType offset = offset();
-		return BasicByteRange<RawPtr>(ptr_head - offset, offset);
+		return BasicByteArrayPtr<RawPtr>(ptr_head - offset, offset);
 	}
 
 	/**
-	 * @return available subarea as a Range object.
+	 * @return offset subarea as an ArrayPointer object.
 	 */
-	inline BasicByteRange<RawPtr> available_range() const noexcept {
-		return BasicByteRange<RawPtr>(ptr_head, bytes_available);
+	inline BasicByteArrayPtr<RawPtr> offset_array() noexcept {
+		SizeType offset = offset();
+		return BasicByteArrayPtr<RawPtr>(ptr_head - offset, offset);
 	}
 
 	/**
-	 * @return padding subarea as a Range object.
+	 * @return available subarea as an ArrayPointer object.
 	 */
-	inline BasicByteRange<RawPtr> padding_range() const noexcept {
-		return BasicByteRange<RawPtr>(ptr_head + available(), bytes_padding);
+	inline BasicByteArrayPtr<const RawPtr> available_array() const noexcept {
+		return BasicByteArrayPtr<RawPtr>(ptr_head, bytes_available);
+	}
+
+	/**
+	 * @return available subarea as an ArrayPointer object.
+	 */
+	inline BasicByteArrayPtr<RawPtr> available_array() noexcept {
+		return BasicByteArrayPtr<RawPtr>(ptr_head, bytes_available);
+	}
+
+	/**
+	 * @return padding subarea as an ArrayPointer object.
+	 */
+	inline BasicByteArrayPtr<const RawPtr> padding_array() const noexcept {
+		return BasicByteArrayPtr<RawPtr>(ptr_head + available(), bytes_padding);
+	}
+
+	/**
+	 * @return padding subarea as an ArrayPointer object.
+	 */
+	inline BasicByteArrayPtr<RawPtr> padding_array() noexcept {
+		return BasicByteArrayPtr<RawPtr>(ptr_head + available(), bytes_padding);
+	}
+
+	/**
+	 * @return whole buffer area as an ArrayPointer object.
+	 */
+	inline BasicByteArrayPtr<const RawPtr> buffer_array() const noexcept {
+		return BasicByteArrayPtr<RawPtr>(ptr_head - offset, bytes_size);
+	}
+
+	/**
+	 * @return whole buffer area as an ArrayPointer object.
+	 */
+	inline BasicByteArrayPtr<RawPtr> buffer_array() noexcept {
+		return BasicByteArrayPtr<RawPtr>(ptr_head - offset, bytes_size);
 	}
 
 	/**
@@ -351,20 +388,23 @@ protected:
 };
 
 template <typename SizeType>
-class BasicWritableArea : public BasicSafeArea<uint8_t, SizeType> {
-	using Base = BasicSafeArea<uint8_t, SizeType>;
-	friend class BasicReadableArea<SizeType>;
+class BasicWritableBuffer : public BasicByteBuffer<uint8_t, SizeType> {
+	using Base = BasicByteBuffer<uint8_t, SizeType>;
+	friend class BasicReadableBuffer<SizeType>;
 
 public:
 
-	BasicWritableArea() noexcept : Base() { }
+	BasicWritableBuffer() noexcept : Base() { }
 
-	BasicWritableArea(const WritableByteRange& range) noexcept :
-	Base(range.data(), range.bytes()) { }
+	BasicWritableBuffer(ByteArrayPtr range) noexcept :
+	Base(range.data(), range.length()) { }
 
 	template <typename T>
-	BasicWritableArea(T* buf, SizeType bytes) noexcept :
+	BasicWritableBuffer(T* buf, SizeType bytes) noexcept :
 	Base(reinterpret_cast<uint8_t*>(buf), bytes) { }
+
+	BasicWritableBuffer(const BasicWritableBuffer<SizeType>& raw) noexcept :
+	Base(raw.ptr_head, raw.available(), raw.padding(), raw.size(), raw.bounds()) { }
 
 	/**
 	 * Write one variable to the buffer and set the head to a new position.
@@ -441,24 +481,24 @@ protected:
 };
 
 template <typename SizeType>
-class BasicReadableArea : public BasicSafeArea<const uint8_t, SizeType> {
-	using Base = BasicSafeArea<const uint8_t, SizeType>;
+class BasicReadableBuffer : public BasicByteBuffer<const uint8_t, SizeType> {
+	using Base = BasicByteBuffer<const uint8_t, SizeType>;
 
 public:
 
-	BasicReadableArea() noexcept : Base() { }
+	BasicReadableBuffer() noexcept : Base() { }
 
-	BasicReadableArea(const ReadableByteRange& range) noexcept :
-	Base(range.data(), range.bytes()) { }
-	
-	BasicReadableArea(const WritableByteRange& range) noexcept :
-	Base(range.data(), range.bytes()) { }
+	BasicReadableBuffer(ByteArrayPtr range) noexcept :
+	Base(range.data(), range.length()) { }
+
+	BasicReadableBuffer(ByteArrayConstPtr range) noexcept :
+	Base(range.data(), range.length()) { }
 
 	template <typename T>
-	BasicReadableArea(T* buf, SizeType bytes) noexcept :
+	BasicReadableBuffer(T* buf, SizeType bytes) noexcept :
 	Base(reinterpret_cast<const uint8_t*>(buf), bytes) { }
 
-	BasicReadableArea(const BasicWritableArea<SizeType>& raw) noexcept :
+	BasicReadableBuffer(const BasicWritableBuffer<SizeType>& raw) noexcept :
 	Base(raw.ptr_head, raw.available(), raw.padding(), raw.size(), raw.bounds()) { }
 
 };
@@ -466,21 +506,21 @@ public:
 /**
  * Public aliases;
  */
-using ReadableArea = BasicReadableArea<size_t>;
-using WritableArea = BasicWritableArea<size_t>;
+using ReadableByteBuffer = BasicReadableBuffer<size_t>;
+using WritableByteBuffer = BasicWritableBuffer<size_t>;
 
-using ReadableArea8 = BasicReadableArea<uint8_t>;
-using WritableArea8 = BasicWritableArea<uint8_t>;
+using ReadableByteBuffer8 = BasicReadableBuffer<uint8_t>;
+using WritableByteBuffer8 = BasicWritableBuffer<uint8_t>;
 
-using ReadableArea16 = BasicReadableArea<uint16_t>;
-using WritableArea16 = BasicWritableArea<uint16_t>;
+using ReadableByteBuffer16 = BasicReadableBuffer<uint16_t>;
+using WritableByteBuffer16 = BasicWritableBuffer<uint16_t>;
 
-using ReadableArea32 = BasicReadableArea<uint32_t>;
-using WritableArea32 = BasicWritableArea<uint32_t>;
+using ReadableByteBuffer32 = BasicReadableBuffer<uint32_t>;
+using WritableByteBuffer32 = BasicWritableBuffer<uint32_t>;
 
-using ReadableArea64 = BasicReadableArea<uint64_t>;
-using WritableArea64 = BasicWritableArea<uint64_t>;
+using ReadableByteBuffer64 = BasicReadableBuffer<uint64_t>;
+using WritableByteBuffer64 = BasicWritableBuffer<uint64_t>;
 
 }; // namespace binio
 
-#endif /* BINIO_SAFE_AREA_H */
+#endif /* BINIO_BYTE_BUFFER_H */

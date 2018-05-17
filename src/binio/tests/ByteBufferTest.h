@@ -6,11 +6,11 @@
 #include <iostream>
 #include <cstdio>
 
-#include "SafeArea.h"
+#include "../ByteBuffer.h"
 
 namespace binio {
 
-class AreaTest {
+class ByteBufferTest {
 
 	struct DataSet {
 		char c;
@@ -30,7 +30,7 @@ class AreaTest {
 	static void test_distances_head() noexcept {
 		unsigned raw_buffer_size = 8;
 		unsigned char raw_buffer[raw_buffer_size];
-		ReadableArea buf(raw_buffer, raw_buffer_size);
+		ReadableByteBuffer buf(raw_buffer, raw_buffer_size);
 
 		assert(buf.reset());
 		assert(buf.bounds());
@@ -57,7 +57,7 @@ class AreaTest {
 	static void test_distances_tail() noexcept {
 		unsigned raw_buffer_size = 8;
 		unsigned char raw_buffer[raw_buffer_size];
-		ReadableArea buf(raw_buffer, raw_buffer_size);
+		ReadableByteBuffer buf(raw_buffer, raw_buffer_size);
 
 		assert(buf.reset());
 		assert(buf.bounds());
@@ -85,7 +85,7 @@ class AreaTest {
 		using DataType = unsigned long long;
 		unsigned raw_buffer_size = 32;
 		DataType raw_buffer[raw_buffer_size];
-		ReadableArea buf(raw_buffer, raw_buffer_size * sizeof (DataType));
+		ReadableByteBuffer buf(raw_buffer, raw_buffer_size * sizeof (DataType));
 
 		DataType value0;
 		DataType value1;
@@ -118,7 +118,7 @@ class AreaTest {
 		using DataType = unsigned long long;
 		unsigned raw_buffer_size = 32;
 		DataType raw_buffer[raw_buffer_size];
-		WritableArea buf(raw_buffer, raw_buffer_size * sizeof (DataType));
+		WritableByteBuffer buf(raw_buffer, raw_buffer_size * sizeof (DataType));
 
 		DataType value0;
 		DataType value1;
@@ -150,7 +150,7 @@ class AreaTest {
 	static void test_distances_range() noexcept {
 		unsigned raw_buffer_size = 8;
 		unsigned char raw_buffer[raw_buffer_size];
-		ReadableArea buf(raw_buffer, raw_buffer_size);
+		ReadableByteBuffer buf(raw_buffer, raw_buffer_size);
 
 		assert(buf.reset());
 		assert(buf.bounds());
@@ -161,10 +161,10 @@ class AreaTest {
 			assert(buf.padding() == 0);
 			assert(buf.size() == raw_buffer_size - i);
 			assert(buf.head_move(1));
-			buf = ReadableArea(buf.available_range());
+			buf = ReadableByteBuffer(buf.available_array());
 		}
 
-		buf = ReadableArea(raw_buffer, raw_buffer_size);
+		buf = ReadableByteBuffer(raw_buffer, raw_buffer_size);
 		for (unsigned i = 0; i < raw_buffer_size; i++) {
 			assert(buf.offset() == 0);
 			assert(buf.available() == raw_buffer_size - i);
@@ -172,7 +172,7 @@ class AreaTest {
 			assert(buf.padding() == 0);
 			assert(buf.size() == raw_buffer_size - i);
 			assert(buf.tail_move_back(1));
-			buf = ReadableArea(buf.available_range());
+			buf = ReadableByteBuffer(buf.available_array());
 		}
 		assert(buf.bounds());
 	}
@@ -180,7 +180,7 @@ class AreaTest {
 	static void test_distances_reset() noexcept {
 		unsigned raw_buffer_size = 8;
 		unsigned char raw_buffer[raw_buffer_size];
-		ReadableArea buf(raw_buffer, raw_buffer_size);
+		ReadableByteBuffer buf(raw_buffer, raw_buffer_size);
 
 		assert(buf.offset() == 0);
 		assert(buf.available() == raw_buffer_size);
@@ -205,7 +205,7 @@ class AreaTest {
 
 		unsigned raw_buffer_size = sizeof (DataSet) * 2;
 		char raw_buffer[raw_buffer_size];
-		WritableArea buffer(raw_buffer, raw_buffer_size);
+		WritableByteBuffer buffer(raw_buffer, raw_buffer_size);
 
 		// writing
 		assert(buffer.bounds());
@@ -233,7 +233,7 @@ class AreaTest {
 
 		unsigned raw_buffer_size = sizeof (DataSet) * 2;
 		char raw_buffer[raw_buffer_size];
-		WritableArea buffer(raw_buffer, raw_buffer_size);
+		WritableByteBuffer buffer(raw_buffer, raw_buffer_size);
 
 		// writing
 		assert(buffer.bounds());
@@ -285,7 +285,7 @@ class AreaTest {
 			raw_input[i] = i;
 		}
 
-		WritableArea buffer(raw_buffer, buf_size * sizeof (RawType));
+		WritableByteBuffer buffer(raw_buffer, buf_size * sizeof (RawType));
 		assert(buffer.size() == sizeof (RawType) * buf_size);
 		assert(buffer.bounds());
 		for (int i = 0; i < buf_size; i += 4) {
@@ -311,15 +311,15 @@ class AreaTest {
 		unsigned raw_buffer_size = sizeof (DataSet) * 2;
 		unsigned char raw_buffer[raw_buffer_size];
 
-		WritableArea buffer(raw_buffer, raw_buffer_size);
+		WritableByteBuffer buffer(raw_buffer, raw_buffer_size);
 		assert(buffer.write(set_first));
 		assert(buffer.bounds());
 
-		WritableArea buffer2(buffer);
+		WritableByteBuffer buffer2(buffer);
 		assert(buffer.write(set_second));
 		assert(buffer.bounds());
 
-		ReadableArea const_buffer(buffer2);
+		ReadableByteBuffer const_buffer(buffer2);
 		assert(const_buffer.reset());
 		assert(const_buffer.bounds());
 		assert(const_buffer.read(copy));
@@ -329,7 +329,7 @@ class AreaTest {
 		assert(const_buffer.bounds());
 
 		copy = DataSet();
-		ReadableArea const_buffer2;
+		ReadableByteBuffer const_buffer2;
 		const_buffer2 = buffer2;
 
 		assert(const_buffer2.reset());
@@ -346,34 +346,34 @@ class AreaTest {
 		int* iptr = &i;
 		int* iptr_null = nullptr;
 
-		ReadableArea ra;
+		ReadableByteBuffer ra;
 		assert(not ra.bounds());
 
-		ra = ReadableArea(iptr_null, 1);
+		ra = ReadableByteBuffer(iptr_null, 1);
 		assert(not ra.bounds());
 
-		ra = ReadableArea(make_readable_byte_range(iptr_null, 1));
+		ra = ReadableByteBuffer(make_const_byte_array(iptr_null, 1));
 		assert(not ra.bounds());
 
-		ra = ReadableArea(iptr, 1);
+		ra = ReadableByteBuffer(iptr, 1);
 		assert(ra.bounds());
 
-		ra = ReadableArea(make_readable_byte_range(iptr, 1));
+		ra = ReadableByteBuffer(make_const_byte_array(iptr, 1));
 		assert(ra.bounds());
 
-		WritableArea wa;
+		WritableByteBuffer wa;
 		assert(not wa.bounds());
 
-		wa = WritableArea(iptr_null, 1);
+		wa = WritableByteBuffer(iptr_null, 1);
 		assert(not wa.bounds());
 
-		wa = WritableArea(make_writable_byte_range(iptr_null, 1));
+		wa = WritableByteBuffer(make_byte_array(iptr_null, 1));
 		assert(not wa.bounds());
 
-		wa = WritableArea(iptr, 1);
+		wa = WritableByteBuffer(iptr, 1);
 		assert(wa.bounds());
 
-		wa = WritableArea(make_writable_byte_range(iptr, 1));
+		wa = WritableByteBuffer(make_byte_array(iptr, 1));
 		assert(wa.bounds());
 	}
 
