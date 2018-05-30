@@ -1,16 +1,19 @@
-#ifndef BINIO_SAFE_AREA_TEST_H
-#define BINIO_SAFE_AREA_TEST_H
+#ifndef BINIO_TESTS_TEST_PACKET_SAFE_H
+#define BINIO_TESTS_TEST_PACKET_SAFE_H
 
 #include <assert.h>
 #include <memory>
 #include <iostream>
 #include <cstdio>
 
-#include "../ByteBuffer.h"
+#include "../packet/PacketSafeReader.h"
+#include "../packet/PacketSafeWriter.h"
 
 namespace binio {
 
-class ByteBufferTest {
+class TestPacketSafe {
+	using Reader = PacketSafeReader<unsigned>;
+	using Writer = PacketSafeWriter<unsigned>;
 
 	struct DataSet {
 		char c;
@@ -29,10 +32,11 @@ class ByteBufferTest {
 
 	static void test_distances_head() noexcept {
 		unsigned raw_buffer_size = 8;
-		unsigned char raw_buffer[raw_buffer_size];
-		ReadableByteBuffer buf(raw_buffer, raw_buffer_size);
+		char raw_buffer[raw_buffer_size];
 
-		assert(buf.reset());
+		Reader buf(as_const_buffer(raw_buffer, raw_buffer_size));
+
+		assert(buf.available() == raw_buffer_size);
 		assert(buf.bounds());
 		for (unsigned i = 0; i < raw_buffer_size; i++) {
 			assert(buf.offset() == i);
@@ -56,10 +60,11 @@ class ByteBufferTest {
 
 	static void test_distances_tail() noexcept {
 		unsigned raw_buffer_size = 8;
-		unsigned char raw_buffer[raw_buffer_size];
-		ReadableByteBuffer buf(raw_buffer, raw_buffer_size);
+		char raw_buffer[raw_buffer_size];
 
-		assert(buf.reset());
+		Reader buf(as_const_buffer(raw_buffer, raw_buffer_size));
+
+		assert(buf.available() == raw_buffer_size);
 		assert(buf.bounds());
 		for (unsigned i = 0; i < raw_buffer_size; i++) {
 			assert(buf.offset() == 0);
@@ -85,12 +90,12 @@ class ByteBufferTest {
 		using DataType = unsigned long long;
 		unsigned raw_buffer_size = 32;
 		DataType raw_buffer[raw_buffer_size];
-		ReadableByteBuffer buf(raw_buffer, raw_buffer_size * sizeof (DataType));
+		Reader buf(as_const_buffer(raw_buffer, raw_buffer_size));
 
 		DataType value0;
 		DataType value1;
 
-		assert(buf.reset());
+		assert(buf.available() == raw_buffer_size * sizeof (DataType));
 		assert(buf.bounds());
 		for (unsigned i = 0; i < raw_buffer_size; i++) {
 			assert(buf.offset() == i * sizeof (DataType));
@@ -118,12 +123,13 @@ class ByteBufferTest {
 		using DataType = unsigned long long;
 		unsigned raw_buffer_size = 32;
 		DataType raw_buffer[raw_buffer_size];
-		WritableByteBuffer buf(raw_buffer, raw_buffer_size * sizeof (DataType));
+
+		Writer buf(as_buffer(raw_buffer, raw_buffer_size));
 
 		DataType value0;
 		DataType value1;
 
-		assert(buf.reset());
+		assert(buf.available() == raw_buffer_size * sizeof (DataType));
 		assert(buf.bounds());
 		for (unsigned i = 0; i < raw_buffer_size; i++) {
 			assert(buf.offset() == i * sizeof (DataType));
@@ -147,10 +153,10 @@ class ByteBufferTest {
 		assert(buf.bounds());
 	}
 
-	static void test_distances_range() noexcept {
+	static void test_distances_as_buffer() noexcept {
 		unsigned raw_buffer_size = 8;
-		unsigned char raw_buffer[raw_buffer_size];
-		ReadableByteBuffer buf(raw_buffer, raw_buffer_size);
+		char raw_buffer[raw_buffer_size];
+		Reader buf(as_const_buffer(raw_buffer, raw_buffer_size));
 
 		assert(buf.reset());
 		assert(buf.bounds());
@@ -161,10 +167,10 @@ class ByteBufferTest {
 			assert(buf.padding() == 0);
 			assert(buf.size() == raw_buffer_size - i);
 			assert(buf.head_move(1));
-			buf = ReadableByteBuffer(buf.available_array());
+			buf = Reader(buf.available_as_buffer());
 		}
 
-		buf = ReadableByteBuffer(raw_buffer, raw_buffer_size);
+		buf = Reader(as_const_buffer(raw_buffer, raw_buffer_size));
 		for (unsigned i = 0; i < raw_buffer_size; i++) {
 			assert(buf.offset() == 0);
 			assert(buf.available() == raw_buffer_size - i);
@@ -172,15 +178,15 @@ class ByteBufferTest {
 			assert(buf.padding() == 0);
 			assert(buf.size() == raw_buffer_size - i);
 			assert(buf.tail_move_back(1));
-			buf = ReadableByteBuffer(buf.available_array());
+			buf = Reader(buf.available_as_buffer());
 		}
 		assert(buf.bounds());
 	}
 
 	static void test_distances_reset() noexcept {
 		unsigned raw_buffer_size = 8;
-		unsigned char raw_buffer[raw_buffer_size];
-		ReadableByteBuffer buf(raw_buffer, raw_buffer_size);
+		char raw_buffer[raw_buffer_size];
+		Reader buf(as_const_buffer(raw_buffer, raw_buffer_size));
 
 		assert(buf.offset() == 0);
 		assert(buf.available() == raw_buffer_size);
@@ -203,25 +209,26 @@ class ByteBufferTest {
 	static void test_read_write(DataSet& set) noexcept {
 		DataSet copy;
 
-		unsigned raw_buffer_size = sizeof (DataSet) * 2;
-		char raw_buffer[raw_buffer_size];
-		WritableByteBuffer buffer(raw_buffer, raw_buffer_size);
+		unsigned raw_buffer_size = 2;
+		DataSet raw_buffer[raw_buffer_size];
+		Writer buf(as_buffer(raw_buffer, raw_buffer_size));
 
+		assert(buf.available() == sizeof (DataSet) * raw_buffer_size);
 		// writing
-		assert(buffer.bounds());
-		assert(buffer.write(set));
-		assert(buffer.write(set.c, set.s, set.i, set.l));
-		assert(buffer.bounds());
-		assert(buffer.reset());
+		assert(buf.bounds());
+		assert(buf.write(set));
+		assert(buf.write(set.c, set.s, set.i, set.l));
+		assert(buf.bounds());
+		assert(buf.reset());
 
 		// reading
-		assert(buffer.bounds());
-		assert(buffer.read(copy));
+		assert(buf.bounds());
+		assert(buf.read(copy));
 		assert(copy == set);
 
-		assert(buffer.read(copy.c, copy.s, copy.i, copy.l));
+		assert(buf.read(copy.c, copy.s, copy.i, copy.l));
 		assert(copy == set);
-		assert(buffer.bounds());
+		assert(buf.bounds());
 	}
 
 	static void test_assign(DataSet& set) noexcept {
@@ -233,25 +240,25 @@ class ByteBufferTest {
 
 		unsigned raw_buffer_size = sizeof (DataSet) * 2;
 		char raw_buffer[raw_buffer_size];
-		WritableByteBuffer buffer(raw_buffer, raw_buffer_size);
+		Writer buf(as_buffer(raw_buffer, raw_buffer_size));
 
 		// writing
-		assert(buffer.bounds());
-		assert(buffer.write(set));
-		assert(buffer.write(set.c, set.s, set.i, set.l));
-		assert(buffer.bounds());
-		assert(buffer.reset());
+		assert(buf.bounds());
+		assert(buf.write(set));
+		assert(buf.write(set.c, set.s, set.i, set.l));
+		assert(buf.bounds());
+		assert(buf.reset());
 
 		// reading
-		assert(buffer.bounds());
-		assert(buffer.assign(copy));
+		assert(buf.bounds());
+		assert(buf.assign(copy));
 		assert(*copy == set);
 
-		assert(buffer.assign(c_cptr));
-		assert(buffer.assign(s_cptr));
-		assert(buffer.assign(i_ptr));
-		assert(buffer.assign(l_ptr));
-		assert(buffer.bounds());
+		assert(buf.assign(c_cptr));
+		assert(buf.assign(s_cptr));
+		assert(buf.assign(i_ptr));
+		assert(buf.assign(l_ptr));
+		assert(buf.bounds());
 		assert(*c_cptr == set.c);
 		assert(*s_cptr == set.s);
 		assert(*i_ptr == set.i);
@@ -285,60 +292,21 @@ class ByteBufferTest {
 			raw_input[i] = i;
 		}
 
-		WritableByteBuffer buffer(raw_buffer, buf_size * sizeof (RawType));
-		assert(buffer.size() == sizeof (RawType) * buf_size);
-		assert(buffer.bounds());
+		Writer buf(as_buffer(raw_buffer, buf_size));
+		assert(buf.size() == sizeof (RawType) * buf_size);
+		assert(buf.bounds());
 		for (int i = 0; i < buf_size; i += 4) {
-			assert(buffer.write_memory(raw_input + i, 4));
+			assert(buf.write_memory(raw_input + i, 4));
 		}
-		assert(buffer.bounds());
-		assert(buffer.reset());
+		assert(buf.bounds());
+		assert(buf.reset());
 		for (int i = 0; i < buf_size; i += 4) {
-			assert(buffer.read_memory(raw_output + i, 4));
+			assert(buf.read_memory(raw_output + i, 4));
 		}
-		assert(buffer.bounds());
+		assert(buf.bounds());
 		for (int i = 0; i < buf_size; i++) {
 			assert(raw_input[i] == raw_output[i]);
 		}
-	}
-
-	static void test_raii() noexcept {
-		DataSet set_first(~0 - 1, ~0 - 2, ~0 - 3, ~0 - 4);
-		DataSet set_second(1, 2, 3, 4);
-
-		DataSet copy;
-
-		unsigned raw_buffer_size = sizeof (DataSet) * 2;
-		unsigned char raw_buffer[raw_buffer_size];
-
-		WritableByteBuffer buffer(raw_buffer, raw_buffer_size);
-		assert(buffer.write(set_first));
-		assert(buffer.bounds());
-
-		WritableByteBuffer buffer2(buffer);
-		assert(buffer.write(set_second));
-		assert(buffer.bounds());
-
-		ReadableByteBuffer const_buffer(buffer2);
-		assert(const_buffer.reset());
-		assert(const_buffer.bounds());
-		assert(const_buffer.read(copy));
-		assert(copy == set_first);
-		assert(const_buffer.read(copy));
-		assert(copy == set_second);
-		assert(const_buffer.bounds());
-
-		copy = DataSet();
-		ReadableByteBuffer const_buffer2;
-		const_buffer2 = buffer2;
-
-		assert(const_buffer2.reset());
-		assert(const_buffer2.bounds());
-		assert(const_buffer2.read(copy));
-		assert(copy == set_first);
-		assert(const_buffer2.read(copy));
-		assert(copy == set_second);
-		assert(const_buffer2.bounds());
 	}
 
 	static void test_input_data() noexcept {
@@ -346,34 +314,28 @@ class ByteBufferTest {
 		int* iptr = &i;
 		int* iptr_null = nullptr;
 
-		ReadableByteBuffer ra;
+		Reader ra = Reader(as_const_buffer(iptr_null, 1));
 		assert(not ra.bounds());
 
-		ra = ReadableByteBuffer(iptr_null, 1);
+		ra = Reader(as_const_buffer(iptr_null, 1));
 		assert(not ra.bounds());
 
-		ra = ReadableByteBuffer(make_const_byte_array(iptr_null, 1));
-		assert(not ra.bounds());
-
-		ra = ReadableByteBuffer(iptr, 1);
+		ra = Reader(as_const_buffer(iptr, 1));
 		assert(ra.bounds());
 
-		ra = ReadableByteBuffer(make_const_byte_array(iptr, 1));
+		ra = Reader(as_const_buffer(iptr, 1));
 		assert(ra.bounds());
 
-		WritableByteBuffer wa;
+		Writer wa = Writer(as_buffer(iptr_null, 1));
 		assert(not wa.bounds());
 
-		wa = WritableByteBuffer(iptr_null, 1);
+		wa = Writer(as_buffer(iptr_null, 1));
 		assert(not wa.bounds());
 
-		wa = WritableByteBuffer(make_byte_array(iptr_null, 1));
-		assert(not wa.bounds());
-
-		wa = WritableByteBuffer(iptr, 1);
+		wa = Writer(as_buffer(iptr, 1));
 		assert(wa.bounds());
 
-		wa = WritableByteBuffer(make_byte_array(iptr, 1));
+		wa = Writer(as_buffer(iptr, 1));
 		assert(wa.bounds());
 	}
 
@@ -384,11 +346,10 @@ public:
 		test_distances_tail();
 		test_distances_read();
 		test_distances_write();
-		test_distances_range();
+		test_distances_as_buffer();
 		test_distances_reset();
 		test_read_write_assign();
 		test_read_write_memory();
-		test_raii();
 		test_input_data();
 	}
 
@@ -396,4 +357,4 @@ public:
 
 }; // namespace binio
 
-#endif /* BINIO_SAFE_AREA_TEST_H */
+#endif /* BINIO_TESTS_TEST_PACKET_SAFE_H */
