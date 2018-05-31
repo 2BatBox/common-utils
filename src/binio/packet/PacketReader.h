@@ -13,7 +13,7 @@ namespace binio {
  * 
  * see BasicPacket.h for more details.
  * 
- * The head moves forward with following methods:
+ * The head can be moved forward with following methods:
  * read(), read_memory(), write(), write_memory(), assign() and head_move().
  * 
  * The head also can be moved backward with head_move_back().

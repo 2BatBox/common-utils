@@ -11,9 +11,6 @@
 
 namespace cli {
 
-/**
- * GNU Command Line Interface.
- */
 class Cli : public cli::EventHandler {
 	const Config m_config;
 	std::vector<Option> m_options;
@@ -43,24 +40,7 @@ public:
 	 * @param opt
 	 * @return 
 	 */
-	Cli& append(const Option& opt) throw (std::logic_error) {
-		if (find(opt) == nullptr) {
-			m_options.push_back(opt);
-		} else {
-			if (opt.has_short_name())
-				fprintf(stderr, "option '%c' has already been appended\n", opt.short_name());
-			else
-				fprintf(stderr, "option '%s' has already been appended\n", opt.long_name().c_str());
-			throw std::logic_error("option has already been appended");
-		}
 
-		if (opt.has_short_name() && opt.arg_type() == Option::OPTIONAL) {
-			fprintf(stderr, "option '%c' has short name with an optional argument\n", opt.short_name());
-			throw std::logic_error("option has short name and optional argument");
-		}
-
-		return *this;
-	}
 
 	void print_options(FILE* out) const noexcept {
 		Formatter formatter(m_config);
@@ -109,33 +89,6 @@ public:
 	}
 
 private:
-
-	Option* find(const Option& opt) noexcept {
-		Option* result = nullptr;
-		if (opt.has_short_name()) {
-			result = find_short_name(opt.short_name());
-			if (not result && opt.has_long_name()) {
-				result = find_long_name(opt.long_name());
-			}
-		}
-		return result;
-	}
-
-	Option* find_short_name(char short_name) noexcept {
-		for (unsigned i = 0; i < m_options.size(); i++) {
-			if (m_options[i].has_short_name() && m_options[i].short_name() == short_name)
-				return &m_options[i];
-		}
-		return nullptr;
-	}
-
-	Option* find_long_name(const std::string& long_name) noexcept {
-		for (unsigned i = 0; i < m_options.size(); i++) {
-			if (m_options[i].has_long_name() && m_options[i].long_name() == long_name)
-				return &m_options[i];
-		}
-		return nullptr;
-	}
 
 	// parser events
 

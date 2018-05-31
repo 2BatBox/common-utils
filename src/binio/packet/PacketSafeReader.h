@@ -13,19 +13,21 @@ namespace binio {
  * 
  * see BasicPacket.h for more details.
  * 
- * The head moves forward with following methods:
+ * The head can be moved forward with following methods:
  * read(), read_memory(), write(), write_memory(), assign() and head_move().
  * 
  * The head also can be moved backward with head_move_back().
  * The tail can be moved with tail_move() and tail_move_back().
  * 
- * An Area object might be in two states at the same time 'In bounds' and 'Out of bounds'.
- * Any operation which tries to leave the bounds of the Area object
- * sets the Area object to 'Out of bounds' state.
+ * A PacketSafeReader/Writer object might be in 'In bounds' or 'Out of bounds' state.
+ * 'In bounds' says that there weren't any tries to leave bounds of the object.
+ * Any operation which tries to leave the bounds of the PacketSafeReader/Writer object
+ * sets the object to 'Out of bounds' state.
  * For instance reading, writing, assigning more bytes than the available subarea has
- * or moving the head of the area before 'begin' point sets the area to 'Out of bounds' state.
- * It's an one-way operation, that means there is no way to set the Area object back to 'In bounds' state.
- * All the non-const methods return state of the Area object they are called with.
+ * or moving the head of before 'begin' point sets the object to 'Out of bounds' state.
+ * It's an one-way operation, that means there is no way to set the object
+ * from 'Out of bounds' back to 'In bounds' state.
+ * All the non-const methods return a state of the object they are called with.
  * All the read, write or assign operations work with the 'available' subarea of the Area object only.
  * 
  **/

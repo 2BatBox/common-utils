@@ -10,7 +10,7 @@ public:
 	const std::string long_arg_start;
 	const std::string terminator;
 	
-	const unsigned left_offset;
+	const unsigned name_offset;
 	const unsigned description_offset;
 
 	Config(
@@ -18,14 +18,14 @@ public:
 	std::string long_prefix = "--",
 	std::string long_arg_start = "=",
 	std::string terminator = "--",
-	unsigned left_offset = 2,
-	unsigned description_offset = 4
+	unsigned left_offset = 4,
+	unsigned description_offset = 12
 		) noexcept :
 	short_prefix(short_prefix),
 	long_prefix(long_prefix),
 	long_arg_start(long_arg_start),
 	terminator(terminator),
-	left_offset(left_offset),
+	name_offset(left_offset),
 	description_offset(description_offset)
 	{ }
 

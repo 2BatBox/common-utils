@@ -18,9 +18,9 @@ namespace binio {
  *   | <-------------------- size -------------------> |
  * begin                                              end
  * 
- * R - already read.
- * A - available to read.
- * P - padding bytes, they're not available to read.
+ * R - already read/write.
+ * A - available to read/write.
+ * P - padding bytes, they're not available to read/write.
  * 
  * The main data area is divided into three subareas called 'offset', 'available' and 'padding'.
  * 
