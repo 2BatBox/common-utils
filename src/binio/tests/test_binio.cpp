@@ -7,7 +7,7 @@
 
 using namespace binio;
 
-int main(int, char**) {
+int main_binio(int, char**) {
 
 	TestByteBuffer byte_buffer;
 	byte_buffer.test();
