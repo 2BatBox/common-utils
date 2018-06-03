@@ -3,6 +3,14 @@
 
 #include <memory>
 
+// gcc 4.8.2's -Wnon-virtual-dtor is broken and turned on by -Weffc++
+#if __GNUC__ < 3 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#pragma GCC diagnostic ignored "-Weffc++"
+#define GCC_DIAG_POP_NEEDED
+#endif
+
 namespace intrusive {
 
 template <typename K, typename V>
@@ -11,10 +19,7 @@ struct MapHook {
 	K im_key;
 	bool im_linked;
 
-	MapHook() noexcept: im_next(nullptr), im_key(), im_linked(false) { }
-	MapHook(const MapHook&) noexcept = default;
-	MapHook& operator=(const MapHook&)noexcept = default;
-	virtual ~MapHook() noexcept = default;
+	MapHook() noexcept : im_next(nullptr), im_key(), im_linked(false) { }
 };
 
 template <typename MapData_t>
@@ -22,13 +27,13 @@ struct MapBucket {
 	MapData_t* head;
 	size_t size;
 
-	MapBucket() noexcept: head(nullptr), size(0) { }
+	MapBucket() noexcept : head(nullptr), size(0) { }
 };
 
-template <typename K, typename MapData_t, typename H = std::hash<K>, typename A = std::allocator<MapBucket<MapData_t> > >
+template <typename K, typename MapNode, typename H = std::hash<K>, typename A = std::allocator<MapBucket<MapNode> > >
 class Map {
 public:
-	typedef MapBucket<MapData_t> Bucket_t;
+	typedef MapBucket<MapNode> Bucket_t;
 
 private:
 	Bucket_t * bucket_list;
@@ -37,58 +42,63 @@ private:
 	H hasher;
 	A allocator;
 
-	template<typename V>
+	template<typename N>
 	struct Iterator {
 		friend class Map;
 
-		Iterator() noexcept: value(nullptr) { }
+		Iterator() noexcept : node_ptr(nullptr), bucket_index(bucket_index) { }
 
-		Iterator(V* value) noexcept: value(value) { }
+		Iterator(N* node, size_t index) noexcept : node_ptr(node), bucket_index(index) { }
 
 		bool operator==(const Iterator& it) const noexcept {
-			return value == it.value;
+			return node_ptr == it.node_ptr;
 		}
 
 		bool operator!=(const Iterator& it) const noexcept {
-			return value != it.value;
+			return node_ptr != it.node_ptr;
 		}
 
 		Iterator& operator++() noexcept {
-			value = value->im_next;
+			node_ptr = node_ptr->im_next;
 			return *this;
 		}
 
 		Iterator operator++(int)noexcept {
-			value = value->im_next;
-			return Iterator(value);
+			node_ptr = node_ptr->im_next;
+			return Iterator(node_ptr);
 		}
 
-		V& operator*() noexcept {
-			return *value;
+		const N& operator*() const noexcept {
+			return *node_ptr;
 		}
 
-		V* operator->() noexcept {
-			return value;
+		N& operator*() noexcept {
+			return *node_ptr;
 		}
 
-		const V& operator*() const noexcept {
-			return *value;
+		const N* operator->() const noexcept {
+			return node_ptr;
 		}
 
-		const V* operator->() const noexcept {
-			return value;
+		N* operator->() noexcept {
+			return node_ptr;
+		}
+
+		size_t index() const noexcept {
+			return bucket_index;
 		}
 
 	private:
-		V* value;
+		N* node_ptr;
+		size_t bucket_index;
 	};
 
-public:
-	
-	typedef Iterator<MapData_t> Iterator_t;
-	typedef Iterator<const MapData_t> ConstIterator_t;
+	using Iterator_t = Iterator<MapNode>;
+	using ConstIterator_t = Iterator<const MapNode>;
 
-	Map(size_t bucket_list_size) noexcept:
+public:
+
+	Map(size_t bucket_list_size) noexcept :
 	bucket_list(nullptr),
 	bucket_list_size(bucket_list_size),
 	elements(0),
@@ -98,7 +108,7 @@ public:
 	Map(const Map&) = delete;
 	Map& operator=(const Map&) = delete;
 
-	Map(Map&& rv) noexcept:
+	Map(Map&& rv) noexcept :
 	bucket_list(rv.bucket_list),
 	bucket_list_size(rv.bucket_list_size),
 	elements(rv.elements),
@@ -138,145 +148,12 @@ public:
 				allocator.construct(bucket_list + i, empty);
 			}
 		}
-
 		return bucket_list != nullptr;
 	}
 
-	Iterator_t put(const K& key, MapData_t& value) noexcept {
-		MapData_t* result = nullptr;
-		if (sanity_check(value)) {
-			size_t index = hasher(key) % bucket_list_size;
-			result = find(bucket_list[index], key);
-			if (result == nullptr) 
-				link_front(bucket_list[index], key, value);
-		}
-		return Iterator_t(result);
-	}
-
-	Iterator_t find(const K& key) noexcept {
-		size_t index = hasher(key) % bucket_list_size;
-		return Iterator_t(find(bucket_list[index], key));
-	}
-
-	ConstIterator_t find(const K& key) const noexcept {
-		size_t index = hasher(key) % bucket_list_size;
-		return ConstIterator_t(find(bucket_list[index], key));
-	}
-
-	Iterator_t remove(const K& key) noexcept {
-		size_t index = hasher(key) % bucket_list_size;
-		Bucket_t& bucket = bucket_list[index];
-		MapData_t* prev = nullptr;
-		MapData_t* result = find(bucket, key, prev);
-		if (result) {
-			if (result == bucket.head)
-				unlink_front(bucket);
-			else
-				unlink_next(bucket, *prev);
-		}
-		return Iterator_t(result);
-	}
-
-	void reset() noexcept {
-		for (size_t i = 0; i < bucket_list_size; i++) {
-			while (bucket_list[i].head)
-				unlink_front(bucket_list[i]);
-		}
-	}
-
-	size_t size() const noexcept {
-		return elements;
-	}
-
-	size_t buckets() const noexcept {
-		return bucket_list_size;
-	}
-
-	Iterator_t begin(size_t bucket) noexcept {
-		return Iterator_t(bucket_list[bucket].head);
-	}
-
-	ConstIterator_t cbegin(size_t bucket) const noexcept {
-		return ConstIterator_t(bucket_list[bucket].head);
-	}
-
-	Iterator_t end() noexcept {
-		return Iterator_t();
-	}
-
-	ConstIterator_t cend() const noexcept {
-		return ConstIterator_t();
-	}
-
-private:
-
-	inline static bool sanity_check(const MapData_t& value) noexcept {
-		return (not value.im_linked);
-	}
-
-	inline void link_front(Bucket_t& bucket, const K& key, MapData_t& value) noexcept {
-		value.im_next = bucket.head;
-		value.im_linked = true;
-		value.im_key = key;
-		bucket.head = &value;
-		bucket.size++;
-		elements++;
-	}
-
-	inline void unlink_front(Bucket_t& bucket) noexcept {
-		MapData_t* tmp_value = bucket.head;
-		bucket.head = bucket.head->im_next;
-		tmp_value->im_next = nullptr;
-		tmp_value->im_linked = false;
-		bucket.size--;
-		elements--;
-	}
-
-	inline void unlink_next(Bucket_t& bucket, MapData_t& value) noexcept {
-		MapData_t* tmp_value = value.im_next;
-		value.im_next = value.im_next->im_next;
-		tmp_value->im_next = nullptr;
-		tmp_value->im_linked = false;
-		bucket.size--;
-		elements--;
-	}
-
-	inline MapData_t* find(Bucket_t& bucket, const K& key) noexcept {
-		MapData_t* cur = bucket.head;
-		while (cur) {
-			if (cur->im_key == key)
-				break;
-			cur = cur->im_next;
-		}
-		return cur;
-	}
-
-	inline const MapData_t* find(Bucket_t& bucket, const K& key) const noexcept {
-		MapData_t* cur = bucket.head;
-		while (cur) {
-			if (cur->im_key == key)
-				break;
-			cur = cur->im_next;
-		}
-		return cur;
-	}
-
-	inline MapData_t* find(Bucket_t& bucket, const K& key, MapData_t*& prev) noexcept {
-		MapData_t* cur = bucket.head;
-		while (cur) {
-			if (cur->im_key == key)
-				break;
-			prev = cur;
-			cur = cur->im_next;
-		}
-		return cur;
-	}
-
-private:
-
 	void destroy() noexcept {
 		if (bucket_list) {
-			reset();
+			clear();
 			for (size_t i = 0; i < bucket_list_size; i++) {
 				allocator.destroy(bucket_list + i);
 			}
@@ -287,9 +164,136 @@ private:
 		elements = 0;
 	}
 
+	Iterator_t put(const K& key, MapNode& value) noexcept {
+		MapNode* result = nullptr;
+		size_t index = 0;
+		if (sanity_check(value)) {
+			index = hasher(key) % bucket_list_size;
+			result = find(bucket_list[index], key);
+			if (result == nullptr){
+				link_front(bucket_list[index], key, value);
+				result = &value;
+			}
+		}
+		return Iterator_t(result, index);
+	}
+
+	ConstIterator_t find(const K& key) const noexcept {
+		size_t index = hasher(key) % bucket_list_size;
+		return ConstIterator_t(find(bucket_list[index], key), index);
+	}
+
+	Iterator_t find(const K& key) noexcept {
+		size_t index = hasher(key) % bucket_list_size;
+		return Iterator_t(find(bucket_list[index], key), index);
+	}
+
+	bool remove(Iterator_t it) noexcept {
+		if (it->im_linked) {
+			MapNode& node = *it;
+			size_t index = it.index();
+			Bucket_t& bucket = bucket_list[index];
+			if (&node == bucket.head)
+				unlink_front(bucket);
+			else
+				unlink_next(bucket, node);
+			return true;
+		}
+		return false;
+	}
+
+	void clear() noexcept {
+		for (size_t i = 0; i < bucket_list_size; i++) {
+			while (bucket_list[i].head)
+				unlink_front(bucket_list[i]);
+		}
+	}
+
+	inline size_t size() const noexcept {
+		return elements;
+	}
+
+	inline size_t buckets() const noexcept {
+		return bucket_list_size;
+	}
+
+	inline Iterator_t begin(size_t bucket) noexcept {
+		return Iterator_t(bucket_list[bucket].head, bucket);
+	}
+
+	inline ConstIterator_t cbegin(size_t bucket) const noexcept {
+		return ConstIterator_t(bucket_list[bucket].head, bucket);
+	}
+
+	inline Iterator_t end() noexcept {
+		return Iterator_t();
+	}
+
+	inline ConstIterator_t cend() const noexcept {
+		return ConstIterator_t();
+	}
+
+private:
+
+	inline static bool sanity_check(const MapNode& node) noexcept {
+		return (not node.im_linked);
+	}
+
+	inline void link_front(Bucket_t& bucket, const K& key, MapNode& node) noexcept {
+		node.im_next = bucket.head;
+		node.im_linked = true;
+		node.im_key = key;
+		bucket.head = &node;
+		bucket.size++;
+		elements++;
+	}
+
+	inline void unlink_front(Bucket_t& bucket) noexcept {
+		MapNode* tmp_value = bucket.head;
+		bucket.head = bucket.head->im_next;
+		tmp_value->im_next = nullptr;
+		tmp_value->im_linked = false;
+		bucket.size--;
+		elements--;
+	}
+
+	inline void unlink_next(Bucket_t& bucket, MapNode& node) noexcept {
+		MapNode* tmp_value = node.im_next;
+		node.im_next = node.im_next->im_next;
+		tmp_value->im_next = nullptr;
+		tmp_value->im_linked = false;
+		bucket.size--;
+		elements--;
+	}
+
+	inline MapNode* find(Bucket_t& bucket, const K& key) noexcept {
+		MapNode* cur = bucket.head;
+		while (cur) {
+			if (cur->im_key == key)
+				break;
+			cur = cur->im_next;
+		}
+		return cur;
+	}
+
+	inline const MapNode* find(Bucket_t& bucket, const K& key) const noexcept {
+		MapNode* cur = bucket.head;
+		while (cur) {
+			if (cur->im_key == key)
+				break;
+			cur = cur->im_next;
+		}
+		return cur;
+	}
+
 };
 
 }; // namespace intrusive
+
+#if defined(GCC_DIAG_POP_NEEDED)
+#pragma GCC diagnostic pop
+#undef GCC_DIAG_POP_NEEDED
+#endif
 
 #endif /* INTRUSIVE_MAP_H */
 

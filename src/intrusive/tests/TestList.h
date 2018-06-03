@@ -1,83 +1,86 @@
-#ifndef INTRUSIVE_LIST_TEST_H
-#define INTRUSIVE_LIST_TEST_H
+#ifndef INTRUSIVE_TESTS_TEST_LIST_H
+#define INTRUSIVE_TESTS_TEST_LIST_H
 
-#include "List.h"
+#include "../List.h"
 
 #include <assert.h>
 #include <cstdio>
 #include <cstddef>
 
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#pragma GCC diagnostic ignored "-Weffc++"
+
 namespace intrusive {
 
-class ListTest {
+class TestList {
 
 	template <typename V>
-	struct ListData: public ListHook<ListData<V> > {
+	struct ListNode : public ListHook<ListNode<V> > {
 		V value;
 
-		ListData(): value() { }
+		ListNode() : value() { }
 
-		ListData(V v): value(v) { }
+		ListNode(V v) : value(v) { }
 
-		bool operator==(const ListData& data) const {
+		bool operator==(const ListNode& data) const {
 			return value == data.value;
 		}
-		
-		~ListData() = default;
 	};
 
 	template<typename T>
 	struct StructValue {
 		T value;
 
-		StructValue(): value() { }
+		StructValue() : value() { }
 
-		StructValue(unsigned int x): value(x) { }
+		StructValue(unsigned int x) : value(x) { }
 
 		bool operator==(const StructValue& st_val) const {
 			return value == st_val.value;
 		}
 	};
 
-	typedef unsigned Key_t;
-	typedef StructValue<unsigned> Value_t;
-	typedef ListData<Value_t> ListData_t;
-	typedef List<ListData_t> List_t;
+	using Key_t = unsigned;
+	using Value_t = StructValue<unsigned>;
+	using ListNode_t = ListNode<Value_t>;
+	using List_t = List<ListNode_t>;
 
 	List_t list;
 	const unsigned storage_size;
-	ListData_t* storage;
+	ListNode_t* storage;
 
 public:
 
-	ListTest(unsigned storage_size): list(), storage_size(storage_size), storage(new ListData_t[storage_size]) {
+	TestList(unsigned storage_size) : list(), storage_size(storage_size), storage(new ListNode_t[storage_size]) {
 		for (unsigned i = 0; i < storage_size; i++) {
 			storage[i].value = Value_t(i);
 		}
 	}
 
-	ListTest(const ListTest&) = delete;
-	ListTest(ListTest&&) = delete;
+	TestList(const TestList&) = delete;
+	TestList(TestList&&) = delete;
 
-	ListTest operator=(const ListTest&) = delete;
-	ListTest operator=(ListTest&&) = delete;
+	TestList operator=(const TestList&) = delete;
+	TestList operator=(TestList&&) = delete;
 
-	~ListTest() {
+	~TestList() {
+		// The list must be empty before the storage has been destroyed.
+		list.clear(); 
 		delete [] storage;
 	}
 
 	size_t storage_bytes() {
-		return storage_size * sizeof (ListData_t);
+		return storage_size * sizeof (ListNode_t);
 	}
 
 	void test() {
 		printf("<intrusive::ListTest>...\n");
 		printf("sizeof(Value_t)=%zu\n", sizeof (Value_t));
-		printf("sizeof(ListData_t)=%zu\n", sizeof (ListData_t));
-//		printf("offsetof(ListData_t, il_next)=%zu\n", offsetof(ListData_t, il_next));
-//		printf("offsetof(ListData_t, il_prev)=%zu\n", offsetof(ListData_t, il_prev));
-//		printf("offsetof(ListData_t, il_linked)=%zu\n", offsetof(ListData_t, il_linked));
-//		printf("offsetof(ListData_t, value)=%zu\n", offsetof(ListData_t, value));
+		printf("sizeof(ListData_t)=%zu\n", sizeof (ListNode_t));
+		//		printf("offsetof(ListData_t, il_next)=%zu\n", offsetof(ListData_t, il_next));
+		//		printf("offsetof(ListData_t, il_prev)=%zu\n", offsetof(ListData_t, il_prev));
+		//		printf("offsetof(ListData_t, il_linked)=%zu\n", offsetof(ListData_t, il_linked));
+		//		printf("offsetof(ListData_t, value)=%zu\n", offsetof(ListData_t, value));
 		printf("memory used %zu Kb\n", storage_bytes() / (1024));
 		test_raii();
 		test_push_front();
@@ -87,6 +90,7 @@ public:
 		test_remove();
 		test_insert_before();
 		test_insert_after();
+		test_iterators();
 	}
 
 	void test_raii() {
@@ -182,6 +186,45 @@ public:
 		test_sanity();
 	}
 
+	void test_iterators() {
+		assert(list.size() == 0);
+		fill_forward(list);
+		assert(list.size() == storage_size);
+
+		// ConstIterator_t::operator++
+		Key_t index = 0;
+		for (auto it = list.cbegin(); it != list.cend(); ++it) {
+			assert((*it) == storage[index]);
+			assert((it->value) == storage[index].value);
+			index++;
+		}
+
+		// ConstIterator_t::operator++(int)
+		index = 0;
+		for (auto it = list.cbegin(); it != list.cend(); it++) {
+			assert((*it) == storage[index]);
+			assert((it->value) == storage[index].value);
+			index++;
+		}
+
+		// Iterator_t::operator++
+		index = 0;
+		for (auto it = list.begin(); it != list.end(); ++it) {
+			assert((*it) == storage[index]);
+			assert((it->value) == storage[index].value);
+			index++;
+		}
+
+		// Iterator_t::operator++(int)
+		index = 0;
+		for (auto it = list.begin(); it != list.end(); it++) {
+			assert((*it) == storage[index]);
+			assert((it->value) == storage[index].value);
+			index++;
+		}
+		clear_list(list);
+	}
+
 	void dump() const noexcept {
 		std::cout << "list has " << list.size() << " elements \n";
 		for (auto it = list.cbegin(); it != list.cend(); ++it) {
@@ -232,7 +275,7 @@ private:
 	}
 
 	void clear_list(List_t& list) {
-		list.reset();
+		list.clear();
 		assert(list.size() == 0);
 		test_sanity();
 	}
@@ -241,5 +284,5 @@ private:
 
 }; // namespace intrusive
 
-#endif /* INTRUSIVE_LIST_TEST_H */
+#endif /* INTRUSIVE_TESTS_TEST_LIST_H */
 

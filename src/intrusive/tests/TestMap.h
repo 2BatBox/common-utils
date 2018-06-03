@@ -1,47 +1,52 @@
-#ifndef INTRUSIVE_MAP_TEST_H
-#define INTRUSIVE_MAP_TEST_H
+#ifndef INTRUSIVE_TESTS_TEST_MAP_H
+#define INTRUSIVE_TESTS_TEST_MAP_H
 
-#include "Map.h"
+#include "../Map.h"
 
 #include <assert.h>
 #include <cstdio>
 
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#pragma GCC diagnostic ignored "-Weffc++"
+
 namespace intrusive {
 
-class MapTest {
+class TestMap {
 
 	template<typename T>
 	struct StructValue {
 		T x;
 
-		StructValue(): x() { }
+		StructValue() : x() { }
 
-		StructValue(unsigned int x): x(x) { }
+		StructValue(unsigned int x) : x(x) { }
 
 		bool operator==(const StructValue& st_val) const {
 			return x == st_val.x;
 		}
+
 	};
 
 	template <typename K, typename V>
-	struct MapData: public MapHook<K, MapData<K, V> > {
+	struct MapData : public MapHook<K, MapData<K, V> > {
 		V value;
 
-		MapData(): value() { }
+		MapData() : value() { }
 
-		MapData(V v): value(v) { }
+		MapData(V v) : value(v) { }
 
 		bool operator==(const MapData& data) const {
 			return value == data.value;
 		}
+
 	};
 
-	typedef unsigned Key_t;
-	typedef StructValue<unsigned> Value_t;
+	using Key_t = unsigned;
+	using Value_t = StructValue<unsigned long long>;
 
-	typedef MapData<Key_t, Value_t> MapData_t;
-	typedef Map<Key_t, MapData_t> Map_t;
-	typedef Map_t::Bucket_t Bucket_t;
+	using MapData_t = MapData<Key_t, Value_t>;
+	using Map_t = Map<Key_t, MapData_t>;
+	using Bucket_t = Map_t::Bucket_t;
 
 	const size_t storage_size;
 	MapData_t* storage;
@@ -50,7 +55,7 @@ class MapTest {
 
 public:
 
-	MapTest(unsigned storage_size, float load_factor)
+	TestMap(unsigned storage_size, float load_factor)
 	: storage_size(storage_size),
 	storage(new MapData_t[storage_size]),
 	bucket_list_size((storage_size / load_factor) + 1),
@@ -63,13 +68,15 @@ public:
 		}
 	}
 
-	MapTest(const MapTest&) = delete;
-	MapTest(MapTest&&) = delete;
+	TestMap(const TestMap&) = delete;
+	TestMap(TestMap&&) = delete;
 
-	MapTest operator=(const MapTest&) = delete;
-	MapTest operator=(MapTest&&) = delete;
+	TestMap operator=(const TestMap&) = delete;
+	TestMap operator=(TestMap&&) = delete;
 
-	~MapTest() {
+	~TestMap() {
+		// the map must be destroyed before the storage has been destroyed.
+		map.destroy();
 		delete [] storage;
 	}
 
@@ -87,8 +94,9 @@ public:
 		printf("memory used %zu Kb\n", storage_bytes() / (1024));
 		test_raii();
 		test_put();
-		test_remove();
 		test_find();
+		test_find_const();
+		test_remove();
 	}
 
 	void test_raii() {
@@ -101,6 +109,7 @@ public:
 			auto it = tmp_map.find(i);
 			assert(it != tmp_map.end());
 			assert((*it) == storage[i]);
+			assert(it->value == storage[i].value);
 		}
 		map = std::move(map);
 		map = std::move(tmp_map);
@@ -113,43 +122,55 @@ public:
 		assert(map.size() == 0);
 		fill(map);
 		for (Key_t i = 0; i < storage_size; i++) {
-			auto it = map.find(i);
-			assert(it != map.end());
-			assert((*it) == storage[i]);
+			auto it = map.put(i, storage[i]);
+			assert(it == map.end());
 		}
 		clear(map);
 	}
 
 	void test_find() {
 		assert(map.size() == 0);
-		Key_t half = storage_size / 2;
-		for (Key_t i = 0; i < half; i++) {
-			assert(map.put(i, storage[i]) == map.end());
-		}
-		assert(map.size() == half);
+		fill(map);
 		for (Key_t i = 0; i < storage_size; i++) {
 			auto it = map.find(i);
-			if (i < half) {
-				assert(it!= map.end());
-				assert((*it) == storage[i]);
-			} else {
-				assert(it == nullptr);
-			}
+			assert(it != map.end());
+			assert(*it == storage[i]);
+			assert(it->value == storage[i].value);
 		}
 		clear(map);
+		for (Key_t i = 0; i < storage_size; i++) {
+			auto it = map.find(i);
+			assert(it == map.end());
+		}
+	}
+
+	void test_find_const() {
+		assert(map.size() == 0);
+		fill(map);
+
+		const Map_t& local_map = map;
+		for (Key_t i = 0; i < storage_size; i++) {
+			auto it = local_map.find(i);
+			assert(it != local_map.cend());
+			assert(*it == storage[i]);
+			assert(it->value == storage[i].value);
+		}
+		clear(map);
+		for (Key_t i = 0; i < storage_size; i++) {
+			auto it = local_map.find(i);
+			assert(it == local_map.cend());
+		}
 	}
 
 	void test_remove() {
 		assert(map.size() == 0);
 		fill(map);
-		Key_t half = storage_size / 2;
-		for (Key_t i = half; i < storage_size; i++) {
-			assert(map.remove(i) != map.end());
-			assert(map.remove(i) == map.end());
-		}
-		for (Key_t i = 0; i < half; i++) {
-			assert(map.remove(i) != map.end());
-			assert(map.remove(i) == map.end());
+		for (Key_t i = 0; i < storage_size; i++) {
+			auto it = map.find(i);
+			assert(it != map.end());
+			assert(*it == storage[i]);
+			assert(it->value == storage[i].value);
+			assert(map.remove(it));
 		}
 		assert(map.size() == 0);
 		test_sanity();
@@ -176,13 +197,16 @@ private:
 
 	void fill(Map_t& map) {
 		for (Key_t i = 0; i < storage_size; i++) {
-			assert(map.put(i, storage[i]) == map.end());
+			auto it = map.put(i, storage[i]);
+			assert(it != map.end());
+			assert(*it == storage[i]);
+			assert(it->value == storage[i].value);
 		}
 		assert(map.size() == storage_size);
 	}
 
 	void clear(Map_t& map) {
-		map.reset();
+		map.clear();
 		assert(map.size() == 0);
 		test_sanity();
 	}
@@ -191,5 +215,5 @@ private:
 
 }; // namespace intrusive
 
-#endif /* INTRUSIVE_MAP_TEST_H */
+#endif /* INTRUSIVE_TESTS_TEST_MAP_H */
 

@@ -3,6 +3,14 @@
 
 #include <cstdlib>
 
+// gcc 4.8.2's -Wnon-virtual-dtor is broken and turned on by -Weffc++
+#if __GNUC__ < 3 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#pragma GCC diagnostic ignored "-Weffc++"
+#define GCC_DIAG_POP_NEEDED
+#endif
+
 namespace intrusive {
 
 template <typename V>
@@ -11,123 +19,120 @@ struct ListHook {
 	V* il_prev;
 	bool il_linked;
 
-	ListHook() noexcept: il_next(nullptr), il_prev(nullptr), il_linked(false) { }
-	ListHook(const ListHook&) noexcept = default;
-	ListHook& operator=(const ListHook&)noexcept = default;
-	virtual ~ListHook() noexcept = default;
+	ListHook() noexcept : il_next(nullptr), il_prev(nullptr), il_linked(false) { }
 };
 
-template <typename ListData_t>
+template <typename ListNode>
 class List {
-	ListData_t* head;
-	ListData_t* tail;
+	ListNode* head;
+	ListNode* tail;
 	size_t list_size;
 
-	template<typename V>
+	template<typename N>
 	struct Iterator {
 		friend class List;
 
-		Iterator() noexcept: value(nullptr) { }
+		Iterator() noexcept : node_ptr(nullptr) { }
 
-		Iterator(V* value) noexcept: value(value) { }
+		Iterator(N* node) noexcept : node_ptr(node) { }
 
 		bool operator==(const Iterator& it) const noexcept {
-			return value == it.value;
+			return node_ptr == it.node_ptr;
 		}
 
 		bool operator!=(const Iterator& it) const noexcept {
-			return value != it.value;
+			return node_ptr != it.node_ptr;
 		}
 
 		Iterator& operator++() noexcept {
-			value = value->il_next;
+			node_ptr = node_ptr->il_next;
 			return *this;
 		}
 
 		Iterator operator++(int)noexcept {
-			value = value->il_next;
-			return Iterator(value);
+			node_ptr = node_ptr->il_next;
+			return Iterator(node_ptr);
 		}
 
-		V& operator*() noexcept {
-			return *value;
+		const N& operator*() const noexcept {
+			return *node_ptr;
 		}
 
-		V* operator->() noexcept {
-			return value;
+		N& operator*() noexcept {
+			return *node_ptr;
 		}
 
-		const V& operator*() const noexcept {
-			return *value;
+		const N* operator->() const noexcept {
+			return node_ptr;
 		}
 
-		const V* operator->() const noexcept {
-			return value;
+		N* operator->() noexcept {
+			return node_ptr;
 		}
 
 	private:
-		V* value;
+		N* node_ptr;
 	};
 
-	template<typename V>
+	template<typename N>
 	struct ReverseIterator {
 		friend class List;
 
-		ReverseIterator() noexcept: value(nullptr) { }
+		ReverseIterator() noexcept : node_ptr(nullptr) { }
 
-		ReverseIterator(V* value) noexcept: value(value) { }
+		ReverseIterator(N* value) noexcept : node_ptr(value) { }
 
 		bool operator==(const ReverseIterator& it) const noexcept {
-			return value == it.value;
+			return node_ptr == it.node_ptr;
 		}
 
 		bool operator!=(const ReverseIterator& it) const noexcept {
-			return value != it.value;
+			return node_ptr != it.node_ptr;
 		}
 
 		ReverseIterator& operator++() noexcept {
-			value = value->il_prev;
+			node_ptr = node_ptr->il_prev;
 			return *this;
 		}
 
 		ReverseIterator operator++(int)noexcept {
-			value = value->il_prev;
-			return ReverseIterator(value);
+			node_ptr = node_ptr->il_prev;
+			return ReverseIterator(node_ptr);
 		}
 
-		V& operator*() noexcept {
-			return *value;
+		const N& operator*() const noexcept {
+			return *node_ptr;
 		}
 
-		V* operator->() noexcept {
-			return value;
+		N& operator*() noexcept {
+			return *node_ptr;
 		}
 
-		const V& operator*() const noexcept {
-			return *value;
+		const N* operator->() const noexcept {
+			return node_ptr;
 		}
 
-		const V* operator->() const noexcept {
-			return value;
+		N* operator->() noexcept {
+			return node_ptr;
 		}
 
 	private:
-		V* value;
+		N* node_ptr;
 	};
 
-	typedef Iterator<ListData_t> Iterator_t;
-	typedef Iterator<const ListData_t> ConstIterator_t;
-	typedef ReverseIterator<ListData_t> ReverseIterator_t;
-	typedef ReverseIterator<const ListData_t> ConstReverseIterator_t;
+	using Iterator_t = Iterator<ListNode>;
+	using ConstIterator_t = Iterator<const ListNode>;
+	using ReverseIterator_t = ReverseIterator<ListNode>;
+	using ConstReverseIterator_t = ReverseIterator<const ListNode>;
 
 public:
 
-	List() noexcept: head(nullptr), tail(nullptr), list_size(0) { }
+	List() noexcept : head(nullptr), tail(nullptr), list_size(0) { }
 
 	List(const List&) = delete;
 	List& operator=(const List&) = delete;
 
-	List(List&& rv): head(rv.head), tail(rv.tail), list_size(rv.list_size) {
+	List(List&& rv) : head(rv.head), tail(rv.tail), list_size(rv.list_size) {
 		rv.head = rv.tail = nullptr;
 		rv.list_size = 0;
 	}
@@ -144,32 +149,32 @@ public:
 	}
 
 	virtual ~List() noexcept {
-		reset();
+		clear();
 	}
 
-	bool push_front(ListData_t& value) noexcept {
-		if (sanity_check(value)) {
+	bool push_front(ListNode& node) noexcept {
+		if (sanity_check(node)) {
 			if (head)
-				link_head(value);
+				link_head(node);
 			else
-				link_first(value);
+				link_first(node);
 			return true;
 		}
 		return false;
 	}
 
-	bool push_back(ListData_t& value) noexcept {
-		if (sanity_check(value)) {
+	bool push_back(ListNode& node) noexcept {
+		if (sanity_check(node)) {
 			if (tail)
-				link_tail(value);
+				link_tail(node);
 			else
-				link_first(value);
+				link_first(node);
 			return true;
 		}
 		return false;
 	}
 
-	ListData_t* pop_front() noexcept {
+	ListNode* pop_front() noexcept {
 		if (head != tail) {
 			return unlink_head();
 		} else if (head) {
@@ -178,7 +183,7 @@ public:
 		return nullptr;
 	}
 
-	ListData_t* pop_back() noexcept {
+	ListNode* pop_back() noexcept {
 		if (head != tail) {
 			return unlink_tail();
 		} else if (head) {
@@ -187,43 +192,42 @@ public:
 		return nullptr;
 	}
 
-	bool insert_before(ListData_t& before, ListData_t& value) noexcept {
-		if (before.il_linked && sanity_check(value)) {
+	bool insert_before(ListNode& before, ListNode& node) noexcept {
+		if (before.il_linked && sanity_check(node)) {
 			if (&before == head)
-				link_head(value);
+				link_head(node);
 			else
-				link_before(before, value);
+				link_before(before, node);
 			return true;
 		}
 		return false;
 	}
 
-	bool insert_after(ListData_t& after, ListData_t& value) noexcept {
-		if (after.il_linked && sanity_check(value)) {
+	bool insert_after(ListNode& after, ListNode& node) noexcept {
+		if (after.il_linked && sanity_check(node)) {
 			if (&after == tail)
-				link_tail(value);
+				link_tail(node);
 			else
-				link_after(after, value);
+				link_after(after, node);
 			return true;
 		}
 		return false;
 	}
 
-	bool remove(ListData_t& value) noexcept {
-		if (head && value.il_linked) {
-			if (&value == head)
+	bool remove(ListNode& node) noexcept {
+		if (head && node.il_linked) {
+			if (&node == head)
 				pop_front();
-			else if (&value == tail)
+			else if (&node == tail)
 				pop_back();
 			else
-				unlink(value);
-
+				unlink(node);
 			return true;
 		}
 		return false;
 	}
 
-	void reset() noexcept {
+	void clear() noexcept {
 		while (head)
 			pop_front();
 	}
@@ -232,90 +236,90 @@ public:
 		return list_size;
 	}
 
-	Iterator_t begin() noexcept {
+	inline Iterator_t begin() noexcept {
 		return Iterator_t(head);
 	}
 
-	ConstIterator_t cbegin() const noexcept {
+	inline ConstIterator_t cbegin() const noexcept {
 		return ConstIterator_t(head);
 	}
 
-	Iterator_t end() noexcept {
+	inline Iterator_t end() noexcept {
 		return Iterator_t();
 	}
 
-	ConstIterator_t cend() const noexcept {
+	inline ConstIterator_t cend() const noexcept {
 		return ConstIterator_t();
 	}
 
-	ReverseIterator_t rbegin() noexcept {
+	inline ReverseIterator_t rbegin() noexcept {
 		return ReverseIterator_t(tail);
 	}
 
-	ConstReverseIterator_t crbegin() const noexcept {
+	inline ConstReverseIterator_t crbegin() const noexcept {
 		return ConstReverseIterator_t(tail);
 	}
 
-	ReverseIterator_t rend() noexcept {
+	inline ReverseIterator_t rend() noexcept {
 		return ReverseIterator_t();
 	}
 
-	ConstReverseIterator_t crend() const noexcept {
+	inline ConstReverseIterator_t crend() const noexcept {
 		return ConstReverseIterator_t();
 	}
 
 private:
 
-	inline static bool sanity_check(ListData_t& value) noexcept {
-		return (not value.il_linked);
+	inline static bool sanity_check(ListNode& node) noexcept {
+		return (not node.il_linked);
 	}
 
-	inline void link_first(ListData_t& value) noexcept {
-		value.il_next = nullptr;
-		value.il_prev = nullptr;
-		value.il_linked = true;
-		head = tail = &value;
+	inline void link_first(ListNode& node) noexcept {
+		node.il_next = nullptr;
+		node.il_prev = nullptr;
+		node.il_linked = true;
+		head = tail = &node;
 		list_size++;
 	}
 
-	inline void link_head(ListData_t& value) noexcept {
-		value.il_next = head;
-		value.il_prev = nullptr;
-		value.il_linked = true;
-		head->il_prev = &value;
-		head = &value;
+	inline void link_head(ListNode& node) noexcept {
+		node.il_next = head;
+		node.il_prev = nullptr;
+		node.il_linked = true;
+		head->il_prev = &node;
+		head = &node;
 		list_size++;
 	}
 
-	inline void link_tail(ListData_t& value) noexcept {
-		value.il_next = nullptr;
-		value.il_prev = tail;
-		value.il_linked = true;
-		tail->il_next = &value;
-		tail = &value;
+	inline void link_tail(ListNode& node) noexcept {
+		node.il_next = nullptr;
+		node.il_prev = tail;
+		node.il_linked = true;
+		tail->il_next = &node;
+		tail = &node;
 		list_size++;
 	}
 
-	inline void link_before(ListData_t& before, ListData_t& value) noexcept {
-		value.il_next = &before;
-		value.il_prev = before.il_prev;
-		value.il_linked = true;
-		before.il_prev->il_next = &value;
-		before.il_prev = &value;
+	inline void link_before(ListNode& before, ListNode& node) noexcept {
+		node.il_next = &before;
+		node.il_prev = before.il_prev;
+		node.il_linked = true;
+		before.il_prev->il_next = &node;
+		before.il_prev = &node;
 		list_size++;
 	}
 
-	inline void link_after(ListData_t& after, ListData_t& value) noexcept {
-		value.il_next = after.il_next;
-		value.il_prev = &after;
-		value.il_linked = true;
-		after.il_next->il_prev = &value;
-		after.il_next = &value;
+	inline void link_after(ListNode& after, ListNode& node) noexcept {
+		node.il_next = after.il_next;
+		node.il_prev = &after;
+		node.il_linked = true;
+		after.il_next->il_prev = &node;
+		after.il_next = &node;
 		list_size++;
 	}
 
-	inline ListData_t* unlink_last() noexcept {
-		ListData_t* result = head;
+	inline ListNode* unlink_last() noexcept {
+		ListNode* result = head;
 		head->il_next = nullptr;
 		head->il_prev = nullptr;
 		head->il_linked = false;
@@ -324,8 +328,8 @@ private:
 		return result;
 	}
 
-	inline ListData_t* unlink_head() noexcept {
-		ListData_t* result = head;
+	inline ListNode* unlink_head() noexcept {
+		ListNode* result = head;
 		head = head->il_next;
 		head->il_prev = nullptr;
 		result->il_next = nullptr;
@@ -335,8 +339,8 @@ private:
 		return result;
 	}
 
-	inline ListData_t* unlink_tail() noexcept {
-		ListData_t* result = tail;
+	inline ListNode* unlink_tail() noexcept {
+		ListNode* result = tail;
 		tail = tail->il_prev;
 		tail->il_next = nullptr;
 		result->il_next = nullptr;
@@ -346,17 +350,22 @@ private:
 		return result;
 	}
 
-	inline void unlink(ListData_t& value) noexcept {
-		value.il_prev->il_next = value.il_next;
-		value.il_next->il_prev = value.il_prev;
-		value.il_next = nullptr;
-		value.il_prev = nullptr;
-		value.il_linked = false;
+	inline void unlink(ListNode& node) noexcept {
+		node.il_prev->il_next = node.il_next;
+		node.il_next->il_prev = node.il_prev;
+		node.il_next = nullptr;
+		node.il_prev = nullptr;
+		node.il_linked = false;
 		list_size--;
 	}
 
 };
 
 }; // namespace intrusive
+
+#if defined(GCC_DIAG_POP_NEEDED)
+#pragma GCC diagnostic pop
+#undef GCC_DIAG_POP_NEEDED
+#endif
 
 #endif /* INTRUSIVE_LIST_H */
