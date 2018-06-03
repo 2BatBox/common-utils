@@ -10,10 +10,18 @@
 #include "../procotols/Udp.h"
 #include "../procotols/Sctp.h"
 
+// gcc 4.8.2's -Wnon-virtual-dtor is broken and turned on by -Weffc++
+#if __GNUC__ < 3 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#pragma GCC diagnostic ignored "-Weffc++"
+#define GCC_DIAG_POP_NEEDED
+#endif
+
 namespace stack_ip {
 
 /**
- * StackParser is a parser of IP packet stack.
+ * An IP stack parser.
  * The packet data MUST be provided completely, it may contain padding.
  * StackHeaderParser might be used to work with packets which contain IP stack headers only.
  * see StackHeaderParser.h for more details.
@@ -66,7 +74,7 @@ public:
 	using Base::available;
 	using Base::padding;
 
-	StackParser(binio::ByteConstBuffer pkt) :
+	StackParser(binio::MemConstArea pkt) :
 	Base(pkt),
 	proto(Protocol::END) { }
 
@@ -119,28 +127,28 @@ public:
 	}
 
 	/**
-	 * @return A current packet in the stack as a ByteConstBuffer object.
+	 * @return A current packet in the stack as a MemArea object.
 	 */
-	inline binio::ByteConstBuffer packet() const noexcept {
-		return available_as_buffer();
+	inline binio::MemConstArea packet() const noexcept {
+		return available_mem_area();
 	}
 
 	/**
-	 * @return A current protocol header as a ByteConstBuffer object.
+	 * @return A current protocol header as a MemArea object.
 	 */
-	binio::ByteConstBuffer header() const noexcept {
+	binio::MemConstArea header() const noexcept {
 		unsigned hdr_len = 0;
 		const uint8_t* ptr = header(hdr_len);
-		return binio::ByteConstBuffer(ptr, hdr_len);
+		return binio::MemConstArea(ptr, hdr_len);
 	}
 
 	/**
-	 * @return A current protocol payload as a ByteConstBuffer object.
+	 * @return A current protocol payload as a MemArea object.
 	 */
-	binio::ByteConstBuffer payload() const noexcept {
+	binio::MemConstArea payload() const noexcept {
 		unsigned payload_len = 0;
 		const uint8_t* ptr = payload(payload_len);
-		return binio::ByteConstBuffer(ptr, payload_len);
+		return binio::MemConstArea(ptr, payload_len);
 	}
 
 private:
@@ -242,6 +250,11 @@ private:
 };
 
 }; // namespace stack_ip
+
+#if defined(GCC_DIAG_POP_NEEDED)
+#pragma GCC diagnostic pop
+#undef GCC_DIAG_POP_NEEDED
+#endif
 
 #endif /* STACK_IP_PARSERS_STACK_IP_PARSER_H */
 

@@ -4,10 +4,18 @@
 #include "../stack_ip.h"
 #include "StackParser.h"
 
+// gcc 4.8.2's -Wnon-virtual-dtor is broken and turned on by -Weffc++
+#if __GNUC__ < 3 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#pragma GCC diagnostic ignored "-Weffc++"
+#define GCC_DIAG_POP_NEEDED
+#endif
+
 namespace stack_ip {
 
 /**
- * SctpParser is a parser of SCTP packets.
+ * An SCTP packet parser.
  * The packet data MUST be provided completely, it may contain padding.
  *   
  * SctpParser parser(...);
@@ -47,7 +55,7 @@ public:
 	using Base::available;
 	using Base::padding;
 
-	SctpParser(binio::ByteConstBuffer pkt) :
+	SctpParser(binio::MemConstArea pkt) :
 	Base(pkt),
 	ptr_header(nullptr),
 	ptr_chunk(nullptr) { }
@@ -67,28 +75,28 @@ public:
 	/**
 	 * @return the data (header + payload) of the current chunk as a ByteConstBuffer.
 	 */
-	binio::ByteConstBuffer chunk() const noexcept {
+	binio::MemConstArea chunk() const noexcept {
 		unsigned chunk_bytes = 0;
 		const uint8_t* ptr = chunk(chunk_bytes);
-		return binio::ByteConstBuffer(ptr, chunk_bytes);
+		return binio::MemConstArea(ptr, chunk_bytes);
 	}
 
 	/**
 	 * @return the header of the current chunk as a ByteConstBuffer.
 	 */
-	binio::ByteConstBuffer chunk_header() const noexcept {
+	binio::MemConstArea chunk_header() const noexcept {
 		unsigned header_bytes = 0;
 		const uint8_t* ptr = chunk_header(header_bytes);
-		return binio::ByteConstBuffer(ptr, header_bytes);
+		return binio::MemConstArea(ptr, header_bytes);
 	}
 
 	/**
 	 * @return the payload of the current chunk as a ByteConstBuffer.
 	 */
-	binio::ByteConstBuffer chunk_payload() const noexcept {
+	binio::MemConstArea chunk_payload() const noexcept {
 		unsigned payload_bytes = 0;
 		const uint8_t* ptr = chunk_payload(payload_bytes);
-		return binio::ByteConstBuffer(ptr, payload_bytes);
+		return binio::MemConstArea(ptr, payload_bytes);
 	}
 
 	/**
@@ -165,6 +173,11 @@ protected:
 };
 
 }; // namespace stack_ip
+
+#if defined(GCC_DIAG_POP_NEEDED)
+#pragma GCC diagnostic pop
+#undef GCC_DIAG_POP_NEEDED
+#endif
 
 #endif /* STACK_IP_PARSERS_SCTP_PARSER_H */
 

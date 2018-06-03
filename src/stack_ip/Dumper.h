@@ -19,7 +19,7 @@ class Dumper {
 
 public:
 
-	static void dump_stack(FILE* out, bool hex_dump, binio::ByteConstBuffer data, Protocol proto = Protocol::L2_ETHERNET) noexcept {
+	static void dump_stack(FILE* out, bool hex_dump, binio::MemConstArea data, Protocol proto = Protocol::L2_ETHERNET) noexcept {
 		StackParser packet(data);
 		if (packet.parse(proto)) {
 			while (packet.protocol() != Protocol::END) {
@@ -67,8 +67,8 @@ public:
 		}
 
 		if (hex_dump) {
-			binio::ByteConstBuffer header = packet.header();
-			binio::ByteConstBuffer payload = packet.payload();
+			binio::MemConstArea header = packet.header();
+			binio::MemConstArea payload = packet.payload();
 
 			if (header) {
 				fprintf(out, "    |-Header [%zu] : ", header.length());
@@ -178,13 +178,13 @@ public:
 				}
 
 				if (payload) {
-					binio::ByteConstBuffer header = sctp.chunk_header();
+					binio::MemConstArea header = sctp.chunk_header();
 					if (header) {
 						fprintf(out, "    |-Header [%zu] : ", header.length());
 						HexDumper::hex(header, header.length());
 					}
 
-					binio::ByteConstBuffer payload = sctp.chunk_payload();
+					binio::MemConstArea payload = sctp.chunk_payload();
 					if (payload) {
 						fprintf(out, "    |-Payload [%zu] : ", payload.length());
 						HexDumper::hex(payload, payload.length());
@@ -200,8 +200,8 @@ public:
 private:
 
 	static inline void print_header(FILE* out, const char* name, const StackParser& pkt) {
-		binio::ByteConstBuffer header = pkt.header();
-		binio::ByteConstBuffer payload = pkt.payload();
+		binio::MemConstArea header = pkt.header();
+		binio::MemConstArea payload = pkt.payload();
 		fprintf(out, "[ %u : %u : %u]\n", pkt.offset(), pkt.available(), pkt.padding());
 		fprintf(out, "[%s] +%u ( %zu / %zu )\n", name, pkt.offset(), header.length(), payload.length());
 	}

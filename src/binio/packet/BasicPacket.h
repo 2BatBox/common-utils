@@ -3,7 +3,15 @@
 
 #include <cstdlib>
 
-#include "../ByteBuffer.h"
+#include "../MemArea.h"
+
+// gcc 4.8.2's -Wnon-virtual-dtor is broken and turned on by -Weffc++
+#if __GNUC__ < 3 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#pragma GCC diagnostic ignored "-Weffc++"
+#define GCC_DIAG_POP_NEEDED
+#endif
 
 namespace binio {
 
@@ -22,22 +30,22 @@ namespace binio {
  * A - available to read/write.
  * P - padding bytes, they're not available to read/write.
  * 
- * The main data area is divided into three subareas called 'offset', 'available' and 'padding'.
+ * The main memory area is divided into three subareas called 'offset', 'available' and 'padding'.
  * 
  * There is no way to move 'begin' and 'end' points but 'head' and 'tail' can be moved.
  * Moving 'head' and 'tail' points affect the subareas they start or end with.
  * 
  **/
 
-template <typename RawPtr, typename SizeType>
+template <typename T, typename S>
 class BasicPacket {
 protected:
-	RawPtr* ptr_head;
-	SizeType bytes_available;
-	SizeType bytes_padding;
-	SizeType bytes_size;
+	T* ptr_head;
+	S bytes_available;
+	S bytes_padding;
+	S bytes_size;
 
-	BasicPacket(RawPtr* buf, SizeType len) noexcept :
+	BasicPacket(T* buf, S len) noexcept :
 	ptr_head(buf),
 	bytes_available(len),
 	bytes_padding(0),
@@ -48,99 +56,104 @@ public:
 	/**
 	 * @return The distance between 'begin' and 'end'
 	 */
-	inline SizeType size() const noexcept {
+	inline S size() const noexcept {
 		return bytes_size;
 	}
 
 	/**
 	 * @return The distance between 'begin' and 'head'
 	 */
-	inline SizeType offset() const noexcept {
+	inline S offset() const noexcept {
 		return bytes_size - bytes_available - bytes_padding;
 	}
 
 	/**
 	 * @return The distance between 'head' and 'tail'
 	 */
-	inline SizeType available() const noexcept {
+	inline S available() const noexcept {
 		return bytes_available;
 	}
 
 	/**
 	 * @return The distance between 'tail' and 'end'
 	 */
-	inline SizeType padding() const noexcept {
+	inline S padding() const noexcept {
 		return bytes_padding;
 	}
 
 	/**
 	 * @return true - if at least @bytes are available.
 	 */
-	inline bool available(SizeType bytes) const noexcept {
+	inline bool available(S bytes) const noexcept {
 		return bytes <= bytes_available;
 	}
 
 	/**
-	 * @return the offset subrange as an ByteBuffer object.
+	 * @return the offset subrange as a MemArea object.
 	 */
-	inline BasicBuffer<const RawPtr> offset_as_buffer() const noexcept {
-		SizeType offset = offset();
-		return BasicBuffer<const RawPtr>(ptr_head - offset, offset);
+	inline BasicMemArea<const T> offset_mem_area() const noexcept {
+		S offset = offset();
+		return BasicMemArea<const T>(ptr_head - offset, offset);
 	}
 
 	/**
-	 * @return the offset subrange as an ByteBuffer object.
+	 * @return the offset subrange as a MemArea object.
 	 */
-	inline BasicBuffer<RawPtr> offset_as_buffer() noexcept {
-		SizeType offset = offset();
-		return BasicBuffer<RawPtr>(ptr_head - offset, offset);
+	inline BasicMemArea<T> offset_mem_area() noexcept {
+		S offset = offset();
+		return BasicMemArea<T>(ptr_head - offset, offset);
 	}
 
 	/**
-	 * @return the available subrange as an ByteBuffer object.
+	 * @return the available subrange as a MemArea object.
 	 */
-	inline BasicBuffer<const RawPtr> available_as_buffer() const noexcept {
-		return BasicBuffer<const RawPtr>(ptr_head, bytes_available);
+	inline BasicMemArea<const T> available_mem_area() const noexcept {
+		return BasicMemArea<const T>(ptr_head, bytes_available);
 	}
 
 	/**
-	 * @return the available subrange as an ByteBuffer object.
+	 * @return the available subrange as a MemArea object.
 	 */
-	inline BasicBuffer<RawPtr> available_as_buffer() noexcept {
-		return BasicBuffer<RawPtr>(ptr_head, bytes_available);
+	inline BasicMemArea<T> available_mem_area() noexcept {
+		return BasicMemArea<T>(ptr_head, bytes_available);
 	}
 
 	/**
-	 * @return the padding subrange as an ByteBuffer object.
+	 * @return the padding subrange as a MemArea object.
 	 */
-	inline BasicBuffer<const RawPtr> padding_as_buffer() const noexcept {
-		return BasicBuffer<const RawPtr>(ptr_head + available(), bytes_padding);
+	inline BasicMemArea<const T> padding_mem_area() const noexcept {
+		return BasicMemArea<const T>(ptr_head + available(), bytes_padding);
 	}
 
 	/**
-	 * @return the padding subrange as an ByteBuffer object.
+	 * @return the padding subrange as a MemArea object.
 	 */
-	inline BasicBuffer<RawPtr> padding_as_buffer() noexcept {
-		return BasicBuffer<RawPtr>(ptr_head + available(), bytes_padding);
+	inline BasicMemArea<T> padding_mem_area() noexcept {
+		return BasicMemArea<T>(ptr_head + available(), bytes_padding);
 	}
 
 	/**
-	 * @return whole the packet area as an ByteBuffer object.
+	 * @return whole the packet area as a MemArea object.
 	 */
-	inline BasicBuffer<const RawPtr> as_buffer() const noexcept {
-		return BasicBuffer<const RawPtr>(ptr_head - offset, bytes_size);
+	inline BasicMemArea<const T> as_mem_area() const noexcept {
+		return BasicMemArea<const T>(ptr_head - offset, bytes_size);
 	}
 
 	/**
-	 * @return whole the packet area as an ByteBuffer object.
+	 * @return whole the packet area as a MemArea object.
 	 */
-	inline BasicBuffer<RawPtr> as_buffer() noexcept {
-		return BasicBuffer<RawPtr>(ptr_head - offset, bytes_size);
+	inline BasicMemArea<T> as_mem_area() noexcept {
+		return BasicMemArea<T>(ptr_head - offset, bytes_size);
 	}
 
 };
 
 }; // namespace binio
+
+#if defined(GCC_DIAG_POP_NEEDED)
+#pragma GCC diagnostic pop
+#undef GCC_DIAG_POP_NEEDED
+#endif
 
 #endif /* BINIO_BASIC_PACKET_H */
 

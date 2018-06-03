@@ -6,6 +6,14 @@
 
 #include "BasicPacket.h"
 
+// gcc 4.8.2's -Wnon-virtual-dtor is broken and turned on by -Weffc++
+#if __GNUC__ < 3 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#pragma GCC diagnostic ignored "-Weffc++"
+#define GCC_DIAG_POP_NEEDED
+#endif
+
 namespace binio {
 
 /**
@@ -32,13 +40,13 @@ namespace binio {
  * 
  **/
 
-template <typename RawPtr, typename SizeType>
-class BasicPacketSafeReader : public BasicPacket<RawPtr, SizeType> {
-	using Base = BasicPacket<RawPtr, SizeType>;
+template <typename T, typename S>
+class BasicPacketSafeReader : public BasicPacket<T, S> {
+	using Base = BasicPacket<T, S>;
 protected:
 	bool in_bounds;
 
-	BasicPacketSafeReader(RawPtr* buf, SizeType len) noexcept :
+	BasicPacketSafeReader(T* buf, S len) noexcept :
 	Base(buf, len),
 	in_bounds(buf != nullptr) { }
 
@@ -57,7 +65,7 @@ public:
 	 */
 	bool reset() noexcept {
 		if (in_bounds) {
-			SizeType off = Base::offset();
+			S off = Base::offset();
 			Base::ptr_head -= off;
 			Base::bytes_available += off + Base::bytes_padding;
 			Base::bytes_padding = 0;
@@ -70,7 +78,7 @@ public:
 	 * @param bytes - bytes to move.
 	 * @return true - if the packet is in its bounds after moving.
 	 */
-	bool head_move(SizeType bytes) noexcept {
+	bool head_move(S bytes) noexcept {
 		if (in_bounds) {
 			if (bytes > Base::bytes_available) {
 				in_bounds = false;
@@ -87,7 +95,7 @@ public:
 	 * @param bytes - bytes to move.
 	 * @return true - if the packet is in its bounds after moving.
 	 */
-	bool head_move_back(SizeType bytes) noexcept {
+	bool head_move_back(S bytes) noexcept {
 		if (in_bounds) {
 			if (bytes > Base::offset()) {
 				in_bounds = false;
@@ -104,7 +112,7 @@ public:
 	 * @param bytes - bytes to move.
 	 * @return true - if the packet is in its bounds after moving.
 	 */
-	bool tail_move(SizeType bytes) noexcept {
+	bool tail_move(S bytes) noexcept {
 		if (in_bounds) {
 			if (bytes > Base::bytes_padding) {
 				in_bounds = false;
@@ -121,7 +129,7 @@ public:
 	 * @param bytes - bytes to move.
 	 * @return true - if the packet is in its bounds after moving.
 	 */
-	bool tail_move_back(SizeType bytes) noexcept {
+	bool tail_move_back(S bytes) noexcept {
 		if (in_bounds) {
 			if (bytes > Base::bytes_available) {
 				in_bounds = false;
@@ -138,10 +146,10 @@ public:
 	 * @param value - variable to read to.
 	 * @return true - if the packet is in its bounds after reading.
 	 */
-	template <typename T>
-	bool read(T& value) noexcept {
+	template <typename V>
+	bool read(V& value) noexcept {
 		if (in_bounds) {
-			if (sizeof (T) > Base::bytes_available) {
+			if (sizeof (V) > Base::bytes_available) {
 				in_bounds = false;
 			} else {
 				read_unsafe(value);
@@ -156,8 +164,8 @@ public:
 	 * @param args - variables to read to.
 	 * @return true - if the packet is in its bounds after reading.
 	 */
-	template <typename T, typename... Args>
-	bool read(T& value, Args&... args) noexcept {
+	template <typename V, typename... Args>
+	bool read(V& value, Args&... args) noexcept {
 		if (in_bounds) {
 			if (sizeof_args(value, args...) > Base::bytes_available) {
 				in_bounds = false;
@@ -174,10 +182,10 @@ public:
 	 * @param array_len - amount of @array elements.
 	 * @return true - if the packet is in its bounds after reading.
 	 */
-	template <typename T>
-	bool read_memory(T* array, SizeType array_len) noexcept {
+	template <typename V>
+	bool read_memory(V* array, S array_len) noexcept {
 		if (in_bounds) {
-			array_len *= sizeof (T);
+			array_len *= sizeof (V);
 			if (array_len > Base::bytes_available) {
 				in_bounds = false;
 			} else {
@@ -195,14 +203,14 @@ public:
 	 * @param array_len - amount of @array elements.
 	 * @return true - if the packet is in its bounds after assigning.
 	 */
-	template <typename T>
-	bool assign(T*& array, SizeType array_len) noexcept {
+	template <typename V>
+	bool assign(V*& array, S array_len) noexcept {
 		if (in_bounds) {
-			array_len *= sizeof (T);
+			array_len *= sizeof (V);
 			if (array_len > Base::bytes_available) {
 				in_bounds = false;
 			} else {
-				array = reinterpret_cast<T*>(Base::ptr_head);
+				array = reinterpret_cast<V*>(Base::ptr_head);
 				Base::ptr_head += array_len;
 				Base::bytes_available -= array_len;
 			}
@@ -215,15 +223,15 @@ public:
 	 * @param pointer - a pointer to assign.
 	 * @return true - if the packet is in its bounds after assigning.
 	 */
-	template <typename T>
-	bool assign(T*& pointer) noexcept {
+	template <typename V>
+	bool assign(V*& pointer) noexcept {
 		if (in_bounds) {
-			if (sizeof (T) > Base::bytes_available) {
+			if (sizeof (V) > Base::bytes_available) {
 				in_bounds = false;
 			} else {
-				pointer = reinterpret_cast<T*>(Base::ptr_head);
-				Base::ptr_head += sizeof (T);
-				Base::bytes_available -= sizeof (T);
+				pointer = reinterpret_cast<V*>(Base::ptr_head);
+				Base::ptr_head += sizeof (V);
+				Base::bytes_available -= sizeof (V);
 			}
 		}
 		return in_bounds;
@@ -235,14 +243,14 @@ public:
 	 * @param array_len - amount of @array elements.
 	 * @return true - if the packet is in its bounds after assigning.
 	 */
-	template <typename T>
-	bool assign_stay(T*& array, SizeType array_len) noexcept {
+	template <typename V>
+	bool assign_stay(V*& array, S array_len) noexcept {
 		if (in_bounds) {
-			array_len *= sizeof (T);
+			array_len *= sizeof (V);
 			if (array_len > Base::bytes_available) {
 				in_bounds = false;
 			} else {
-				array = reinterpret_cast<T*>(Base::ptr_head);
+				array = reinterpret_cast<V*>(Base::ptr_head);
 			}
 		}
 		return in_bounds;
@@ -253,13 +261,13 @@ public:
 	 * @param pointer - a pointer to assign.
 	 * @return true - if the packet is in its bounds after assigning.
 	 */
-	template <typename T>
-	bool assign_stay(T*& pointer) noexcept {
+	template <typename V>
+	bool assign_stay(V*& pointer) noexcept {
 		if (in_bounds) {
-			if (sizeof (T) > Base::bytes_available) {
+			if (sizeof (V) > Base::bytes_available) {
 				in_bounds = false;
 			} else {
-				pointer = reinterpret_cast<T*>(Base::ptr_head);
+				pointer = reinterpret_cast<V*>(Base::ptr_head);
 			}
 		}
 		return in_bounds;
@@ -267,46 +275,51 @@ public:
 
 protected:
 
-	static inline constexpr SizeType sizeof_args() noexcept {
+	static inline constexpr S sizeof_args() noexcept {
 		return 0;
 	}
 
-	template <typename T, typename... Args>
-	static inline constexpr SizeType sizeof_args(T& value, Args&... args) noexcept {
+	template <typename V, typename... Args>
+	static inline constexpr S sizeof_args(V& value, Args&... args) noexcept {
 		return sizeof (value) + sizeof_args(args...);
 	}
 
-	template <typename T>
-	inline void read_unsafe(T& value) noexcept {
-		value = *reinterpret_cast<const T*>(Base::ptr_head);
-		Base::ptr_head += sizeof (T);
-		Base::bytes_available -= sizeof (T);
+	template <typename V>
+	inline void read_unsafe(V& value) noexcept {
+		value = *reinterpret_cast<const V*>(Base::ptr_head);
+		Base::ptr_head += sizeof (V);
+		Base::bytes_available -= sizeof (V);
 	}
 
-	template <typename T, typename... Args>
-	inline void read_unsafe(T& value, Args&... args) noexcept {
+	template <typename V, typename... Args>
+	inline void read_unsafe(V& value, Args&... args) noexcept {
 		read_unsafe(value);
 		read_unsafe(args...);
 	}
 
 };
 
-template <typename SizeType>
-class PacketSafeReader : public BasicPacketSafeReader<const uint8_t, SizeType> {
-	using Base = BasicPacketSafeReader<const uint8_t, SizeType>;
+template <typename S>
+class PacketSafeReader : public BasicPacketSafeReader<const uint8_t, S> {
+	using Base = BasicPacketSafeReader<const uint8_t, S>;
 
 public:
 
-	PacketSafeReader(ByteConstBuffer range) noexcept :
-	Base(range.data(), range.length()) { }
+	PacketSafeReader(MemConstArea range) noexcept :
+	Base(range.pointer(), range.length()) { }
 
-	PacketSafeReader(ByteBuffer range) noexcept :
-	Base(range.data(), range.length()) { }
+	PacketSafeReader(MemArea range) noexcept :
+	Base(range.pointer(), range.length()) { }
 
-	PacketSafeReader(const uint8_t* data, SizeType bytes) noexcept :
+	PacketSafeReader(const uint8_t* data, S bytes) noexcept :
 	Base(data, bytes) { }
 };
 
 }; // namespace binio
+
+#if defined(GCC_DIAG_POP_NEEDED)
+#pragma GCC diagnostic pop
+#undef GCC_DIAG_POP_NEEDED
+#endif
 
 #endif /* BINIO_PACKET_SAFE_READER_H */
