@@ -6,36 +6,33 @@
 #include <assert.h>
 #include <cstdio>
 
-#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
-#pragma GCC diagnostic ignored "-Weffc++"
-
 namespace intrusive {
 
 class TestMap {
 
 	template<typename T>
 	struct StructValue {
-		T x;
+		T value;
 
-		StructValue() : x() { }
+		StructValue() : value() { }
 
-		StructValue(unsigned int x) : x(x) { }
+		StructValue(unsigned int x) : value(x) { }
 
 		bool operator==(const StructValue& st_val) const {
-			return x == st_val.x;
+			return value == st_val.value;
 		}
 
 	};
 
 	template <typename K, typename V>
-	struct MapData : public MapHook<K, MapData<K, V> > {
+	struct MapNode : public MapHook<K, MapNode<K, V> > {
 		V value;
 
-		MapData() : value() { }
+		MapNode() : value() { }
 
-		MapData(V v) : value(v) { }
+		explicit MapNode(V v) : value(v) { }
 
-		bool operator==(const MapData& data) const {
+		bool operator==(const MapNode& data) const {
 			return value == data.value;
 		}
 
@@ -44,12 +41,12 @@ class TestMap {
 	using Key_t = unsigned;
 	using Value_t = StructValue<unsigned long long>;
 
-	using MapData_t = MapData<Key_t, Value_t>;
-	using Map_t = Map<Key_t, MapData_t>;
+	using MapNode_t = MapNode<Key_t, Value_t>;
+	using Map_t = Map<Key_t, MapNode_t>;
 	using Bucket_t = Map_t::Bucket_t;
 
 	const size_t storage_size;
-	MapData_t* storage;
+	MapNode_t* storage;
 	const size_t bucket_list_size;
 	Map_t map;
 
@@ -57,15 +54,11 @@ public:
 
 	TestMap(unsigned storage_size, float load_factor)
 	: storage_size(storage_size),
-	storage(new MapData_t[storage_size]),
+	storage(new MapNode_t[storage_size]),
 	bucket_list_size((storage_size / load_factor) + 1),
 	map(bucket_list_size) {
-
 		if (not map.allocate())
 			throw std::logic_error("Cannot allocate Map instance");
-		for (unsigned i = 0; i < storage_size; i++) {
-			storage[i].value = i;
-		}
 	}
 
 	TestMap(const TestMap&) = delete;
@@ -75,103 +68,135 @@ public:
 	TestMap operator=(TestMap&&) = delete;
 
 	~TestMap() {
-		// the map must be destroyed before the storage has been destroyed.
-		map.destroy();
+		// The map must be empty before the storage has been destroyed.
+		map.clear();
 		delete [] storage;
 	}
 
 	size_t storage_bytes() {
-		return storage_size * sizeof (MapData_t) + bucket_list_size * sizeof (Bucket_t);
+		return storage_size * sizeof (MapNode_t) + bucket_list_size * sizeof (Bucket_t);
 	}
 
 	void test() {
 		printf("<intrusive::MapTest>...\n");
 		printf("sizeof(Value_t)=%zu\n", sizeof (Value_t));
-		printf("sizeof(MapData_t)=%zu\n", sizeof (MapData_t));
+		printf("sizeof(MapData_t)=%zu\n", sizeof (MapNode_t));
 		printf("sizeof(Bucket_t)=%zu\n", sizeof (Bucket_t));
 		printf("storage_size=%zu\n", storage_size);
 		printf("bucket_list_size=%zu\n", bucket_list_size);
 		printf("memory used %zu Kb\n", storage_bytes() / (1024));
 		test_raii();
-		test_put();
-		test_find();
-		test_find_const();
-		test_remove();
+		test_put_find_remove();
+		test_clear();
 	}
 
 	void test_raii() {
 		assert(map.size() == 0);
-		fill(map);
+		for (size_t i = 0; i < storage_size; i++) {
+			put_once(i, i, i);
+		}
 		Map_t tmp_map(std::move(map));
 		assert(map.size() == 0);
 		assert(tmp_map.size() == storage_size);
-		for (Key_t i = 0; i < storage_size; i++) {
-			auto it = tmp_map.find(i);
-			assert(it != tmp_map.end());
-			assert((*it) == storage[i]);
-			assert(it->value == storage[i].value);
-		}
 		map = std::move(map);
 		map = std::move(tmp_map);
 		std::swap(map, tmp_map);
 		std::swap(map, tmp_map);
-		clear(map);
+		for (size_t i = 0; i < storage_size; i++) {
+			find_once(i, i);
+			remove_once(i, i);
+		}
+		assert(map.size() == 0);
+		test_sanity();
 	}
 
-	void test_put() {
+	void test_put_find_remove() {
 		assert(map.size() == 0);
-		fill(map);
-		for (Key_t i = 0; i < storage_size; i++) {
-			auto it = map.put(i, storage[i]);
-			assert(it == map.end());
+		unsigned step = 0;
+
+		// forward
+		step++;
+		for (size_t i = 0; i < storage_size; i++) {
+			put_once(i, i * step, i + step);
 		}
-		clear(map);
+		for (size_t i = 0; i < storage_size; i++) {
+			find_once(i * step, i + step);
+			find_once_const(i * step, i + step);
+		}
+		for (size_t i = 0; i < storage_size; i++) {
+			remove_once(i * step, i + step);
+		}
+		assert(map.size() == 0);
+		test_sanity();
+
+		// backward
+		step++;
+		for (size_t i = 0; i < storage_size; i++) {
+			size_t index = storage_size - i - 1;
+			put_once(index, i * step, i + step);
+		}
+		for (size_t i = 0; i < storage_size; i++) {
+			find_once(i * step, i + step);
+			find_once_const(i * step, i + step);
+		}
+		for (size_t i = 0; i < storage_size; i++) {
+			remove_once(i * step, i + step);
+		}
+		assert(map.size() == 0);
+		test_sanity();
+
+		// odd
+		step++;
+		for (size_t i = 0; i < storage_size; i++) {
+			if (i % 2 != 0) {
+				put_once(i, i * step, i + step);
+			}
+		}
+		for (size_t i = 0; i < storage_size; i++) {
+			if (i % 2 != 0) {
+				find_once(i * step, i + step);
+				find_once_const(i * step, i + step);
+			} else {
+				miss_once(i * step);
+			}
+		}
+		for (size_t i = 0; i < storage_size; i++) {
+			if (i % 2 != 0) {
+				remove_once(i * step, i + step);
+			}
+		}
+		assert(map.size() == 0);
+		test_sanity();
+
+		// even
+		step++;
+		for (size_t i = 0; i < storage_size; i++) {
+			if (i % 2 == 0) {
+				put_once(i, i * step, i + step);
+			}
+		}
+		for (size_t i = 0; i < storage_size; i++) {
+			if (i % 2 == 0) {
+				find_once(i * step, i + step);
+				find_once_const(i * step, i + step);
+			} else {
+				miss_once(i * step);
+			}
+		}
+		for (size_t i = 0; i < storage_size; i++) {
+			if (i % 2 == 0) {
+				remove_once(i * step, i + step);
+			}
+		}
+		assert(map.size() == 0);
+		test_sanity();
 	}
 
-	void test_find() {
-		assert(map.size() == 0);
-		fill(map);
-		for (Key_t i = 0; i < storage_size; i++) {
-			auto it = map.find(i);
-			assert(it != map.end());
-			assert(*it == storage[i]);
-			assert(it->value == storage[i].value);
+	void test_clear() {
+		for (size_t i = 0; i < storage_size; i++) {
+			put_once(i, i, i);
 		}
-		clear(map);
-		for (Key_t i = 0; i < storage_size; i++) {
-			auto it = map.find(i);
-			assert(it == map.end());
-		}
-	}
-
-	void test_find_const() {
-		assert(map.size() == 0);
-		fill(map);
-
-		const Map_t& local_map = map;
-		for (Key_t i = 0; i < storage_size; i++) {
-			auto it = local_map.find(i);
-			assert(it != local_map.cend());
-			assert(*it == storage[i]);
-			assert(it->value == storage[i].value);
-		}
-		clear(map);
-		for (Key_t i = 0; i < storage_size; i++) {
-			auto it = local_map.find(i);
-			assert(it == local_map.cend());
-		}
-	}
-
-	void test_remove() {
-		assert(map.size() == 0);
-		fill(map);
-		for (Key_t i = 0; i < storage_size; i++) {
-			auto it = map.find(i);
-			assert(it != map.end());
-			assert(*it == storage[i]);
-			assert(it->value == storage[i].value);
-			assert(map.remove(it));
-		}
+		map.clear();
 		assert(map.size() == 0);
 		test_sanity();
 	}
@@ -181,7 +206,7 @@ public:
 		for (size_t bucket = 0; bucket < map.buckets(); ++bucket) {
 			std::cout << "B[" << bucket << "] ";
 			for (auto it = map.cbegin(bucket); it != map.cend(); ++it) {
-				std::cout << (*it).value.x << " ";
+				std::cout << "[" << &(*it) << "] " << (*it).im_key << ":" << (*it).value.value << " -> ";
 			}
 			std::cout << "\n";
 		}
@@ -189,26 +214,52 @@ public:
 
 private:
 
+	void put_once(size_t node_index, const Key_t& key, const Value_t& value) noexcept {
+		MapNode_t& node = storage[node_index];
+		node.value = value;
+		auto it = map.put(key, node);
+		assert(it != map.end());
+		assert(*it == node);
+		assert(it->value == value);
+		assert(it->im_key == key);
+		assert(it->im_linked);
+	}
+
+	void find_once(const Key_t& key, const Value_t& value) noexcept {
+		auto it = map.find(key);
+		assert(it != map.end());
+		assert(it->value == value);
+		assert(it->im_key == key);
+		assert(it->im_linked);
+	}
+
+	void find_once_const(const Key_t& key, const Value_t& value) const noexcept {
+		auto it = map.find(key);
+		assert(it != map.cend());
+		assert(it->value == value);
+		assert(it->im_key == key);
+		assert(it->im_linked);
+	}
+
+	void miss_once(const Key_t& key) noexcept {
+		auto it = map.find(key);
+		assert(it == map.end());
+	}
+
+	void remove_once(const Key_t& key, const Value_t& value) noexcept {
+		auto it = map.find(key);
+		assert(it != map.end());
+		assert(it->value == value);
+		assert(it->im_key == key);
+		assert(it->im_linked);
+		map.remove(it);
+		assert(not it->im_linked);
+	}
+
 	void test_sanity() {
 		for (unsigned i = 0; i < storage_size; i++) {
 			assert(not storage[i].im_linked);
 		}
-	}
-
-	void fill(Map_t& map) {
-		for (Key_t i = 0; i < storage_size; i++) {
-			auto it = map.put(i, storage[i]);
-			assert(it != map.end());
-			assert(*it == storage[i]);
-			assert(it->value == storage[i].value);
-		}
-		assert(map.size() == storage_size);
-	}
-
-	void clear(Map_t& map) {
-		map.clear();
-		assert(map.size() == 0);
-		test_sanity();
 	}
 
 };

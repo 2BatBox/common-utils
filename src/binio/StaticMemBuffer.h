@@ -13,11 +13,11 @@ template <size_t capacity_bytes>
 class StaticMemBuffer {
 protected:
 	size_t m_length;
-	uint8_t m_buffer[capacity];
+	uint8_t m_buffer[capacity_bytes];
 
 public:
 
-	StaticMemBuffer() noexcept : m_buffer(), m_length(0) { }
+	StaticMemBuffer() noexcept : m_length(0), m_buffer() { }
 
 	inline operator const uint8_t*() const noexcept {
 		return m_buffer;
@@ -49,6 +49,10 @@ public:
 
 	// set data
 
+	inline bool set(const StaticMemBuffer& membuf) noexcept {
+		return set(membuf.pointer(), membuf.length());
+	}
+
 	inline bool set(MemConstArea marea) noexcept {
 		return set(marea.pointer(), marea.length());
 	}
@@ -58,7 +62,7 @@ public:
 	}
 
 	inline bool set(const uint8_t* data, size_t length) noexcept {
-		if (length > capacity || data == nullptr)
+		if (length > capacity_bytes || data == nullptr)
 			return false;
 		memcpy(m_buffer, data, length);
 		m_length = length;
@@ -66,6 +70,10 @@ public:
 	}
 
 	// append data
+
+	inline bool append(const StaticMemBuffer& membuf) noexcept {
+		return append(membuf.pointer(), membuf.length());
+	}
 
 	inline bool append(MemConstArea array) noexcept {
 		return append(array.pointer(), array.length());
@@ -75,8 +83,12 @@ public:
 		return append(array.pointer(), array.length());
 	}
 
+	inline bool append(uint8_t byte) noexcept {
+		return append(&byte, 1);
+	}
+
 	inline bool append(const uint8_t* data, size_t length) noexcept {
-		size_t bytes_left = capacity - length;
+		size_t bytes_left = capacity_bytes - length;
 		if (length > bytes_left || data == nullptr)
 			return false;
 
@@ -89,14 +101,16 @@ public:
 		return m_length = 0;
 	}
 
-	inline bool operator==(const StaticMemBuffer& lv) const noexcept {
-		if (m_length == lv.m_length && m_length <= capacity) {
-			return (memcmp(m_buffer, lv.m_buffer, m_length) == 0);
+	template <size_t size>
+	inline bool operator==(const StaticMemBuffer<size>& lv) const noexcept {
+		if (m_length == lv.length()) {
+			return (memcmp(m_buffer, lv.pointer(), m_length) == 0);
 		}
 		return false;
 	}
 
-	inline bool operator!=(const StaticMemBuffer& lv) const noexcept {
+	template <size_t size>
+	inline bool operator!=(const StaticMemBuffer<size>& lv) const noexcept {
 		return not operator==(lv);
 	}
 

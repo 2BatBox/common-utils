@@ -33,7 +33,7 @@ struct MapBucket {
 template <typename K, typename MapNode, typename H = std::hash<K>, typename A = std::allocator<MapBucket<MapNode> > >
 class Map {
 public:
-	typedef MapBucket<MapNode> Bucket_t;
+	using Bucket_t = MapBucket<MapNode>;
 
 private:
 	Bucket_t * bucket_list;
@@ -45,10 +45,11 @@ private:
 	template<typename N>
 	struct Iterator {
 		friend class Map;
+		friend class LruCache;
 
-		Iterator() noexcept : node_ptr(nullptr), bucket_index(bucket_index) { }
+		Iterator() noexcept : node_ptr(nullptr) { }
 
-		Iterator(N* node, size_t index) noexcept : node_ptr(node), bucket_index(index) { }
+		Iterator(N* node) noexcept : node_ptr(node) { }
 
 		bool operator==(const Iterator& it) const noexcept {
 			return node_ptr == it.node_ptr;
@@ -84,19 +85,18 @@ private:
 			return node_ptr;
 		}
 
-		size_t index() const noexcept {
-			return bucket_index;
+		const K& key() noexcept {
+			return node_ptr->im_key;
 		}
 
 	private:
 		N* node_ptr;
-		size_t bucket_index;
 	};
+
+public:
 
 	using Iterator_t = Iterator<MapNode>;
 	using ConstIterator_t = Iterator<const MapNode>;
-
-public:
 
 	Map(size_t bucket_list_size) noexcept :
 	bucket_list(nullptr),
@@ -126,17 +126,23 @@ public:
 			elements = rv.elements;
 			allocator = rv.allocator;
 			hasher = rv.hasher;
-
-			rv.bucket_list = nullptr;
-			rv.destroy();
+			rv.clean_state();
 		}
 		return *this;
 	}
 
+	/**
+	 * Be careful, The map must be empty before the storage has been destroyed.
+	 * That means the method 'clean()' must be called before destroying the storage.
+	 */
 	virtual ~Map() noexcept {
 		destroy();
 	}
 
+	/**
+	 * Allocate the bucket storage of the map.
+	 * @return true - if the bucket storage has been allocated successfully.
+	 */
 	bool allocate() noexcept {
 		if (bucket_list)
 			return false;
@@ -151,61 +157,47 @@ public:
 		return bucket_list != nullptr;
 	}
 
-	void destroy() noexcept {
-		if (bucket_list) {
-			clear();
-			for (size_t i = 0; i < bucket_list_size; i++) {
-				allocator.destroy(bucket_list + i);
-			}
-			allocator.deallocate(bucket_list, bucket_list_size);
-			bucket_list = nullptr;
+	/**
+	 * Unlink all the objects the map contains.
+	 */
+	void clear() noexcept {
+		for (size_t i = 0; i < bucket_list_size; i++) {
+			while (bucket_list[i].head)
+				unlink_front(i);
 		}
-		bucket_list_size = 0;
-		elements = 0;
 	}
 
 	Iterator_t put(const K& key, MapNode& value) noexcept {
 		MapNode* result = nullptr;
-		size_t index = 0;
 		if (sanity_check(value)) {
-			index = hasher(key) % bucket_list_size;
-			result = find(bucket_list[index], key);
-			if (result == nullptr){
-				link_front(bucket_list[index], key, value);
+			size_t bucket_id = hasher(key) % bucket_list_size;
+			result = find(bucket_id, key);
+			if (result == nullptr) {
+				link_front(bucket_id, key, value);
 				result = &value;
 			}
 		}
-		return Iterator_t(result, index);
+		return Iterator_t(result);
 	}
 
 	ConstIterator_t find(const K& key) const noexcept {
-		size_t index = hasher(key) % bucket_list_size;
-		return ConstIterator_t(find(bucket_list[index], key), index);
+		size_t bucket_id = hasher(key) % bucket_list_size;
+		return ConstIterator_t(find(bucket_id, key));
 	}
 
 	Iterator_t find(const K& key) noexcept {
-		size_t index = hasher(key) % bucket_list_size;
-		return Iterator_t(find(bucket_list[index], key), index);
+		size_t bucket_id = hasher(key) % bucket_list_size;
+		return Iterator_t(find(bucket_id, key));
 	}
 
-	bool remove(Iterator_t it) noexcept {
-		if (it->im_linked) {
-			MapNode& node = *it;
-			size_t index = it.index();
-			Bucket_t& bucket = bucket_list[index];
-			if (&node == bucket.head)
-				unlink_front(bucket);
-			else
-				unlink_next(bucket, node);
-			return true;
-		}
-		return false;
-	}
-
-	void clear() noexcept {
-		for (size_t i = 0; i < bucket_list_size; i++) {
-			while (bucket_list[i].head)
-				unlink_front(bucket_list[i]);
+	void remove(Iterator_t it) noexcept {
+		MapNode* node = it.node_ptr;
+		size_t bucket_id = hasher(node->im_key) % bucket_list_size;
+		if (node == bucket_list[bucket_id].head) {
+			unlink_front(bucket_id);
+		} else {
+			MapNode* prev = find_prev(bucket_id, node->im_key);
+			unlink_next(bucket_id, *prev);
 		}
 	}
 
@@ -222,7 +214,7 @@ public:
 	}
 
 	inline ConstIterator_t cbegin(size_t bucket) const noexcept {
-		return ConstIterator_t(bucket_list[bucket].head, bucket);
+		return ConstIterator_t(bucket_list[bucket].head);
 	}
 
 	inline Iterator_t end() noexcept {
@@ -235,11 +227,23 @@ public:
 
 private:
 
+	void destroy() noexcept {
+		if (bucket_list) {
+			clear();
+			for (size_t i = 0; i < bucket_list_size; i++) {
+				allocator.destroy(bucket_list + i);
+			}
+			allocator.deallocate(bucket_list, bucket_list_size);
+		}
+		clean_state();
+	}
+
 	inline static bool sanity_check(const MapNode& node) noexcept {
 		return (not node.im_linked);
 	}
 
-	inline void link_front(Bucket_t& bucket, const K& key, MapNode& node) noexcept {
+	inline void link_front(size_t bucket_id, const K& key, MapNode& node) noexcept {
+		Bucket_t& bucket = bucket_list[bucket_id];
 		node.im_next = bucket.head;
 		node.im_linked = true;
 		node.im_key = key;
@@ -248,7 +252,8 @@ private:
 		elements++;
 	}
 
-	inline void unlink_front(Bucket_t& bucket) noexcept {
+	inline void unlink_front(size_t bucket_id) noexcept {
+		Bucket_t& bucket = bucket_list[bucket_id];
 		MapNode* tmp_value = bucket.head;
 		bucket.head = bucket.head->im_next;
 		tmp_value->im_next = nullptr;
@@ -257,7 +262,8 @@ private:
 		elements--;
 	}
 
-	inline void unlink_next(Bucket_t& bucket, MapNode& node) noexcept {
+	inline void unlink_next(size_t bucket_id, MapNode& node) noexcept {
+		Bucket_t& bucket = bucket_list[bucket_id];
 		MapNode* tmp_value = node.im_next;
 		node.im_next = node.im_next->im_next;
 		tmp_value->im_next = nullptr;
@@ -266,8 +272,8 @@ private:
 		elements--;
 	}
 
-	inline MapNode* find(Bucket_t& bucket, const K& key) noexcept {
-		MapNode* cur = bucket.head;
+	inline MapNode* find(size_t bucket_id, const K& key) noexcept {
+		MapNode* cur = bucket_list[bucket_id].head;
 		while (cur) {
 			if (cur->im_key == key)
 				break;
@@ -276,14 +282,34 @@ private:
 		return cur;
 	}
 
-	inline const MapNode* find(Bucket_t& bucket, const K& key) const noexcept {
-		MapNode* cur = bucket.head;
+	inline const MapNode* find(size_t bucket_id, const K& key) const noexcept {
+		MapNode* cur = bucket_list[bucket_id].head;
 		while (cur) {
-			if (cur->im_key == key)
+			if (cur->im_key == key) {
 				break;
+			}
 			cur = cur->im_next;
 		}
 		return cur;
+	}
+
+	inline MapNode* find_prev(size_t bucket_id, const K& key) const noexcept {
+		MapNode* cur = bucket_list[bucket_id].head;
+		MapNode* prev = nullptr;
+		while (cur) {
+			if (cur->im_key == key) {
+				return prev;
+			}
+			prev = cur;
+			cur = cur->im_next;
+		}
+		return nullptr;
+	}
+
+	inline void clean_state() noexcept {
+		bucket_list = nullptr;
+		bucket_list_size = 0;
+		elements = 0;
 	}
 
 };

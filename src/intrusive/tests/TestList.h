@@ -7,9 +7,6 @@
 #include <cstdio>
 #include <cstddef>
 
-#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
-#pragma GCC diagnostic ignored "-Weffc++"
-
 namespace intrusive {
 
 class TestList {

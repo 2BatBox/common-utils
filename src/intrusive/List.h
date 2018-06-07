@@ -13,10 +13,10 @@
 
 namespace intrusive {
 
-template <typename V>
+template <typename N>
 struct ListHook {
-	V* il_next;
-	V* il_prev;
+	N* il_next;
+	N* il_prev;
 	bool il_linked;
 
 	ListHook() noexcept : il_next(nullptr), il_prev(nullptr), il_linked(false) { }
@@ -142,14 +142,17 @@ public:
 			head = rv.head;
 			tail = rv.tail;
 			list_size = rv.list_size;
-			rv.head = rv.tail = nullptr;
-			rv.list_size = 0;
+			rv.clean_state();
 		}
 		return *this;
 	}
 
+	/**
+	 * Be careful, The list must be empty before the storage has been destroyed.
+	 */
 	virtual ~List() noexcept {
 		clear();
+		clean_state();
 	}
 
 	bool push_front(ListNode& node) noexcept {
@@ -227,6 +230,9 @@ public:
 		return false;
 	}
 
+	/**
+	 * Unlink all objects in the list.
+	 */
 	void clear() noexcept {
 		while (head)
 			pop_front();
@@ -357,6 +363,11 @@ private:
 		node.il_prev = nullptr;
 		node.il_linked = false;
 		list_size--;
+	}
+
+	inline void clean_state() noexcept {
+		head = tail = nullptr;
+		list_size = 0;
 	}
 
 };
