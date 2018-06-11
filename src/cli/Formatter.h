@@ -10,16 +10,12 @@
 namespace cli {
 
 class Formatter {
-	Config m_config;
-
 public:
 
-	Formatter(const Config& config) noexcept : m_config(config) { }
-
-	void print_options(const OptionList& list, FILE* out) noexcept {
+	static void print_options(const OptionList& list, FILE* out) noexcept {
 		for (unsigned i = 0; i < list.size(); i++) {
 			const Option& opt = list[i];
-			fprintf(out, "%*s", m_config.name_offset, "");
+			fprintf(out, "%*s", Config::name_offset, "");
 
 			if (opt.has_short_name()) {
 				print_short(opt, out);
@@ -39,8 +35,8 @@ public:
 
 private:
 
-	void print_short(const Option& opt, FILE* out) const noexcept {
-		fprintf(out, "%s%c", m_config.short_prefix.c_str(), opt.short_name());
+	static void print_short(const Option& opt, FILE* out) noexcept {
+		fprintf(out, "%s%c", Config::short_prefix.c_str(), opt.short_name());
 
 		switch (opt.arg_type()) {
 		case ArgumentType::NONE:
@@ -59,30 +55,30 @@ private:
 		}
 	}
 
-	void print_long(const Option& opt, FILE* out) const noexcept {
-		fprintf(out, "%s%s", m_config.long_prefix.c_str(), opt.long_name().c_str());
+	static void print_long(const Option& opt, FILE* out) noexcept {
+		fprintf(out, "%s%s", Config::long_prefix.c_str(), opt.long_name().c_str());
 
 		switch (opt.arg_type()) {
 		case ArgumentType::NONE:
 			break;
 
 		case ArgumentType::MANDATORY:
-			fprintf(out, "%s%s", m_config.long_arg_start.c_str(), opt.arg_name().c_str());
+			fprintf(out, "%s%s", Config::long_arg_start.c_str(), opt.arg_name().c_str());
 			break;
 
 		case ArgumentType::OPTIONAL:
-			fprintf(out, "[%s%s]", m_config.long_arg_start.c_str(), opt.arg_name().c_str());
+			fprintf(out, "[%s%s]", Config::long_arg_start.c_str(), opt.arg_name().c_str());
 			break;
 		}
 	}
 
-	void print_desc(const char* desc, FILE* out) const noexcept {
-		fprintf(out, "%*s", m_config.description_offset, "");
+	static void print_desc(const char* desc, FILE* out) noexcept {
+		fprintf(out, "%*s", Config::description_offset, "");
 		unsigned desc_len = strlen(desc);
 		for (unsigned i = 0; i < desc_len; i++) {
 			if (desc[i] == '\n') {
 
-				fprintf(out, "\n%*s", m_config.description_offset, "");
+				fprintf(out, "\n%*s", Config::description_offset, "");
 			} else {
 				fprintf(out, "%c", desc[i]);
 			}

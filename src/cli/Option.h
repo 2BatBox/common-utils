@@ -15,6 +15,46 @@ enum class ArgumentType {
 	OPTIONAL
 };
 
+class OptionValue {
+	bool m_presented;
+	bool m_has_argument;
+	std::string m_argument;
+
+public:
+
+	OptionValue() noexcept : m_presented(false), m_has_argument(false), m_argument() {
+	}
+
+	bool presented() const noexcept {
+		return m_presented;
+	}
+
+	bool has_argument() const noexcept {
+		return m_has_argument;
+	}
+
+	const std::string& argument() const noexcept {
+		return m_argument;
+	}
+
+	void set_presented() noexcept {
+		m_presented = true;
+	}
+
+	void set_argument(const std::string& value) noexcept {
+		m_presented = true;
+		m_has_argument = true;
+		m_argument = value;
+	}
+
+	void clear() noexcept {
+		m_presented = false;
+		m_has_argument = false;
+		m_argument.clear();
+	}
+
+};
+
 class Option {
 	const char m_short_name;
 	const std::string m_long_name;
@@ -23,6 +63,7 @@ class Option {
 	bool m_required;
 	std::string m_desc;
 	std::string m_arg_name;
+	OptionValue m_value;
 
 public:
 
@@ -34,7 +75,65 @@ public:
 	m_arg_type(arg_type),
 	m_required(false),
 	m_desc(),
-	m_arg_name("arg") { };
+	m_arg_name(),
+	m_value() {
+	}
+
+	bool has_short_name() const noexcept {
+		return m_short_name != SHORT_NAME_NONE;
+	}
+
+	bool has_long_name() const noexcept {
+		return m_long_name.length() > 0;
+	}
+
+	// Getters
+
+	char short_name() const noexcept {
+		return m_short_name;
+	}
+
+	const std::string& long_name() const noexcept {
+		return m_long_name;
+	}
+
+	const std::string& name() const noexcept {
+		std::string result;
+		if (has_short_name()) {
+			result += m_short_name;
+			result += " ";
+		}
+		if (has_long_name()) {
+			result += m_long_name;
+		}
+		return std::move(result);
+	}
+
+	ArgumentType arg_type() const noexcept {
+		return m_arg_type;
+	}
+
+	bool required() const noexcept {
+		return m_required;
+	}
+
+	const std::string& description() const noexcept {
+		return m_desc;
+	}
+
+	std::string arg_name() const noexcept {
+		return m_arg_name;
+	}
+
+	const OptionValue& value() const noexcept {
+		return m_value;
+	}
+
+	OptionValue& value() noexcept {
+		return m_value;
+	}
+
+	// setters
 
 	/**
 	 * @param value - true if the option cannot be omitted.
@@ -62,75 +161,6 @@ public:
 	Option& arg_name(const std::string& value) noexcept {
 		m_arg_name = value;
 		return *this;
-	}
-
-	bool has_short_name() const noexcept {
-		return m_short_name != SHORT_NAME_NONE;
-	}
-
-	bool has_long_name() const noexcept {
-		return m_long_name.length() > 0;
-	}
-
-	// Getters
-
-	char short_name() const noexcept {
-		return m_short_name;
-	}
-
-	const std::string& long_name() const noexcept {
-		return m_long_name;
-	}
-
-	ArgumentType arg_type() const noexcept {
-		return m_arg_type;
-	}
-
-	bool required() const noexcept {
-		return m_required;
-	}
-
-	const std::string& description() const noexcept {
-		return m_desc;
-	}
-
-	std::string arg_name() const noexcept {
-		if (m_arg_name.length() > 0)
-			return m_arg_name;
-		return "arg";
-	}
-
-private:
-
-	static void validate_short_name(char name) throw (std::logic_error) {
-		if (not isalpha(name)) {
-			fprintf(stderr, "Name '%c' is not a valid short name, the name must be alphabetical\n", name);
-			throw std::logic_error("invalid short name");
-		}
-	}
-
-	static void validate_long_name(const std::string& name) throw (std::logic_error) {
-		if (not check_long_name(name)) {
-			fprintf(stderr, "Name '%s' is not a valid long name, ", name.c_str());
-			fprintf(stderr, "the name must be start with an alphabetical symbol, it also can contain dashes. ");
-			fprintf(stderr, "The name must have two symbols at least.\n");
-			throw std::logic_error("invalid long name");
-		}
-	}
-
-	static bool check_long_name(const std::string& name) noexcept {
-		if (name.length() < 2)
-			return false;
-
-		if (not isalpha(name.c_str()[0]))
-			return false;
-
-		for (unsigned i = 1; i < name.length(); i++) {
-			char ch = name.c_str()[i];
-			if (not (isalpha(ch) || ch == '-'))
-				return false;
-		}
-		return true;
 	}
 
 };

@@ -12,110 +12,103 @@ public:
 
 	virtual ~EventHandler() noexcept = default;
 
-	virtual bool begin() = 0;
-	virtual bool end() = 0;
+	virtual void begin() throw (std::logic_error) = 0;
+	virtual void end() throw (std::logic_error) = 0;
 
-	virtual bool start_short(char opt) = 0;
-	virtual bool start_short(char opt, std::string arg) = 0;
-	virtual bool start_long(std::string opt) = 0;
-	virtual bool start_long(std::string opt, std::string arg) = 0;
-	virtual bool start_argument(std::string arg) = 0;
+	virtual void start_short(char opt) throw (std::logic_error) = 0;
+	virtual bool start_short(char opt, std::string arg) throw (std::logic_error) = 0;
+	virtual void start_long(std::string opt) throw (std::logic_error) = 0;
+	virtual void start_long(std::string opt, std::string arg) throw (std::logic_error) = 0;
+	virtual void start_argument(std::string arg) throw (std::logic_error) = 0;
 
 };
 
 class Parser {
-	Config m_config;
-
 public:
 
-	Parser(const Config& config) noexcept :
-	m_config(config) { }
+	Parser() noexcept {}
 
-	bool parse(int argc, char** argv, EventHandler* eh) {
-
-		if (not eh->begin()) {
-			return false;
-		}
+	void parse(int argc, char** argv, EventHandler* eh) throw (std::logic_error) {
+		eh->begin();
 
 		for (int i = 0; i < argc; i++) {
 			std::string argument(argv[i]);
 
-			if (argument.compare(0, m_config.long_prefix.length(), m_config.long_prefix) == 0) {
+			if (argument == Config::terminator) {
+				break;
+			}
+			if (argument.compare(0, Config::long_prefix.length(), Config::long_prefix) == 0) {
 				// long option
-				argument = argument.substr(m_config.long_prefix.length());
-				if (not parser_long_option(argument, eh)) {
-					return false;
-				}
-
-			} else if (argument.compare(0, m_config.short_prefix.length(), m_config.short_prefix) == 0) {
+				argument = argument.substr(Config::long_prefix.length());
+				parser_long_option(argument, eh);
+			} else if (argument.compare(0, Config::short_prefix.length(), Config::short_prefix) == 0) {
 				// short option
-				argument = argument.substr(m_config.short_prefix.length());
-				if (not parser_short_option(argument, eh)) {
-					return false;
-				}
-
+				argument = argument.substr(Config::short_prefix.length());
+				parser_short_option(argument, eh);
 			} else {
-				if (not eh->start_argument(argument)) {
-					return false;
-				}
+				eh->start_argument(argument);
 			}
 		}
-		return eh->end();
+		eh->end();
 	}
 
-	bool parser_long_option(std::string argument, EventHandler* eh) {
+	void parser_long_option(std::string argument, EventHandler* eh) {
 		std::string option;
 		std::string option_argument;
-		auto eq_sym = argument.find(m_config.long_arg_start);
+		auto eq_sym = argument.find(Config::long_arg_start);
 
-		// with argument
 		if (eq_sym != std::string::npos) {
+			// with argument
 			option = argument.substr(0, eq_sym);
 			option_argument = argument.substr(eq_sym + 1);
-
-			if (not validate_long_option(option) || option_argument.length() == 0) {
-				return false;
-			}
-
-			if (not eh->start_long(option, option_argument)) {
-				return false;
-			}
-
-			// with no argument
+			validate_long(option);
+			validate_long_arg(option_argument);
+			eh->start_long(option, option_argument);
 		} else {
-			if (not (validate_long_option(argument) && eh->start_long(argument))) {
-				return false;
-			}
+			// with no argument
+			validate_long(argument);
+			eh->start_long(argument);
 		}
-		return true;
 	}
 
-	bool parser_short_option(std::string argument, EventHandler* eh) {
-		if(argument.length() == 0 || not isalpha(argument.at(0))){
-			return false;
+	void parser_short_option(std::string argument, EventHandler* eh) {
+		if(argument.length() == 0){
+			return;
 		}
 		
-		if(argument.length() == 1){
-			return eh->start_short(argument.at(0));
+		char option = argument.at(0);
+		argument = argument.substr(1);
+		
+		validate_short(option);
+		if(argument.length() > 0){
+			if(eh->start_short(option, argument)){
+				parser_short_option(argument, eh);
+			}
 		} else {
-			return eh->start_short(argument.at(0), argument.substr(1));
+			eh->start_short(option);
 		}
-		return true;
+		
 	}
 
-	bool validate_long_option(std::string opt) noexcept {
-		if (opt.length() == 0)
-			return false;
-
-		if (not isalpha(opt.c_str()[0]))
-			return false;
-
-		for (unsigned i = 1; i < opt.length(); i++) {
-			char ch = opt.c_str()[i];
-			if (not (isalpha(ch) || ch == '-'))
-				return false;
+	void validate_short(char opt) throw (std::logic_error) {
+		if (opt == 0 || not isalpha(opt)) {
+			fprintf(stderr, "invalid short option name '%c'\n", opt);
+			throw std::logic_error("invalid short option name");
 		}
-		return true;
+	}
+
+	void validate_long(std::string opt) throw (std::logic_error) {
+		if (opt.length() == 0 || not isalpha(opt.c_str()[0])) {
+			fprintf(stderr, "invalid long option name '%s'\n", opt.c_str());
+			throw std::logic_error("invalid long option name");
+		}
+	}
+
+	void validate_long_arg(std::string arg) throw (std::logic_error) {
+		if (arg.length() == 0) {
+			fprintf(stderr, "invalid long option argument '%s'\n", arg.c_str());
+			throw std::logic_error("invalid long option argument");
+		}
 	}
 
 };

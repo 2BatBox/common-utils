@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include <ctype.h>
+#include <cstdlib>
 #include <vector>
 
 #include "Option.h"
@@ -16,7 +17,8 @@ class OptionList {
 
 public:
 
-	OptionList() noexcept : m_options() { }
+	OptionList() noexcept : m_options() {
+	}
 
 	Option& add_short(char short_name, bool has_argument) throw (std::logic_error) {
 		validate_short_name(short_name);
@@ -63,18 +65,49 @@ public:
 		return m_options.size();
 	}
 
-	const Option& operator[](unsigned index)const noexcept {
+	const Option& operator[](unsigned index) const noexcept {
 		return m_options[index];
 	}
 
-	Option& operator[](unsigned index)noexcept {
+	Option& operator[](unsigned index) noexcept {
 		return m_options[index];
 	}
 
+	void clean_values() noexcept {
+		for (auto elem : m_options) {
+			elem.value().clear();
+		}
+	}
+
+	void validate() throw (std::logic_error) {
+		for (auto elem : m_options) {
+			if (
+					elem.arg_type() == ArgumentType::MANDATORY
+					&& elem.value().presented()
+					&& not elem.value().has_argument()
+					) {
+				fprintf(stderr, "option '%s' has a mandatory argument\n", elem.name().c_str());
+				throw std::logic_error("a mandatory argument has not been set");
+			}
+		}
+	}
+
+	void dump(FILE* out) const noexcept {
+		fprintf(out, "==== Presented Option List ====\n");
+		for (auto elem : m_options) {
+			if (elem.value().presented()) {
+				fprintf(out, "%s : ", elem.name().c_str());
+				if (elem.value().has_argument()) {
+					fprintf(out, "value='%s'", elem.value().argument().c_str());
+				}
+				fprintf(out, "\n");
+			}
+		}
+	}
 
 private:
 
-	Option& append(const Option& opt) throw (std::logic_error) {
+	Option& append(Option& opt) throw (std::logic_error) {
 		if (opt.has_short_name() && find_short_name(opt.short_name())) {
 			fprintf(stderr, "option '%c' has already been appended\n", opt.short_name());
 			throw std::logic_error("option has already been appended");
@@ -85,6 +118,9 @@ private:
 			throw std::logic_error("option has already been appended");
 		}
 
+		if (opt.arg_type() != ArgumentType::NONE) {
+			opt.arg_name("arg");
+		}
 		m_options.push_back(opt);
 		return *(m_options.rbegin());
 	}
