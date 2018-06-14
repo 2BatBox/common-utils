@@ -12,30 +12,29 @@ namespace cli {
 class Formatter {
 public:
 
-	static void print_options(const OptionList& list, FILE* out) noexcept {
+	static void print_options(FILE* out, const OptionList& list) noexcept {
 		for (unsigned i = 0; i < list.size(); i++) {
 			const Option& opt = list[i];
 			fprintf(out, "%*s", Config::name_offset, "");
 
 			if (opt.has_short_name()) {
-				print_short(opt, out);
+				print_short(out, opt);
 			}
 
 			if (opt.has_long_name()) {
-				print_long(opt, out);
+				print_long(out, opt);
 			}
 			fprintf(out, "\n");
 
 			if (opt.description().length()) {
-				print_desc(opt.description().c_str(), out);
+				print_desc(out, opt.description().c_str());
 			}
-
 		}
 	}
 
 private:
 
-	static void print_short(const Option& opt, FILE* out) noexcept {
+	static void print_short(FILE* out, const Option& opt) noexcept {
 		fprintf(out, "%s%c", Config::short_prefix.c_str(), opt.short_name());
 
 		switch (opt.arg_type()) {
@@ -55,7 +54,7 @@ private:
 		}
 	}
 
-	static void print_long(const Option& opt, FILE* out) noexcept {
+	static void print_long(FILE* out, const Option& opt) noexcept {
 		fprintf(out, "%s%s", Config::long_prefix.c_str(), opt.long_name().c_str());
 
 		switch (opt.arg_type()) {
@@ -72,12 +71,11 @@ private:
 		}
 	}
 
-	static void print_desc(const char* desc, FILE* out) noexcept {
+	static void print_desc(FILE* out, const char* desc) noexcept {
 		fprintf(out, "%*s", Config::description_offset, "");
 		unsigned desc_len = strlen(desc);
 		for (unsigned i = 0; i < desc_len; i++) {
 			if (desc[i] == '\n') {
-
 				fprintf(out, "\n%*s", Config::description_offset, "");
 			} else {
 				fprintf(out, "%c", desc[i]);

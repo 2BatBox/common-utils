@@ -14,7 +14,7 @@ public:
 	
 	static const unsigned name_offset;
 	static const unsigned description_offset;
-
+	
 };
 
 }; // namespace cli;

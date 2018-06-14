@@ -8,7 +8,7 @@ BINDIR=bin
 CC=g++
 LINKER=g++
 
-CFLAGS=-std=c++11 -Wall -Wextra -Weffc++ -pthread -mssse3 -g3
+CFLAGS=-std=c++11 -Wall -Wextra -pthread -mssse3 -g3
 LDFLAGS=-lrt -pthread
 
 SOURCES  := $(wildcard $(SRCDIR)/*.cpp) $(wildcard $(SRCDIR)/**/*.cpp) $(wildcard $(SRCDIR)/**/**/*.cpp)
