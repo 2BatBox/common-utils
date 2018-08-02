@@ -3,14 +3,6 @@
 
 #include <memory>
 
-// gcc 4.8.2's -Wnon-virtual-dtor is broken and turned on by -Weffc++
-#if __GNUC__ < 3 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
-#pragma GCC diagnostic ignored "-Weffc++"
-#define GCC_DIAG_POP_NEEDED
-#endif
-
 namespace intrusive {
 
 template <typename K, typename V>
@@ -20,6 +12,12 @@ struct MapHook {
 	bool im_linked;
 
 	MapHook() noexcept : im_next(nullptr), im_key(), im_linked(false) { }
+
+	MapHook(const MapHook&) = delete;
+	MapHook& operator=(const MapHook&) = delete;
+
+	MapHook(MapHook&&) = delete;
+	MapHook& operator=(MapHook&&) = delete;
 };
 
 template <typename MapData_t>
@@ -28,6 +26,12 @@ struct MapBucket {
 	size_t size;
 
 	MapBucket() noexcept : head(nullptr), size(0) { }
+
+	MapBucket(const MapBucket&) = delete;
+	MapBucket& operator=(const MapBucket&) = delete;
+
+	MapBucket(MapBucket&&) = delete;
+	MapBucket& operator=(MapBucket&&) = delete;
 };
 
 template <typename K, typename MapNode, typename H = std::hash<K>, typename A = std::allocator<MapBucket<MapNode> > >
@@ -45,52 +49,55 @@ private:
 	template<typename N>
 	struct Iterator {
 		friend class Map;
-		friend class LruCache;
 
-		Iterator() noexcept : node_ptr(nullptr) { }
+		Iterator() noexcept : m_node(nullptr) { }
 
-		Iterator(N* node) noexcept : node_ptr(node) { }
+		Iterator(N* node) noexcept : m_node(node) { }
 
-		bool operator==(const Iterator& it) const noexcept {
-			return node_ptr == it.node_ptr;
+		inline bool operator==(const Iterator& it) const noexcept {
+			return m_node == it.m_node;
 		}
 
-		bool operator!=(const Iterator& it) const noexcept {
-			return node_ptr != it.node_ptr;
+		inline bool operator!=(const Iterator& it) const noexcept {
+			return m_node != it.m_node;
 		}
 
-		Iterator& operator++() noexcept {
-			node_ptr = node_ptr->im_next;
+		inline Iterator& operator++() noexcept {
+			m_node = m_node->im_next;
 			return *this;
 		}
 
-		Iterator operator++(int)noexcept {
-			node_ptr = node_ptr->im_next;
-			return Iterator(node_ptr);
+		inline Iterator operator++(int)noexcept {
+			m_node = m_node->im_next;
+			return Iterator(m_node);
 		}
 
-		const N& operator*() const noexcept {
-			return *node_ptr;
+		inline const N& operator*() const noexcept {
+			return *m_node;
 		}
 
-		N& operator*() noexcept {
-			return *node_ptr;
+		inline N& operator*() noexcept {
+			return *m_node;
 		}
 
-		const N* operator->() const noexcept {
-			return node_ptr;
+		inline const N* operator->() const noexcept {
+			return m_node;
 		}
 
-		N* operator->() noexcept {
-			return node_ptr;
+		inline N* operator->() noexcept {
+			return m_node;
 		}
 
-		const K& key() noexcept {
-			return node_ptr->im_key;
+		inline const K& key() noexcept {
+			return m_node->im_key;
+		}
+
+		inline operator bool() const noexcept {
+			return m_node;
 		}
 
 	private:
-		N* node_ptr;
+		N* m_node;
 	};
 
 public:
@@ -147,11 +154,10 @@ public:
 		if (bucket_list)
 			return false;
 
-		Bucket_t empty;
 		bucket_list = allocator.allocate(bucket_list_size);
 		if (bucket_list) {
 			for (size_t i = 0; i < bucket_list_size; i++) {
-				allocator.construct(bucket_list + i, empty);
+				allocator.construct(bucket_list + i);
 			}
 		}
 		return bucket_list != nullptr;
@@ -167,14 +173,20 @@ public:
 		}
 	}
 
-	Iterator_t put(const K& key, MapNode& value) noexcept {
+	inline Iterator_t put(const K& key, MapNode& free_node) noexcept {
+		bool recycled;
+		return put(key, free_node, recycled);
+	}
+
+	Iterator_t put(const K& key, MapNode& free_node, bool& recycled) noexcept {
 		MapNode* result = nullptr;
-		if (sanity_check(value)) {
+		if (sanity_check(free_node)) {
 			size_t bucket_id = hasher(key) % bucket_list_size;
 			result = find(bucket_id, key);
 			if (result == nullptr) {
-				link_front(bucket_id, key, value);
-				result = &value;
+				link_front(bucket_id, key, free_node);
+				result = &free_node;
+				recycled = false;
 			}
 		}
 		return Iterator_t(result);
@@ -191,7 +203,7 @@ public:
 	}
 
 	void remove(Iterator_t it) noexcept {
-		MapNode* node = it.node_ptr;
+		MapNode* node = it.m_node;
 		size_t bucket_id = hasher(node->im_key) % bucket_list_size;
 		if (node == bucket_list[bucket_id].head) {
 			unlink_front(bucket_id);
@@ -315,11 +327,6 @@ private:
 };
 
 }; // namespace intrusive
-
-#if defined(GCC_DIAG_POP_NEEDED)
-#pragma GCC diagnostic pop
-#undef GCC_DIAG_POP_NEEDED
-#endif
 
 #endif /* INTRUSIVE_MAP_H */
 

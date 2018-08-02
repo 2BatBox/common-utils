@@ -3,14 +3,6 @@
 
 #include <cstdlib>
 
-// gcc 4.8.2's -Wnon-virtual-dtor is broken and turned on by -Weffc++
-#if __GNUC__ < 3 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
-#pragma GCC diagnostic ignored "-Weffc++"
-#define GCC_DIAG_POP_NEEDED
-#endif
-
 namespace intrusive {
 
 template <typename N>
@@ -20,13 +12,20 @@ struct ListHook {
 	bool il_linked;
 
 	ListHook() noexcept : il_next(nullptr), il_prev(nullptr), il_linked(false) { }
+
+	ListHook(const ListHook&) = delete;
+	ListHook& operator=(const ListHook&) = delete;
+
+	ListHook(ListHook&&) = delete;
+	ListHook& operator=(ListHook&&) = delete;
 };
 
 template <typename ListNode>
 class List {
-	ListNode* head;
-	ListNode* tail;
-	size_t list_size;
+protected:
+	ListNode* m_head;
+	ListNode* m_tail;
+	size_t m_size;
 
 	template<typename N>
 	struct Iterator {
@@ -67,6 +66,10 @@ class List {
 		}
 
 		N* operator->() noexcept {
+			return node_ptr;
+		}
+
+		operator bool() const noexcept {
 			return node_ptr;
 		}
 
@@ -127,21 +130,21 @@ class List {
 
 public:
 
-	List() noexcept : head(nullptr), tail(nullptr), list_size(0) { }
+	List() noexcept : m_head(nullptr), m_tail(nullptr), m_size(0) { }
 
 	List(const List&) = delete;
 	List& operator=(const List&) = delete;
 
-	List(List&& rv) : head(rv.head), tail(rv.tail), list_size(rv.list_size) {
-		rv.head = rv.tail = nullptr;
-		rv.list_size = 0;
+	List(List&& rv) : m_head(rv.m_head), m_tail(rv.m_tail), m_size(rv.m_size) {
+		rv.m_head = rv.m_tail = nullptr;
+		rv.m_size = 0;
 	}
 
 	List& operator=(List&& rv) {
 		if (this != &rv) {
-			head = rv.head;
-			tail = rv.tail;
-			list_size = rv.list_size;
+			m_head = rv.m_head;
+			m_tail = rv.m_tail;
+			m_size = rv.m_size;
 			rv.clean_state();
 		}
 		return *this;
@@ -155,9 +158,17 @@ public:
 		clean_state();
 	}
 
+	ListNode* head() noexcept {
+		return m_head;
+	}
+
+	ListNode* tail() noexcept {
+		return m_tail;
+	}
+
 	bool push_front(ListNode& node) noexcept {
 		if (sanity_check(node)) {
-			if (head)
+			if (m_head)
 				link_head(node);
 			else
 				link_first(node);
@@ -168,7 +179,7 @@ public:
 
 	bool push_back(ListNode& node) noexcept {
 		if (sanity_check(node)) {
-			if (tail)
+			if (m_tail)
 				link_tail(node);
 			else
 				link_first(node);
@@ -178,18 +189,18 @@ public:
 	}
 
 	ListNode* pop_front() noexcept {
-		if (head != tail) {
+		if (m_head != m_tail) {
 			return unlink_head();
-		} else if (head) {
+		} else if (m_head) {
 			return unlink_last();
 		}
 		return nullptr;
 	}
 
 	ListNode* pop_back() noexcept {
-		if (head != tail) {
+		if (m_head != m_tail) {
 			return unlink_tail();
-		} else if (head) {
+		} else if (m_head) {
 			return unlink_last();
 		}
 		return nullptr;
@@ -197,7 +208,7 @@ public:
 
 	bool insert_before(ListNode& before, ListNode& node) noexcept {
 		if (before.il_linked && sanity_check(node)) {
-			if (&before == head)
+			if (&before == m_head)
 				link_head(node);
 			else
 				link_before(before, node);
@@ -208,7 +219,7 @@ public:
 
 	bool insert_after(ListNode& after, ListNode& node) noexcept {
 		if (after.il_linked && sanity_check(node)) {
-			if (&after == tail)
+			if (&after == m_tail)
 				link_tail(node);
 			else
 				link_after(after, node);
@@ -218,10 +229,10 @@ public:
 	}
 
 	bool remove(ListNode& node) noexcept {
-		if (head && node.il_linked) {
-			if (&node == head)
+		if (m_head && node.il_linked) {
+			if (&node == m_head)
 				pop_front();
-			else if (&node == tail)
+			else if (&node == m_tail)
 				pop_back();
 			else
 				unlink(node);
@@ -234,20 +245,20 @@ public:
 	 * Unlink all objects in the list.
 	 */
 	void clear() noexcept {
-		while (head)
+		while (m_head)
 			pop_front();
 	}
 
 	inline size_t size() const noexcept {
-		return list_size;
+		return m_size;
 	}
 
 	inline Iterator_t begin() noexcept {
-		return Iterator_t(head);
+		return Iterator_t(m_head);
 	}
 
 	inline ConstIterator_t cbegin() const noexcept {
-		return ConstIterator_t(head);
+		return ConstIterator_t(m_head);
 	}
 
 	inline Iterator_t end() noexcept {
@@ -259,11 +270,11 @@ public:
 	}
 
 	inline ReverseIterator_t rbegin() noexcept {
-		return ReverseIterator_t(tail);
+		return ReverseIterator_t(m_tail);
 	}
 
 	inline ConstReverseIterator_t crbegin() const noexcept {
-		return ConstReverseIterator_t(tail);
+		return ConstReverseIterator_t(m_tail);
 	}
 
 	inline ReverseIterator_t rend() noexcept {
@@ -284,26 +295,26 @@ private:
 		node.il_next = nullptr;
 		node.il_prev = nullptr;
 		node.il_linked = true;
-		head = tail = &node;
-		list_size++;
+		m_head = m_tail = &node;
+		m_size++;
 	}
 
 	inline void link_head(ListNode& node) noexcept {
-		node.il_next = head;
+		node.il_next = m_head;
 		node.il_prev = nullptr;
 		node.il_linked = true;
-		head->il_prev = &node;
-		head = &node;
-		list_size++;
+		m_head->il_prev = &node;
+		m_head = &node;
+		m_size++;
 	}
 
 	inline void link_tail(ListNode& node) noexcept {
 		node.il_next = nullptr;
-		node.il_prev = tail;
+		node.il_prev = m_tail;
 		node.il_linked = true;
-		tail->il_next = &node;
-		tail = &node;
-		list_size++;
+		m_tail->il_next = &node;
+		m_tail = &node;
+		m_size++;
 	}
 
 	inline void link_before(ListNode& before, ListNode& node) noexcept {
@@ -312,7 +323,7 @@ private:
 		node.il_linked = true;
 		before.il_prev->il_next = &node;
 		before.il_prev = &node;
-		list_size++;
+		m_size++;
 	}
 
 	inline void link_after(ListNode& after, ListNode& node) noexcept {
@@ -321,38 +332,38 @@ private:
 		node.il_linked = true;
 		after.il_next->il_prev = &node;
 		after.il_next = &node;
-		list_size++;
+		m_size++;
 	}
 
 	inline ListNode* unlink_last() noexcept {
-		ListNode* result = head;
-		head->il_next = nullptr;
-		head->il_prev = nullptr;
-		head->il_linked = false;
-		head = tail = nullptr;
-		list_size--;
+		ListNode* result = m_head;
+		m_head->il_next = nullptr;
+		m_head->il_prev = nullptr;
+		m_head->il_linked = false;
+		m_head = m_tail = nullptr;
+		m_size--;
 		return result;
 	}
 
 	inline ListNode* unlink_head() noexcept {
-		ListNode* result = head;
-		head = head->il_next;
-		head->il_prev = nullptr;
+		ListNode* result = m_head;
+		m_head = m_head->il_next;
+		m_head->il_prev = nullptr;
 		result->il_next = nullptr;
 		result->il_prev = nullptr;
 		result->il_linked = false;
-		list_size--;
+		m_size--;
 		return result;
 	}
 
 	inline ListNode* unlink_tail() noexcept {
-		ListNode* result = tail;
-		tail = tail->il_prev;
-		tail->il_next = nullptr;
+		ListNode* result = m_tail;
+		m_tail = m_tail->il_prev;
+		m_tail->il_next = nullptr;
 		result->il_next = nullptr;
 		result->il_prev = nullptr;
 		result->il_linked = false;
-		list_size--;
+		m_size--;
 		return result;
 	}
 
@@ -362,21 +373,16 @@ private:
 		node.il_next = nullptr;
 		node.il_prev = nullptr;
 		node.il_linked = false;
-		list_size--;
+		m_size--;
 	}
 
 	inline void clean_state() noexcept {
-		head = tail = nullptr;
-		list_size = 0;
+		m_head = m_tail = nullptr;
+		m_size = 0;
 	}
 
 };
 
 }; // namespace intrusive
-
-#if defined(GCC_DIAG_POP_NEEDED)
-#pragma GCC diagnostic pop
-#undef GCC_DIAG_POP_NEEDED
-#endif
 
 #endif /* INTRUSIVE_LIST_H */

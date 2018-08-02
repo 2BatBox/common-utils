@@ -1,18 +1,10 @@
-#ifndef CACHE_LRU_CACHE_H
-#define CACHE_LRU_CACHE_H
-
-#include <bits/allocator.h>
+#ifndef CACHE_LRUCACHE_H
+#define CACHE_LRUCACHE_H
 
 #include "../intrusive/List.h"
 #include "../intrusive/Map.h"
 
-// gcc 4.8.2's -Wnon-virtual-dtor is broken and turned on by -Weffc++
-#if __GNUC__ < 3 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
-#pragma GCC diagnostic ignored "-Weffc++"
-#define GCC_DIAG_POP_NEEDED
-#endif
+#include <bits/allocator.h>
 
 namespace cache {
 
@@ -24,7 +16,11 @@ struct LruCacheNode : public intrusive::ListHook<LruCacheNode<K, V> >, intrusive
 
 	LruCacheNode() : value() { }
 
-	explicit LruCacheNode(const V& v) : value(v) { }
+	LruCacheNode(const LruCacheNode&) = delete;
+	LruCacheNode& operator=(const LruCacheNode&) = delete;
+
+	LruCacheNode(LruCacheNode&&) = delete;
+	LruCacheNode& operator=(LruCacheNode&&) = delete;
 
 	bool operator==(const LruCacheNode& data) const noexcept {
 		return value == data.value;
@@ -32,22 +28,22 @@ struct LruCacheNode : public intrusive::ListHook<LruCacheNode<K, V> >, intrusive
 };
 
 template <
-typename Node,
-typename H = std::hash<typename Node::Key_t>,
-typename SA = std::allocator<Node>,
-typename BA = std::allocator<intrusive::MapBucket<Node> >
+typename Node_t,
+typename H = std::hash<typename Node_t::Key_t>,
+typename SA = std::allocator<Node_t>,
+typename BA = std::allocator<intrusive::MapBucket<Node_t> >
 >
 class LruCache {
 	friend class TestLruCache;
 
-	using Key_t = typename Node::Key_t;
-	using Value_t = typename Node::Value_t;
-	using List_t = intrusive::List<Node>;
-	using Map_t = intrusive::Map<Key_t, Node, H, BA>;
+	using Key_t = typename Node_t::Key_t;
+	using Value_t = typename Node_t::Value_t;
+	using List_t = intrusive::List<Node_t>;
+	using Map_t = intrusive::Map<Key_t, Node_t, H, BA>;
 	using Bucket_t = typename Map_t::Bucket_t;
 
 	const size_t m_capacity;
-	Node* m_storage;
+	Node_t* m_storage;
 	Map_t m_map;
 	List_t m_list_cached;
 	List_t m_list_freed;
@@ -65,8 +61,6 @@ public:
 	m_list_freed(),
 	m_allocator() { }
 
-public:
-
 	LruCache(const LruCache&) = delete;
 	LruCache& operator=(const LruCache&) = delete;
 
@@ -78,7 +72,7 @@ public:
 	}
 
 	/**
-	 * Allocate the node storage of the cache and the map object.
+	 * Allocate the node storage.
 	 * @return true - if the cache has been allocated successfully.
 	 */
 	bool allocate() noexcept {
@@ -89,9 +83,8 @@ public:
 		if (m_storage == nullptr)
 			return false;
 
-		Node empty;
 		for (unsigned i = 0; i < m_capacity; i++) {
-			m_allocator.construct(m_storage + i, empty);
+			m_allocator.construct(m_storage + i);
 			m_list_freed.push_back(m_storage[i]);
 		}
 
@@ -102,18 +95,21 @@ public:
 		return true;
 	}
 
-	Iterator_t put(const Key_t& key) noexcept {
+	Iterator_t push_back(const Key_t& key, bool& recycled) noexcept {
+		recycled = false;
 		auto it = m_map.find(key);
-		if (it != m_map.end()) {
+		if (it) {
 			update(it);
+			recycled = true;
 		} else {
-			Node* freed;
+			Node_t* freed;
 			if (m_list_freed.size()) {
 				freed = m_list_freed.pop_front();
 			} else {
 				freed = m_list_cached.pop_front();
 				auto freed_it = m_map.find(freed->im_key);
 				m_map.remove(freed_it);
+				recycled = true;
 			}
 			m_list_cached.push_back(*freed);
 			it = m_map.put(key, *freed);
@@ -121,28 +117,38 @@ public:
 		return it;
 	}
 
-	ConstIterator_t find(const Key_t& key) const noexcept {
+	Iterator_t peek_front() noexcept {
+		Iterator_t result(m_list_cached.head());
+		return result;
+	}
+
+	Iterator_t pop_front() noexcept {
+		Iterator_t result(m_list_cached.head());
+		if (result) {
+			remove(result);
+		}
+		return result;
+	}
+
+	inline ConstIterator_t find(const Key_t& key) const noexcept {
 		return m_map.find(key);
 	}
 
-	Iterator_t find(const Key_t& key) noexcept {
+	inline Iterator_t find(const Key_t& key) noexcept {
 		return m_map.find(key);
 	}
 
-	void update(Iterator_t it) noexcept {
+	inline void update(Iterator_t it) noexcept {
 		m_list_cached.remove(*it);
 		m_list_cached.push_back(*it);
 	}
 
-	void remove(Iterator_t it) noexcept {
+	inline void remove(Iterator_t it) noexcept {
 		m_map.remove(it);
 		m_list_cached.remove(*it);
 		m_list_freed.push_back(*it);
 	}
 
-	/**
-	 * Unlink all the objects the cache contains.
-	 */
 	void clear() noexcept {
 		m_map.clear();
 		m_list_cached.clear();
@@ -160,7 +166,7 @@ public:
 	}
 
 	inline size_t storage_bytes() const noexcept {
-		return m_capacity * sizeof (Node) + m_map.buckets() * sizeof (Bucket_t);
+		return m_capacity * sizeof (Node_t) + m_map.buckets() * sizeof (Bucket_t);
 	}
 
 	inline Iterator_t end() noexcept {
@@ -190,10 +196,5 @@ private:
 
 }; // namespace cache
 
-#if defined(GCC_DIAG_POP_NEEDED)
-#pragma GCC diagnostic pop
-#undef GCC_DIAG_POP_NEEDED
-#endif
-
-#endif /* CACHE_LRU_CACHE_H */
+#endif /* CACHE_LRUCACHE_H */
 

@@ -85,15 +85,130 @@ public:
 		printf("storage_size=%zu\n", storage_size);
 		printf("bucket_list_size=%zu\n", bucket_list_size);
 		printf("memory used %zu Kb\n", storage_bytes() / (1024));
+
+		unsigned step = 1;
+		test_put_remove_forward(step++);
+		test_put_remove_backward(step++);
+		test_put_remove_odd_even(step++);
+		test_recycle(step++);
+		test_clear(step++);
 		test_raii();
-		test_put_find_remove();
-		test_clear();
 	}
 
-	void test_raii() {
+	void test_put_remove_forward(unsigned step) noexcept {
+		printf("-> test_put_remove_forward()\n");
+		assert(map.size() == 0);
+
+		for (size_t i = 0; i < storage_size; i++) {
+			put_one(i, i * step, i + step);
+		}
+		for (size_t i = 0; i < storage_size; i++) {
+			find_one(i * step, i + step);
+		}
+		for (size_t i = 0; i < storage_size; i++) {
+			remove_one(i * step, i + step);
+			miss_one(i * step);
+		}
+		assert(map.size() == 0);
+		test_sanity();
+	}
+
+	void test_put_remove_backward(unsigned step) noexcept {
+		printf("-> test_put_remove_backward()\n");
+		assert(map.size() == 0);
+
+		for (size_t i = 0; i < storage_size; i++) {
+			size_t index = storage_size - i - 1;
+			put_one(index, i * step, i + step);
+		}
+		for (size_t i = 0; i < storage_size; i++) {
+			find_one(i * step, i + step);
+		}
+		for (size_t i = 0; i < storage_size; i++) {
+			remove_one(i * step, i + step);
+			miss_one(i * step);
+		}
+		assert(map.size() == 0);
+		test_sanity();
+	}
+
+	void test_put_remove_odd_even(unsigned step) noexcept {
+		printf("-> test_put_remove_odd_even()\n");
+		assert(map.size() == 0);
+
+		for (size_t i = 0; i < storage_size; i++) {
+			if (i % 2 != 0) {
+				put_one(i, i * step, i + step);
+			}
+		}
+
+		for (size_t i = 0; i < storage_size; i++) {
+			if (i % 2 == 0) {
+				put_one(i, i * step, i + step + 1);
+			}
+		}
+
+		for (size_t i = 0; i < storage_size; i++) {
+			if (i % 2 != 0) {
+				find_one(i * step, i + step);
+			} else {
+				find_one(i * step, i + step + 1);
+			}
+		}
+
+		for (size_t i = 0; i < storage_size; i++) {
+			if (i % 2 != 0) {
+				remove_one(i * step, i + step);
+			} else {
+				remove_one(i * step, i + step + 1);
+			}
+			miss_one(i * step);
+		}
+		assert(map.size() == 0);
+		test_sanity();
+	}
+
+	void test_recycle(unsigned step) noexcept {
+		printf("-> test_recycle()\n");
+		for (size_t i = 0; i < storage_size; i++) {
+			if (i % 2 == 0) {
+				put_one(i, i, i);
+			} else {
+				put_one_recycled(i - 1, i - 1, (i - 1) * step);
+			}
+		}
+
+		for (size_t i = 0; i < storage_size; i++) {
+			if (i % 2 == 0) {
+				find_one(i, i * step);
+				remove_one(i, i * step);
+				miss_one(i);
+			} else {
+				miss_one(i);
+			}
+
+		}
+		assert(map.size() == 0);
+		test_sanity();
+	}
+
+	void test_clear(unsigned step) noexcept {
+		printf("-> test_clear()\n");
+
+		for (size_t i = 0; i < storage_size; i++) {
+			put_one(i, i + step, i + step);
+		}
+		map.clear();
+		assert(map.size() == 0);
+		test_sanity();
+	}
+
+	void test_raii() noexcept {
+		printf("-> test_raii()\n");
+
 		assert(map.size() == 0);
 		for (size_t i = 0; i < storage_size; i++) {
-			put_once(i, i, i);
+			put_one(i, i, i);
 		}
 		Map_t tmp_map(std::move(map));
 		assert(map.size() == 0);
@@ -103,105 +218,14 @@ public:
 		std::swap(map, tmp_map);
 		std::swap(map, tmp_map);
 		for (size_t i = 0; i < storage_size; i++) {
-			find_once(i, i);
-			remove_once(i, i);
+			find_one(i, i);
+			remove_one(i, i);
 		}
 		assert(map.size() == 0);
 		test_sanity();
 	}
 
-	void test_put_find_remove() {
-		assert(map.size() == 0);
-		unsigned step = 0;
-
-		// forward
-		step++;
-		for (size_t i = 0; i < storage_size; i++) {
-			put_once(i, i * step, i + step);
-		}
-		for (size_t i = 0; i < storage_size; i++) {
-			find_once(i * step, i + step);
-			find_once_const(i * step, i + step);
-		}
-		for (size_t i = 0; i < storage_size; i++) {
-			remove_once(i * step, i + step);
-		}
-		assert(map.size() == 0);
-		test_sanity();
-
-		// backward
-		step++;
-		for (size_t i = 0; i < storage_size; i++) {
-			size_t index = storage_size - i - 1;
-			put_once(index, i * step, i + step);
-		}
-		for (size_t i = 0; i < storage_size; i++) {
-			find_once(i * step, i + step);
-			find_once_const(i * step, i + step);
-		}
-		for (size_t i = 0; i < storage_size; i++) {
-			remove_once(i * step, i + step);
-		}
-		assert(map.size() == 0);
-		test_sanity();
-
-		// odd
-		step++;
-		for (size_t i = 0; i < storage_size; i++) {
-			if (i % 2 != 0) {
-				put_once(i, i * step, i + step);
-			}
-		}
-		for (size_t i = 0; i < storage_size; i++) {
-			if (i % 2 != 0) {
-				find_once(i * step, i + step);
-				find_once_const(i * step, i + step);
-			} else {
-				miss_once(i * step);
-			}
-		}
-		for (size_t i = 0; i < storage_size; i++) {
-			if (i % 2 != 0) {
-				remove_once(i * step, i + step);
-			}
-		}
-		assert(map.size() == 0);
-		test_sanity();
-
-		// even
-		step++;
-		for (size_t i = 0; i < storage_size; i++) {
-			if (i % 2 == 0) {
-				put_once(i, i * step, i + step);
-			}
-		}
-		for (size_t i = 0; i < storage_size; i++) {
-			if (i % 2 == 0) {
-				find_once(i * step, i + step);
-				find_once_const(i * step, i + step);
-			} else {
-				miss_once(i * step);
-			}
-		}
-		for (size_t i = 0; i < storage_size; i++) {
-			if (i % 2 == 0) {
-				remove_once(i * step, i + step);
-			}
-		}
-		assert(map.size() == 0);
-		test_sanity();
-	}
-
-	void test_clear() {
-		for (size_t i = 0; i < storage_size; i++) {
-			put_once(i, i, i);
-		}
-		map.clear();
-		assert(map.size() == 0);
-		test_sanity();
-	}
-
-	void dump() {
+	void dump() noexcept {
 		std::cout << "map has " << map.size() << " elements \n";
 		for (size_t bucket = 0; bucket < map.buckets(); ++bucket) {
 			std::cout << "B[" << bucket << "] ";
@@ -214,18 +238,32 @@ public:
 
 private:
 
-	void put_once(size_t node_index, const Key_t& key, const Value_t& value) noexcept {
+	void put_one(size_t node_index, const Key_t& key, const Value_t& value) noexcept {
+		bool recycled = true;
 		MapNode_t& node = storage[node_index];
-		node.value = value;
-		auto it = map.put(key, node);
+		auto it = map.put(key, node, recycled);
 		assert(it != map.end());
+		assert(not recycled);
+		it->value = value;
 		assert(*it == node);
-		assert(it->value == value);
 		assert(it->im_key == key);
 		assert(it->im_linked);
 	}
 
-	void find_once(const Key_t& key, const Value_t& value) noexcept {
+	void put_one_recycled(size_t node_index, const Key_t& key, const Value_t& value) noexcept {
+		bool recycled = false;
+		MapNode_t tmp;
+		MapNode_t& node_recycled = storage[node_index];
+		auto it = map.put(key, tmp);
+		assert(it != map.end());
+		assert(not recycled);
+		it->value = value;
+		assert(*it == node_recycled);
+		assert(it->im_key == key);
+		assert(it->im_linked);
+	}
+
+	void find_one(const Key_t& key, const Value_t& value) noexcept {
 		auto it = map.find(key);
 		assert(it != map.end());
 		assert(it->value == value);
@@ -233,20 +271,12 @@ private:
 		assert(it->im_linked);
 	}
 
-	void find_once_const(const Key_t& key, const Value_t& value) const noexcept {
-		auto it = map.find(key);
-		assert(it != map.cend());
-		assert(it->value == value);
-		assert(it->im_key == key);
-		assert(it->im_linked);
-	}
-
-	void miss_once(const Key_t& key) noexcept {
+	void miss_one(const Key_t& key) noexcept {
 		auto it = map.find(key);
 		assert(it == map.end());
 	}
 
-	void remove_once(const Key_t& key, const Value_t& value) noexcept {
+	void remove_one(const Key_t& key, const Value_t& value) noexcept {
 		auto it = map.find(key);
 		assert(it != map.end());
 		assert(it->value == value);

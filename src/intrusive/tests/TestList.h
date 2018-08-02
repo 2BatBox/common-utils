@@ -62,7 +62,7 @@ public:
 
 	~TestList() {
 		// The list must be empty before the storage has been destroyed.
-		list.clear(); 
+		list.clear();
 		delete [] storage;
 	}
 
