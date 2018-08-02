@@ -173,12 +173,16 @@ public:
 		}
 	}
 
-	inline Iterator_t put(const K& key, MapNode& free_node) noexcept {
-		bool recycled;
-		return put(key, free_node, recycled);
-	}
-
-	Iterator_t put(const K& key, MapNode& free_node, bool& recycled) noexcept {
+	/**
+	 * The method can pun 'free_node' or recycle an existing one.
+	 * To find one which way has been used compare the result address and 'free_node' address.
+	 * bool recycled = (&node != &(*it));
+	 * 
+	 * @param key
+	 * @param free_node
+	 * @return 
+	 */
+	Iterator_t put(const K& key, MapNode& free_node) noexcept {
 		MapNode* result = nullptr;
 		if (sanity_check(free_node)) {
 			size_t bucket_id = hasher(key) % bucket_list_size;
@@ -186,7 +190,6 @@ public:
 			if (result == nullptr) {
 				link_front(bucket_id, key, free_node);
 				result = &free_node;
-				recycled = false;
 			}
 		}
 		return Iterator_t(result);

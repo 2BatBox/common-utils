@@ -293,7 +293,7 @@ private:
 		assert(it == m_map.end());
 		it = m_map.push_back(key, recycled);
 		assert(it != m_map.end());
-//		assert(not it.recycled());
+		assert(not recycled);
 		it->value = value;
 		assert(it->im_key == key);
 		assert(it->im_linked);
@@ -303,7 +303,7 @@ private:
 		bool recycled = false;
 		auto it = m_map.push_back(key, recycled);
 		assert(it != m_map.end());
-//		assert(it.recycled());
+		assert(recycled);
 		it->value = value;
 		assert(it->im_key == key);
 		assert(it->im_linked);

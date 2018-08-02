@@ -239,10 +239,10 @@ public:
 private:
 
 	void put_one(size_t node_index, const Key_t& key, const Value_t& value) noexcept {
-		bool recycled = true;
 		MapNode_t& node = storage[node_index];
-		auto it = map.put(key, node, recycled);
+		auto it = map.put(key, node);
 		assert(it != map.end());
+		bool recycled = (&node != &(*it));
 		assert(not recycled);
 		it->value = value;
 		assert(*it == node);
@@ -251,12 +251,12 @@ private:
 	}
 
 	void put_one_recycled(size_t node_index, const Key_t& key, const Value_t& value) noexcept {
-		bool recycled = false;
 		MapNode_t tmp;
 		MapNode_t& node_recycled = storage[node_index];
 		auto it = map.put(key, tmp);
 		assert(it != map.end());
-		assert(not recycled);
+		bool recycled = (&tmp != &(*it));
+		assert(recycled);
 		it->value = value;
 		assert(*it == node_recycled);
 		assert(it->im_key == key);

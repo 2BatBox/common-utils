@@ -10,7 +10,7 @@ typedef unsigned Key_t;
 typedef unsigned Value_t;
 
 int main_intrusive(int, char**) {
-	//int main(int, char**) {
+	//	int main(int, char**) {
 
 	unsigned storage_size = 16;
 	float load_factor = 0.7f;
