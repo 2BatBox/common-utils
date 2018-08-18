@@ -6,18 +6,11 @@
 
 #include "BasicPacket.h"
 
-// gcc 4.8.2's -Wnon-virtual-dtor is broken and turned on by -Weffc++
-#if __GNUC__ < 3 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
-#pragma GCC diagnostic ignored "-Weffc++"
-#define GCC_DIAG_POP_NEEDED
-#endif
-
 namespace binio {
 
 /**
  * The PacketSafeReader / PacketSafeWriter design.
+ * The class provides a bounds checking solution for safe reading/writing operations.
  * 
  * see BasicPacket.h for more details.
  * 
@@ -142,7 +135,7 @@ public:
 	}
 
 	/**
-	 * Read @value from the packet and set the head to a new position.
+	 * Read @value from the packet and set the head to the new position.
 	 * @param value - variable to read to.
 	 * @return true - if the packet is in its bounds after reading.
 	 */
@@ -159,7 +152,7 @@ public:
 	}
 
 	/**
-	 * Read @value and @args from the packet and set the head to a new position.
+	 * Read @value and @args from the packet and set the head to the new position.
 	 * @param value - a variable to read to.
 	 * @param args - variables to read to.
 	 * @return true - if the packet is in its bounds after reading.
@@ -177,19 +170,17 @@ public:
 	}
 
 	/**
-	 * Read an array from the packet and set the head to a new position.
-	 * @param array - an array to read to.
-	 * @param array_len - amount of @array elements.
+	 * Read a memory area from the packet and set the head to the new position.
+	 * @param area - an array to read to.
 	 * @return true - if the packet is in its bounds after reading.
 	 */
-	template <typename V>
-	bool read_memory(V* array, S array_len) noexcept {
+	bool read_marea(MArea area) noexcept {
 		if (in_bounds) {
-			array_len *= sizeof (V);
+			S array_len = area.length();
 			if (array_len > Base::bytes_available) {
 				in_bounds = false;
 			} else {
-				memcpy(array, Base::ptr_head, array_len);
+				memcpy(area.begin(), Base::ptr_head, array_len);
 				Base::ptr_head += array_len;
 				Base::bytes_available -= array_len;
 			}
@@ -198,28 +189,7 @@ public:
 	}
 
 	/**
-	 * Assign an array of pointers to the head and set the head to a new position.
-	 * @param array - an array to assign.
-	 * @param array_len - amount of @array elements.
-	 * @return true - if the packet is in its bounds after assigning.
-	 */
-	template <typename V>
-	bool assign(V*& array, S array_len) noexcept {
-		if (in_bounds) {
-			array_len *= sizeof (V);
-			if (array_len > Base::bytes_available) {
-				in_bounds = false;
-			} else {
-				array = reinterpret_cast<V*>(Base::ptr_head);
-				Base::ptr_head += array_len;
-				Base::bytes_available -= array_len;
-			}
-		}
-		return in_bounds;
-	}
-
-	/**
-	 * Assign one pointer to the head and set the head to a new position.
+	 * Assign one pointer to the head and set the head to the new position.
 	 * @param pointer - a pointer to assign.
 	 * @return true - if the packet is in its bounds after assigning.
 	 */
@@ -238,19 +208,19 @@ public:
 	}
 
 	/**
-	 * Assign an array of pointers to the head.
-	 * @param array - an array to assign.
-	 * @param array_len - amount of @array elements.
+	 * Assign a memory area to the head and set the head to the new position.
+	 * @param area - an area to assign.
+	 * @param area_len - length of the area in bytes.
 	 * @return true - if the packet is in its bounds after assigning.
 	 */
-	template <typename V>
-	bool assign_stay(V*& array, S array_len) noexcept {
+	bool assign_mcarea(MCArea& area, S area_len) noexcept {
 		if (in_bounds) {
-			array_len *= sizeof (V);
-			if (array_len > Base::bytes_available) {
+			if (area_len > Base::bytes_available) {
 				in_bounds = false;
 			} else {
-				array = reinterpret_cast<V*>(Base::ptr_head);
+				area = as_mcarea(Base::ptr_head, area_len);
+				Base::ptr_head += area_len;
+				Base::bytes_available -= area_len;
 			}
 		}
 		return in_bounds;
@@ -262,7 +232,7 @@ public:
 	 * @return true - if the packet is in its bounds after assigning.
 	 */
 	template <typename V>
-	bool assign_stay(V*& pointer) noexcept {
+	bool assign_stay(V*& pointer) const noexcept {
 		if (in_bounds) {
 			if (sizeof (V) > Base::bytes_available) {
 				in_bounds = false;
@@ -305,21 +275,16 @@ class PacketSafeReader : public BasicPacketSafeReader<const uint8_t, S> {
 
 public:
 
-	PacketSafeReader(MemConstArea range) noexcept :
-	Base(range.pointer(), range.length()) { }
+	PacketSafeReader(MCArea range) noexcept :
+	Base(range.begin(), range.length()) { }
 
-	PacketSafeReader(MemArea range) noexcept :
-	Base(range.pointer(), range.length()) { }
+	PacketSafeReader(MArea range) noexcept :
+	Base(range.begin(), range.length()) { }
 
 	PacketSafeReader(const uint8_t* data, S bytes) noexcept :
 	Base(data, bytes) { }
 };
 
 }; // namespace binio
-
-#if defined(GCC_DIAG_POP_NEEDED)
-#pragma GCC diagnostic pop
-#undef GCC_DIAG_POP_NEEDED
-#endif
 
 #endif /* BINIO_PACKET_SAFE_READER_H */

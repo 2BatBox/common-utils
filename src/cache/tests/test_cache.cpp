@@ -4,25 +4,30 @@
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 #pragma GCC diagnostic ignored "-Weffc++"
 
-#include "TestLruCache.h"
+#include "TestLinkedHashPool.h"
+#include "TestLinkedPool.h"
 
 #include <iostream>
 
 typedef unsigned Key_t;
 typedef unsigned Value_t;
 
-//int main_cache(int, char**) {
-int main(int, char**) {
+int main_cache(int, char**) {
+//int main(int, char**) {
 	unsigned storage_size = 1024;
-	float load_factor = 0.2f;
+	float load_factor_one = 0.2f;
+	float load_factor_two = 10.0f;
 
-	cache::TestLruCache lru_map_test(storage_size, load_factor);
-	lru_map_test.test();
+	cache::TestLinkedPool linked_pool(storage_size);
+	linked_pool.test();
 	std::cout << "\n";
 
-	load_factor = 10.0f;
-	cache::TestLruCache lru_map_test2(storage_size, load_factor);
-	lru_map_test2.test();
+	cache::TestLinkedHashPool linked_hash_pool_first(storage_size, load_factor_one);
+	linked_hash_pool_first.test();
+	std::cout << "\n";
+
+	cache::TestLinkedHashPool linked_hash_pool_second(storage_size, load_factor_two);
+	linked_hash_pool_second.test();
 	std::cout << "\n";
 
 	std::cout << "<---- the end of main_cache() ---->\n";

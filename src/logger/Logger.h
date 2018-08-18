@@ -33,7 +33,7 @@
 
 class Logger {
 public:
-    static FILE* log_file;
+	static FILE* log_file;
 };
 
 #endif /* LOG_H_ */

@@ -2,6 +2,7 @@
 #define INTRUSIVE_MAP_H
 
 #include <memory>
+#include <cassert>
 
 namespace intrusive {
 
@@ -96,6 +97,14 @@ private:
 			return m_node;
 		}
 
+		inline const N* get() const noexcept {
+			return m_node;
+		}
+
+		inline N* get() noexcept {
+			return m_node;
+		}
+
 	private:
 		N* m_node;
 	};
@@ -174,52 +183,77 @@ public:
 	}
 
 	/**
-	 * The method can pun 'free_node' or recycle an existing one.
-	 * To find one which way has been used compare the result address and 'free_node' address.
-	 * bool recycled = (&node != &(*it));
-	 * 
+	 * Link a key with a node.
+	 * The key must not be linked with some other node.
+	 * The node must not be linked.
 	 * @param key
-	 * @param free_node
+	 * @param node
 	 * @return 
 	 */
-	Iterator_t put(const K& key, MapNode& free_node) noexcept {
-		MapNode* result = nullptr;
-		if (sanity_check(free_node)) {
-			size_t bucket_id = hasher(key) % bucket_list_size;
-			result = find(bucket_id, key);
-			if (result == nullptr) {
-				link_front(bucket_id, key, free_node);
-				result = &free_node;
-			}
-		}
-		return Iterator_t(result);
+	Iterator_t link(const K& key, MapNode& node) noexcept {
+		check_free(node);
+		size_t bucket_id = hasher(key) % bucket_list_size;
+		link_front(bucket_id, key, node);
+		return Iterator_t(&node);
 	}
 
+	/**
+	 * Find a node which is linked to the key.
+	 * @param key
+	 * @return 
+	 */
 	ConstIterator_t find(const K& key) const noexcept {
 		size_t bucket_id = hasher(key) % bucket_list_size;
 		return ConstIterator_t(find(bucket_id, key));
 	}
 
+	/**
+	 * Find a node which is linked to the key.
+	 * @param key
+	 * @return 
+	 */
 	Iterator_t find(const K& key) noexcept {
 		size_t bucket_id = hasher(key) % bucket_list_size;
 		return Iterator_t(find(bucket_id, key));
 	}
 
-	void remove(Iterator_t it) noexcept {
-		MapNode* node = it.m_node;
-		size_t bucket_id = hasher(node->im_key) % bucket_list_size;
-		if (node == bucket_list[bucket_id].head) {
+	/**
+	 * Remove the node.
+	 * The node must be linked.
+	 * @param key
+	 * @return 
+	 */
+	void remove(MapNode& node) noexcept {
+		check_linked(node);
+		size_t bucket_id = hasher(node.im_key) % bucket_list_size;
+		if (&node == bucket_list[bucket_id].head) {
 			unlink_front(bucket_id);
 		} else {
-			MapNode* prev = find_prev(bucket_id, node->im_key);
+			MapNode* prev = find_prev(bucket_id, node.im_key);
 			unlink_next(bucket_id, *prev);
 		}
 	}
 
+	/**
+	 * Remove the node with an iterator.
+	 * The node must be linked.
+	 * @param key
+	 * @return 
+	 */
+	void remove(Iterator_t it) noexcept {
+		remove(*it);
+	}
+
+	/**
+	 * @return amount of currently linked nodes.
+	 */
 	inline size_t size() const noexcept {
 		return elements;
 	}
 
+	/**
+	 * @return amount of the map buckets.
+	 */
 	inline size_t buckets() const noexcept {
 		return bucket_list_size;
 	}
@@ -253,8 +287,12 @@ private:
 		clean_state();
 	}
 
-	inline static bool sanity_check(const MapNode& node) noexcept {
-		return (not node.im_linked);
+	inline static void check_free(const MapNode& node) noexcept {
+		assert(not node.im_linked);
+	}
+
+	inline static void check_linked(const MapNode& node) noexcept {
+		assert(node.im_linked);
 	}
 
 	inline void link_front(size_t bucket_id, const K& key, MapNode& node) noexcept {

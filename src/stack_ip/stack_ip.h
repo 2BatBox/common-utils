@@ -2,6 +2,7 @@
 #define STACK_IP_STACK_IP_H
 
 #include <cstdlib>
+#include <arpa/inet.h>
 
 #include "../binio/packet/PacketReader.h"
 
@@ -10,13 +11,13 @@ namespace stack_ip {
 using DefaultPacketReader = binio::PacketReader<unsigned>;
 
 enum class Protocol : uint8_t {
-	L2_ETHERNET,
-	L2_VLAN,
-	L3_IPv4,
-	L4_UDP,
-	L4_SCTP,
+    L2_ETHERNET,
+    L2_VLAN,
+    L3_IPv4,
+    L4_UDP,
+    L4_SCTP,
 
-	END = 100
+    END = 100
 };
 
 }; // namespace stack_ip

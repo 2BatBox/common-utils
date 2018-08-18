@@ -6,14 +6,6 @@
 
 #include "PacketReader.h"
 
-// gcc 4.8.2's -Wnon-virtual-dtor is broken and turned on by -Weffc++
-#if __GNUC__ < 3 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
-#pragma GCC diagnostic ignored "-Weffc++"
-#define GCC_DIAG_POP_NEEDED
-#endif
-
 namespace binio {
 
 /**
@@ -26,19 +18,18 @@ class PacketWriter : public BasicPacketReader<uint8_t, S> {
 
 public:
 
-	PacketWriter(MemArea range) noexcept :
-	Base(range.pointer(), range.length()) { }
+	PacketWriter(MArea range) noexcept :
+	Base(range.begin(), range.length()) { }
 
 	PacketWriter(uint8_t* data, S bytes) noexcept :
 	Base(data, bytes) { }
 
 	/**
-	 * Write one variable to the buffer and set the head to a new position.
+	 * Write one variable to the buffer and set the head to the new position.
 	 * @param value - variable to write from.
-	 * @return true - if the buffer is in its bounds after writing.
 	 */
 	template <typename V>
-	void write(const V& value) noexcept {
+	inline void write(const V& value) noexcept {
 		write_unsafe(value);
 	}
 
@@ -46,25 +37,32 @@ public:
 	 * Write @value and @args to the buffer and set it at the new position.
 	 * @param value - variable to write from.
 	 * @param args - variables to write from.
-	 * @return true - if the buffer is in its bounds after writing.
 	 */
 	template <typename V, typename... Args>
-	void write(const V& value, const Args&... args) noexcept {
+	inline void write(const V& value, const Args&... args) noexcept {
 		write_unsafe(value, args...);
 	}
 
 	/**
-	 * Write an array to the buffer and set the head to a new position.
-	 * @param value - variable to write from
-	 * @param array_len - amount of @array elements.
-	 * @return true - if the buffer is in its bounds after writing
+	 * Write an array to the buffer and set the head to the new position.
+	 * @param area - an area to write from
 	 */
-	template <typename V>
-	void write_memory(const V* array, S array_len) noexcept {
-		array_len *= sizeof (V);
-		memcpy(Base::ptr_head, array, array_len);
+	void write_mcarea(MCArea area) noexcept {
+		S array_len = area.length();
+		memcpy(Base::ptr_head, area.begin(), array_len);
 		Base::ptr_head += array_len;
 		Base::bytes_available -= array_len;
+	}
+
+	/**
+	 * Assign an area to the head and set the head to the new position.
+	 * @param area - an array to assign.
+	 * @param area_len - length of the area in bytes.
+	 */
+	inline void assign_marea(MArea& area, S area_len) noexcept {
+		area = as_marea(Base::ptr_head, area_len);
+		Base::ptr_head += area_len;
+		Base::bytes_available -= area_len;
 	}
 
 protected:
@@ -84,10 +82,5 @@ protected:
 };
 
 }; // namespace binio
-
-#if defined(GCC_DIAG_POP_NEEDED)
-#pragma GCC diagnostic pop
-#undef GCC_DIAG_POP_NEEDED
-#endif
 
 #endif /* BINIO_PACKET_WRITER_H */

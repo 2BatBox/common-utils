@@ -34,7 +34,7 @@ class TestPacketSafe {
 		unsigned raw_buffer_size = 8;
 		char raw_buffer[raw_buffer_size];
 
-		Reader buf(as_mem_const_area(raw_buffer, raw_buffer_size));
+		Reader buf(as_mcarea(raw_buffer, raw_buffer_size));
 
 		assert(buf.available() == raw_buffer_size);
 		assert(buf.bounds());
@@ -62,7 +62,7 @@ class TestPacketSafe {
 		unsigned raw_buffer_size = 8;
 		char raw_buffer[raw_buffer_size];
 
-		Reader buf(as_mem_const_area(raw_buffer, raw_buffer_size));
+		Reader buf(as_mcarea(raw_buffer, raw_buffer_size));
 
 		assert(buf.available() == raw_buffer_size);
 		assert(buf.bounds());
@@ -90,7 +90,7 @@ class TestPacketSafe {
 		using DataType = unsigned long long;
 		unsigned raw_buffer_size = 32;
 		DataType raw_buffer[raw_buffer_size];
-		Reader buf(as_mem_const_area(raw_buffer, raw_buffer_size));
+		Reader buf(as_mcarea(raw_buffer, raw_buffer_size));
 
 		DataType value0;
 		DataType value1;
@@ -124,7 +124,7 @@ class TestPacketSafe {
 		unsigned raw_buffer_size = 32;
 		DataType raw_buffer[raw_buffer_size];
 
-		Writer buf(as_mem_area(raw_buffer, raw_buffer_size));
+		Writer buf(as_marea(raw_buffer, raw_buffer_size));
 
 		DataType value0;
 		DataType value1;
@@ -153,10 +153,10 @@ class TestPacketSafe {
 		assert(buf.bounds());
 	}
 
-	static void test_distances_as_mem_area() noexcept {
+	static void test_distances_as_marea() noexcept {
 		unsigned raw_buffer_size = 8;
 		char raw_buffer[raw_buffer_size];
-		Reader buf(as_mem_const_area(raw_buffer, raw_buffer_size));
+		Reader buf(as_mcarea(raw_buffer, raw_buffer_size));
 
 		assert(buf.reset());
 		assert(buf.bounds());
@@ -167,10 +167,10 @@ class TestPacketSafe {
 			assert(buf.padding() == 0);
 			assert(buf.size() == raw_buffer_size - i);
 			assert(buf.head_move(1));
-			buf = Reader(buf.available_mem_area());
+			buf = Reader(buf.marea_available());
 		}
 
-		buf = Reader(as_mem_const_area(raw_buffer, raw_buffer_size));
+		buf = Reader(as_mcarea(raw_buffer, raw_buffer_size));
 		for (unsigned i = 0; i < raw_buffer_size; i++) {
 			assert(buf.offset() == 0);
 			assert(buf.available() == raw_buffer_size - i);
@@ -178,7 +178,7 @@ class TestPacketSafe {
 			assert(buf.padding() == 0);
 			assert(buf.size() == raw_buffer_size - i);
 			assert(buf.tail_move_back(1));
-			buf = Reader(buf.available_mem_area());
+			buf = Reader(buf.marea_available());
 		}
 		assert(buf.bounds());
 	}
@@ -186,7 +186,7 @@ class TestPacketSafe {
 	static void test_distances_reset() noexcept {
 		unsigned raw_buffer_size = 8;
 		char raw_buffer[raw_buffer_size];
-		Reader buf(as_mem_const_area(raw_buffer, raw_buffer_size));
+		Reader buf(as_mcarea(raw_buffer, raw_buffer_size));
 
 		assert(buf.offset() == 0);
 		assert(buf.available() == raw_buffer_size);
@@ -211,7 +211,7 @@ class TestPacketSafe {
 
 		unsigned raw_buffer_size = 2;
 		DataSet raw_buffer[raw_buffer_size];
-		Writer buf(as_mem_area(raw_buffer, raw_buffer_size));
+		Writer buf(as_marea(raw_buffer, raw_buffer_size));
 
 		assert(buf.available() == sizeof (DataSet) * raw_buffer_size);
 		// writing
@@ -240,7 +240,7 @@ class TestPacketSafe {
 
 		unsigned raw_buffer_size = sizeof (DataSet) * 2;
 		char raw_buffer[raw_buffer_size];
-		Writer buf(as_mem_area(raw_buffer, raw_buffer_size));
+		Writer buf(as_marea(raw_buffer, raw_buffer_size));
 
 		// writing
 		assert(buf.bounds());
@@ -282,7 +282,7 @@ class TestPacketSafe {
 		test_assign(input_dec);
 	}
 
-	static void test_read_write_memory() noexcept {
+	static void test_read_write_marea() noexcept {
 		using RawType = size_t;
 		constexpr int buf_size = 32;
 		RawType raw_buffer[buf_size];
@@ -292,16 +292,16 @@ class TestPacketSafe {
 			raw_input[i] = i;
 		}
 
-		Writer buf(as_mem_area(raw_buffer, buf_size));
+		Writer buf(as_marea(raw_buffer, buf_size));
 		assert(buf.size() == sizeof (RawType) * buf_size);
 		assert(buf.bounds());
 		for (int i = 0; i < buf_size; i += 4) {
-			assert(buf.write_memory(raw_input + i, 4));
+			assert(buf.write_mcarea(as_mcarea(raw_input + i, 4)));
 		}
 		assert(buf.bounds());
 		assert(buf.reset());
 		for (int i = 0; i < buf_size; i += 4) {
-			assert(buf.read_memory(raw_output + i, 4));
+			assert(buf.read_marea(as_marea(raw_output + i, 4)));
 		}
 		assert(buf.bounds());
 		for (int i = 0; i < buf_size; i++) {
@@ -314,28 +314,28 @@ class TestPacketSafe {
 		int* iptr = &i;
 		int* iptr_null = nullptr;
 
-		Reader ra = Reader(as_mem_const_area(iptr_null, 1));
+		Reader ra = Reader(as_mcarea(iptr_null, 1));
 		assert(not ra.bounds());
 
-		ra = Reader(as_mem_const_area(iptr_null, 1));
+		ra = Reader(as_mcarea(iptr_null, 1));
 		assert(not ra.bounds());
 
-		ra = Reader(as_mem_const_area(iptr, 1));
+		ra = Reader(as_mcarea(iptr, 1));
 		assert(ra.bounds());
 
-		ra = Reader(as_mem_const_area(iptr, 1));
+		ra = Reader(as_mcarea(iptr, 1));
 		assert(ra.bounds());
 
-		Writer wa = Writer(as_mem_area(iptr_null, 1));
+		Writer wa = Writer(as_marea(iptr_null, 1));
 		assert(not wa.bounds());
 
-		wa = Writer(as_mem_area(iptr_null, 1));
+		wa = Writer(as_marea(iptr_null, 1));
 		assert(not wa.bounds());
 
-		wa = Writer(as_mem_area(iptr, 1));
+		wa = Writer(as_marea(iptr, 1));
 		assert(wa.bounds());
 
-		wa = Writer(as_mem_area(iptr, 1));
+		wa = Writer(as_marea(iptr, 1));
 		assert(wa.bounds());
 	}
 
@@ -346,10 +346,10 @@ public:
 		test_distances_tail();
 		test_distances_read();
 		test_distances_write();
-		test_distances_as_mem_area();
+		test_distances_as_marea();
 		test_distances_reset();
 		test_read_write_assign();
-		test_read_write_memory();
+		test_read_write_marea();
 		test_input_data();
 	}
 

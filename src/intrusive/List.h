@@ -2,6 +2,7 @@
 #define INTRUSIVE_LIST_H
 
 #include <cstdlib>
+#include <cassert>
 
 namespace intrusive {
 
@@ -73,6 +74,14 @@ protected:
 			return node_ptr;
 		}
 
+		inline const N* get() const noexcept {
+			return node_ptr;
+		}
+
+		inline N* get() noexcept {
+			return node_ptr;
+		}
+
 	private:
 		N* node_ptr;
 	};
@@ -119,16 +128,24 @@ protected:
 			return node_ptr;
 		}
 
+		inline const N* get() const noexcept {
+			return node_ptr;
+		}
+
+		inline N* get() noexcept {
+			return node_ptr;
+		}
+
 	private:
 		N* node_ptr;
 	};
+
+public:
 
 	using Iterator_t = Iterator<ListNode>;
 	using ConstIterator_t = Iterator<const ListNode>;
 	using ReverseIterator_t = ReverseIterator<ListNode>;
 	using ConstReverseIterator_t = ReverseIterator<const ListNode>;
-
-public:
 
 	List() noexcept : m_head(nullptr), m_tail(nullptr), m_size(0) { }
 
@@ -166,26 +183,20 @@ public:
 		return m_tail;
 	}
 
-	bool push_front(ListNode& node) noexcept {
-		if (sanity_check(node)) {
-			if (m_head)
-				link_head(node);
-			else
-				link_first(node);
-			return true;
-		}
-		return false;
+	void push_front(ListNode& node) noexcept {
+		check_free(node);
+		if (m_head)
+			link_head(node);
+		else
+			link_first(node);
 	}
 
-	bool push_back(ListNode& node) noexcept {
-		if (sanity_check(node)) {
-			if (m_tail)
-				link_tail(node);
-			else
-				link_first(node);
-			return true;
-		}
-		return false;
+	void push_back(ListNode& node) noexcept {
+		check_free(node);
+		if (m_tail)
+			link_tail(node);
+		else
+			link_first(node);
 	}
 
 	ListNode* pop_front() noexcept {
@@ -206,39 +217,34 @@ public:
 		return nullptr;
 	}
 
-	bool insert_before(ListNode& before, ListNode& node) noexcept {
-		if (before.il_linked && sanity_check(node)) {
-			if (&before == m_head)
-				link_head(node);
-			else
-				link_before(before, node);
-			return true;
-		}
-		return false;
+	void insert_before(ListNode& before, ListNode& node) noexcept {
+		check_linked(before);
+		check_free(node);
+		if (&before == m_head)
+			link_head(node);
+		else
+			link_before(before, node);
 	}
 
-	bool insert_after(ListNode& after, ListNode& node) noexcept {
-		if (after.il_linked && sanity_check(node)) {
-			if (&after == m_tail)
-				link_tail(node);
-			else
-				link_after(after, node);
-			return true;
-		}
-		return false;
+	void insert_after(ListNode& after, ListNode& node) noexcept {
+		check_linked(after);
+		check_free(node);
+		if (&after == m_tail)
+			link_tail(node);
+		else
+			link_after(after, node);
 	}
 
-	bool remove(ListNode& node) noexcept {
-		if (m_head && node.il_linked) {
+	void remove(ListNode& node) noexcept {
+		check_linked(node);
+		if (m_head) {
 			if (&node == m_head)
 				pop_front();
 			else if (&node == m_tail)
 				pop_back();
 			else
 				unlink(node);
-			return true;
 		}
-		return false;
 	}
 
 	/**
@@ -257,28 +263,28 @@ public:
 		return Iterator_t(m_head);
 	}
 
-	inline ConstIterator_t cbegin() const noexcept {
-		return ConstIterator_t(m_head);
-	}
-
-	inline Iterator_t end() noexcept {
-		return Iterator_t();
-	}
-
-	inline ConstIterator_t cend() const noexcept {
-		return ConstIterator_t();
-	}
-
 	inline ReverseIterator_t rbegin() noexcept {
 		return ReverseIterator_t(m_tail);
+	}
+
+	inline ConstIterator_t cbegin() const noexcept {
+		return ConstIterator_t(m_head);
 	}
 
 	inline ConstReverseIterator_t crbegin() const noexcept {
 		return ConstReverseIterator_t(m_tail);
 	}
 
+	inline Iterator_t end() noexcept {
+		return Iterator_t();
+	}
+
 	inline ReverseIterator_t rend() noexcept {
 		return ReverseIterator_t();
+	}
+
+	inline ConstIterator_t cend() const noexcept {
+		return ConstIterator_t();
 	}
 
 	inline ConstReverseIterator_t crend() const noexcept {
@@ -287,8 +293,12 @@ public:
 
 private:
 
-	inline static bool sanity_check(ListNode& node) noexcept {
-		return (not node.il_linked);
+	inline static void check_free(ListNode& node) noexcept {
+		assert(not node.il_linked);
+	}
+
+	inline static void check_linked(ListNode& node) noexcept {
+		assert(node.il_linked);
 	}
 
 	inline void link_first(ListNode& node) noexcept {

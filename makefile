@@ -31,5 +31,5 @@ $(BINDIR)/$(TARGET): $(OBJECTS)
 	$(LINKER) -o $@ $(LDFLAGS) $(OBJECTS)
 
 clean:
-	@rm $(OBJECTS)
+	@rm -rf $(OBJECTS)
 	@rm -rf $(BINDIR)

@@ -6,14 +6,6 @@
 
 #include "BasicPacket.h"
 
-// gcc 4.8.2's -Wnon-virtual-dtor is broken and turned on by -Weffc++
-#if __GNUC__ < 3 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
-#pragma GCC diagnostic ignored "-Weffc++"
-#define GCC_DIAG_POP_NEEDED
-#endif
-
 namespace binio {
 
 /**
@@ -54,7 +46,7 @@ public:
 	 * Move the head @bytes forward.
 	 * @param bytes - bytes to move.
 	 */
-	void head_move(S bytes) noexcept {
+	inline void head_move(S bytes) noexcept {
 		Base::ptr_head += bytes;
 		Base::bytes_available -= bytes;
 	}
@@ -63,7 +55,7 @@ public:
 	 * Move the head @bytes backward.
 	 * @param bytes - bytes to move.
 	 */
-	void head_move_back(S bytes) noexcept {
+	inline void head_move_back(S bytes) noexcept {
 		Base::ptr_head -= bytes;
 		Base::bytes_available += bytes;
 	}
@@ -72,7 +64,7 @@ public:
 	 * Move the tail @bytes forward.
 	 * @param bytes - bytes to move.
 	 */
-	void tail_move(S bytes) noexcept {
+	inline void tail_move(S bytes) noexcept {
 		Base::bytes_available += bytes;
 		Base::bytes_padding -= bytes;
 	}
@@ -81,65 +73,61 @@ public:
 	 * Move the tail @bytes backward.
 	 * @param bytes - bytes to move.
 	 */
-	void tail_move_back(S bytes) noexcept {
+	inline void tail_move_back(S bytes) noexcept {
 		Base::bytes_available -= bytes;
 		Base::bytes_padding += bytes;
 	}
 
 	/**
-	 * Read @value from the packet and set the head to a new position.
+	 * Read @value from the packet and set the head to the new position.
 	 * @param value - variable to read to.
 	 */
 	template <typename V>
-	void read(V& value) noexcept {
+	inline void read(V& value) noexcept {
 		read_unsafe(value);
 	}
 
 	/**
-	 * Read @value and @args from the packet and set the head to a new position.
+	 * Read @value and @args from the packet and set the head to the new position.
 	 * @param value - a variable to read to.
 	 * @param args - variables to read to.
 	 */
 	template <typename V, typename... Args>
-	void read(V& value, Args&... args) noexcept {
+	inline void read(V& value, Args&... args) noexcept {
 		read_unsafe(value, args...);
 	}
 
 	/**
-	 * Read an array from the packet and set the head to a new position.
-	 * @param array - an array to read to.
-	 * @param array_len - amount of @array elements.
+	 * Read a memory area from the packet and set the head to the new position.
+	 * @param area - an area to read to.
 	 */
-	template <typename V>
-	void read_memory(V* array, S array_len) noexcept {
-		array_len *= sizeof (V);
-		memcpy(array, Base::ptr_head, array_len);
+	void read_marea(MArea area) noexcept {
+		S array_len = area.length();
+		memcpy(area.begin(), Base::ptr_head, array_len);
 		Base::ptr_head += array_len;
 		Base::bytes_available -= array_len;
 	}
 
 	/**
-	 * Assign an array of pointers to the head set the head to a new position.
-	 * @param array - an array to assign.
-	 * @param array_len - amount of @array elements.
-	 */
-	template <typename V>
-	void assign(V*& array, S array_len) noexcept {
-		array_len *= sizeof (V);
-		array = reinterpret_cast<V*>(Base::ptr_head);
-		Base::ptr_head += array_len;
-		Base::bytes_available -= array_len;
-	}
-
-	/**
-	 * Assign one pointer to the head and set the head to a new position.
+	 * Assign one pointer to the head and set the head to the new position.
 	 * @param pointer - a pointer to assign.
 	 */
 	template <typename V>
-	void assign(V*& pointer) noexcept {
+	inline void assign(V*& pointer) noexcept {
 		pointer = reinterpret_cast<V*>(Base::ptr_head);
 		Base::ptr_head += sizeof (V);
 		Base::bytes_available -= sizeof (V);
+	}
+
+	/**
+	 * Assign an area to the head and set the head to the new position.
+	 * @param area - an array to assign.
+	 * @param area_len - length of the area in bytes.
+	 */
+	inline void assign_mcarea(MCArea& area, S area_len) noexcept {
+		area = as_mcarea(Base::ptr_head, area_len);
+		Base::ptr_head += area_len;
+		Base::bytes_available -= area_len;
 	}
 
 	/**
@@ -147,9 +135,10 @@ public:
 	 * @param pointer - a pointer to assign.
 	 */
 	template <typename V>
-	void assign_stay(V*& pointer) const noexcept {
+	inline void assign_stay(V*& pointer) const noexcept {
 		pointer = reinterpret_cast<V*>(Base::ptr_head);
 	}
+
 
 protected:
 
@@ -174,21 +163,16 @@ class PacketReader : public BasicPacketReader<const uint8_t, S> {
 
 public:
 
-	PacketReader(MemConstArea mem) noexcept :
-	Base(mem.pointer(), mem.length()) { }
+	PacketReader(MCArea mem) noexcept :
+	Base(mem.begin(), mem.length()) { }
 
-	PacketReader(MemArea mem) noexcept :
-	Base(mem.pointer(), mem.length()) { }
+	PacketReader(MArea mem) noexcept :
+	Base(mem.begin(), mem.length()) { }
 
 	PacketReader(const uint8_t* data, S bytes) noexcept :
 	Base(data, bytes) { }
 };
 
 }; // namespace binio
-
-#if defined(GCC_DIAG_POP_NEEDED)
-#pragma GCC diagnostic pop
-#undef GCC_DIAG_POP_NEEDED
-#endif
 
 #endif /* BINIO_PACKET_READER_H */

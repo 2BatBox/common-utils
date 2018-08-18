@@ -1,18 +1,18 @@
-#ifndef BINIO_TESTS_TEST_MEM_AREA_H
-#define BINIO_TESTS_TEST_MEM_AREA_H
+#ifndef BINIO_TESTS_TEST_MAREA_H
+#define BINIO_TESTS_TEST_MAREA_H
 
 #include <assert.h>
 #include <memory>
 #include <iostream>
 #include <cstdio>
 
-#include "../MemArea.h"
+#include "../MArea.h"
 
 namespace binio {
 
-class TestByteBuffer {
-	using Readable = MemConstArea;
-	using Writable = MemConstArea;
+class TestMArea {
+	using Readable = MCArea;
+	using Writable = MArea;
 
 	struct DataSet {
 		char c;
@@ -44,18 +44,18 @@ class TestByteBuffer {
 		Readable readable;
 		Writable writable;
 
-		readable = as_mem_const_area(const_void_ptr, 1);
+		readable = as_mcarea(const_void_ptr, 1);
 		assert(readable.length() == 1);
-		readable = as_mem_const_area(const_u32_ptr, 1);
+		readable = as_mcarea(const_u32_ptr, 1);
 		assert(readable.length() == sizeof (*const_u32_ptr));
-		readable = as_mem_const_area(c_struct_ptr, 1);
+		readable = as_mcarea(c_struct_ptr, 1);
 		assert(readable.length() == sizeof (*c_struct_ptr));
 
-		writable = as_mem_area(void_ptr, 1);
+		writable = as_marea(void_ptr, 1);
 		assert(writable.length() == 1);
-		writable = as_mem_area(u32_ptr, 1);
+		writable = as_marea(u32_ptr, 1);
 		assert(writable.length() == sizeof (*u32_ptr));
-		writable = as_mem_area(struct_ptr, 1);
+		writable = as_marea(struct_ptr, 1);
 		assert(writable.length() == sizeof (*struct_ptr));
 
 	}
@@ -107,11 +107,11 @@ class TestByteBuffer {
 		Readable readable_null;
 		Readable writable_null;
 
-		Readable readable_first = as_mem_const_area(array_struc_first, buf_size);
-		Readable readable_second = as_mem_const_area(array_struc_second, buf_size);
+		Readable readable_first = as_mcarea(array_struc_first, buf_size);
+		Readable readable_second = as_mcarea(array_struc_second, buf_size);
 
-		Writable writable_first = as_mem_area(array_struc_first, buf_size);
-		Writable writable_second = as_mem_area(array_struc_second, buf_size);
+		Writable writable_first = as_marea(array_struc_first, buf_size);
+		Writable writable_second = as_marea(array_struc_second, buf_size);
 
 		assert(readable_first != readable_null);
 		assert(readable_second != readable_null);
@@ -127,16 +127,42 @@ class TestByteBuffer {
 		assert(writable_first != writable_second);
 	}
 
+	static void test_subarea() noexcept {
+		unsigned buf_size = 16;
+		char raw_buffer[buf_size];
+
+		Readable readable = as_marea(raw_buffer, buf_size);
+		assert(readable == readable.subarea(0));
+		assert(readable == readable.subarea(0, buf_size));
+		assert(readable.subarea(0) == readable.subarea(0, buf_size));
+		assert(readable.subarea(1) == readable.subarea(1, buf_size - 1));
+		assert(readable.subarea(buf_size) == readable.subarea(buf_size, 0));
+		assert(readable.subarea(buf_size - 1) == readable.subarea(buf_size - 1, 1));
+
+		readable.subarea(0, buf_size);
+		try {
+			assert(readable.subarea(buf_size + 1));
+			assert(false);
+		} catch (const std::out_of_range& e) {
+		}
+		try {
+			assert(readable.subarea(0, buf_size + 1));
+			assert(false);
+		} catch (const std::out_of_range& e) {
+		}
+	}
+
 public:
 
 	static void test() {
 		test_length();
 		test_type_converting();
 		test_comparison();
+		test_subarea();
 	}
 
 };
 
 }; // namespace binio
 
-#endif /* BINIO_TESTS_TEST_MEM_AREA_H */
+#endif /* BINIO_TESTS_TEST_MAREA_H */

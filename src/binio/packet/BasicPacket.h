@@ -3,15 +3,7 @@
 
 #include <cstdlib>
 
-#include "../MemArea.h"
-
-// gcc 4.8.2's -Wnon-virtual-dtor is broken and turned on by -Weffc++
-#if __GNUC__ < 3 || (__GNUC__ == 4 && __GNUC_MINOR__ <= 8)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
-#pragma GCC diagnostic ignored "-Weffc++"
-#define GCC_DIAG_POP_NEEDED
-#endif
+#include "../MArea.h"
 
 namespace binio {
 
@@ -89,71 +81,66 @@ public:
 	}
 
 	/**
-	 * @return the offset subrange as a MemArea object.
+	 * @return the offset subarea as a MArea object.
 	 */
-	inline BasicMemArea<const T> offset_mem_area() const noexcept {
+	inline BasicMArea<const T> marea_offset() const noexcept {
 		S offset = offset();
-		return BasicMemArea<const T>(ptr_head - offset, offset);
+		return BasicMArea<const T>(ptr_head - offset, offset);
 	}
 
 	/**
-	 * @return the offset subrange as a MemArea object.
+	 * @return the offset subarea as a MArea object.
 	 */
-	inline BasicMemArea<T> offset_mem_area() noexcept {
+	inline BasicMArea<T> marea_offset() noexcept {
 		S offset = offset();
-		return BasicMemArea<T>(ptr_head - offset, offset);
+		return BasicMArea<T>(ptr_head - offset, offset);
 	}
 
 	/**
-	 * @return the available subrange as a MemArea object.
+	 * @return the available subarea as a MArea object.
 	 */
-	inline BasicMemArea<const T> available_mem_area() const noexcept {
-		return BasicMemArea<const T>(ptr_head, bytes_available);
+	inline BasicMArea<const T> marea_available() const noexcept {
+		return BasicMArea<const T>(ptr_head, bytes_available);
 	}
 
 	/**
-	 * @return the available subrange as a MemArea object.
+	 * @return the available subarea as a MArea object.
 	 */
-	inline BasicMemArea<T> available_mem_area() noexcept {
-		return BasicMemArea<T>(ptr_head, bytes_available);
+	inline BasicMArea<T> marea_available() noexcept {
+		return BasicMArea<T>(ptr_head, bytes_available);
 	}
 
 	/**
-	 * @return the padding subrange as a MemArea object.
+	 * @return the padding subarea as a MArea object.
 	 */
-	inline BasicMemArea<const T> padding_mem_area() const noexcept {
-		return BasicMemArea<const T>(ptr_head + available(), bytes_padding);
+	inline BasicMArea<const T> marea_padding() const noexcept {
+		return BasicMArea<const T>(ptr_head + available(), bytes_padding);
 	}
 
 	/**
-	 * @return the padding subrange as a MemArea object.
+	 * @return the padding subarea as a MArea object.
 	 */
-	inline BasicMemArea<T> padding_mem_area() noexcept {
-		return BasicMemArea<T>(ptr_head + available(), bytes_padding);
+	inline BasicMArea<T> marea_padding() noexcept {
+		return BasicMArea<T>(ptr_head + available(), bytes_padding);
 	}
 
 	/**
-	 * @return whole the packet area as a MemArea object.
+	 * @return whole the packet area as a MArea object.
 	 */
-	inline BasicMemArea<const T> as_mem_area() const noexcept {
-		return BasicMemArea<const T>(ptr_head - offset, bytes_size);
+	inline BasicMArea<const T> marea_packet() const noexcept {
+		return BasicMArea<const T>(ptr_head - offset, bytes_size);
 	}
 
 	/**
-	 * @return whole the packet area as a MemArea object.
+	 * @return whole the packet area as a MArea object.
 	 */
-	inline BasicMemArea<T> as_mem_area() noexcept {
-		return BasicMemArea<T>(ptr_head - offset, bytes_size);
+	inline BasicMArea<T> marea_packet() noexcept {
+		return BasicMArea<T>(ptr_head - offset, bytes_size);
 	}
 
 };
 
 }; // namespace binio
-
-#if defined(GCC_DIAG_POP_NEEDED)
-#pragma GCC diagnostic pop
-#undef GCC_DIAG_POP_NEEDED
-#endif
 
 #endif /* BINIO_BASIC_PACKET_H */
 

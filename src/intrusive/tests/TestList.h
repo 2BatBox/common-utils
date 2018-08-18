@@ -91,6 +91,7 @@ public:
 	}
 
 	void test_raii() {
+		printf("-> test_raii()\n");
 		assert(list.size() == 0);
 
 		List_t list_tmp(std::move(list));
@@ -110,6 +111,7 @@ public:
 	}
 
 	void test_push_front() {
+		printf("-> test_push_front()\n");
 		assert(list.size() == 0);
 		fill_backward(list);
 		compare_backward(list);
@@ -117,6 +119,7 @@ public:
 	}
 
 	void test_push_back() {
+		printf("-> test_push_back()\n");
 		assert(list.size() == 0);
 		fill_forward(list);
 		compare_forward(list);
@@ -124,6 +127,7 @@ public:
 	}
 
 	void test_pop_front() {
+		printf("-> test_pop_front()\n");
 		assert(list.size() == 0);
 		fill_forward(list);
 		for (Key_t i = 0; i < storage_size; i++) {
@@ -136,6 +140,7 @@ public:
 	}
 
 	void test_pop_back() {
+		printf("-> test_pop_back()\n");
 		assert(list.size() == 0);
 		fill_backward(list);
 		for (Key_t i = 0; i < storage_size; i++) {
@@ -148,42 +153,47 @@ public:
 	}
 
 	void test_insert_before() {
+		printf("-> test_insert_before()\n");
 		assert(list.size() == 0);
 		list.push_front(storage[0]);
 		for (Key_t i = 1; i < storage_size; i++) {
-			assert(list.insert_before(storage[i - 1], storage[i]));
+			list.insert_before(storage[i - 1], storage[i]);
 		}
 		compare_backward(list);
 		clear_list(list);
 	}
 
 	void test_insert_after() {
+		printf("-> test_insert_after()\n");
 		assert(list.size() == 0);
 		list.push_front(storage[0]);
 		for (Key_t i = 1; i < storage_size; i++) {
-			assert(list.insert_after(storage[i - 1], storage[i]));
+			list.insert_after(storage[i - 1], storage[i]);
 		}
 		compare_forward(list);
 		clear_list(list);
 	}
 
 	void test_remove() {
+		printf("-> test_remove()\n");
 		assert(list.size() == 0);
 		fill_forward(list);
-		Key_t half = storage_size / 2;
-		for (Key_t i = half; i < storage_size; i++) {
-			assert(list.remove(storage[i]));
-			assert(not list.remove(storage[i]));
+		for (Key_t i = 0; i < storage_size; i++) {
+			if (i % 2 == 0) {
+				list.remove(storage[i]);
+			}
 		}
-		for (Key_t i = 0; i < half; i++) {
-			assert(list.remove(storage[i]));
-			assert(not list.remove(storage[i]));
+		for (Key_t i = 0; i < storage_size; i++) {
+			if (i % 2 != 0) {
+				list.remove(storage[i]);
+			}
 		}
 		assert(list.size() == 0);
 		test_sanity();
 	}
 
 	void test_iterators() {
+		printf("-> test_iterators()\n");
 		assert(list.size() == 0);
 		fill_forward(list);
 		assert(list.size() == storage_size);
@@ -241,16 +251,14 @@ private:
 
 	void fill_forward(List_t& list) {
 		for (Key_t i = 0; i < storage_size; i++) {
-			assert(list.push_back(storage[i]));
-			assert(not list.push_back(storage[i]));
+			list.push_back(storage[i]);
 		}
 		assert(list.size() == storage_size);
 	}
 
 	void fill_backward(List_t& list) {
 		for (Key_t i = 0; i < storage_size; i++) {
-			assert(list.push_front(storage[i]));
-			assert(not list.push_front(storage[i]));
+			list.push_front(storage[i]);
 		}
 		assert(list.size() == storage_size);
 	}

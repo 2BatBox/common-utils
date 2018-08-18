@@ -90,7 +90,6 @@ public:
 		test_put_remove_forward(step++);
 		test_put_remove_backward(step++);
 		test_put_remove_odd_even(step++);
-		test_recycle(step++);
 		test_clear(step++);
 		test_raii();
 	}
@@ -168,30 +167,6 @@ public:
 		test_sanity();
 	}
 
-	void test_recycle(unsigned step) noexcept {
-		printf("-> test_recycle()\n");
-		for (size_t i = 0; i < storage_size; i++) {
-			if (i % 2 == 0) {
-				put_one(i, i, i);
-			} else {
-				put_one_recycled(i - 1, i - 1, (i - 1) * step);
-			}
-		}
-
-		for (size_t i = 0; i < storage_size; i++) {
-			if (i % 2 == 0) {
-				find_one(i, i * step);
-				remove_one(i, i * step);
-				miss_one(i);
-			} else {
-				miss_one(i);
-			}
-
-		}
-		assert(map.size() == 0);
-		test_sanity();
-	}
-
 	void test_clear(unsigned step) noexcept {
 		printf("-> test_clear()\n");
 
@@ -240,25 +215,12 @@ private:
 
 	void put_one(size_t node_index, const Key_t& key, const Value_t& value) noexcept {
 		MapNode_t& node = storage[node_index];
-		auto it = map.put(key, node);
+		auto it = map.link(key, node);
 		assert(it != map.end());
 		bool recycled = (&node != &(*it));
 		assert(not recycled);
 		it->value = value;
 		assert(*it == node);
-		assert(it->im_key == key);
-		assert(it->im_linked);
-	}
-
-	void put_one_recycled(size_t node_index, const Key_t& key, const Value_t& value) noexcept {
-		MapNode_t tmp;
-		MapNode_t& node_recycled = storage[node_index];
-		auto it = map.put(key, tmp);
-		assert(it != map.end());
-		bool recycled = (&tmp != &(*it));
-		assert(recycled);
-		it->value = value;
-		assert(*it == node_recycled);
 		assert(it->im_key == key);
 		assert(it->im_linked);
 	}

@@ -1,18 +1,18 @@
 #include <iostream>
 #include <cstdio>
 
-#include "TestMemArea.h"
+#include "TestMArea.h"
 #include "TestPacket.h"
 #include "TestPacketSafe.h"
-#include "TestStaticArray.h"
-#include "TestStaticMemBuffer.h"
+#include "TestVLArray.h"
 
 using namespace binio;
 
+//int main(int, char**) {
 int main_binio(int, char**) {
 
-	TestByteBuffer byte_buffer;
-	byte_buffer.test();
+	TestMArea byte_marea;
+	byte_marea.test();
 
 	TestPacket packet;
 	packet.test();
@@ -20,12 +20,9 @@ int main_binio(int, char**) {
 	TestPacketSafe packet_safe;
 	packet_safe.test();
 	
-	TestStaticArray static_array;
+	TestVLArray static_array;
 	static_array.test();
 	
-	TestStaticMemBuffer static_mem_buffer;
-	static_mem_buffer.test();
-
 	std::cout << "<---- the end of main_binio() ---->\n";
 	return 0;
 }

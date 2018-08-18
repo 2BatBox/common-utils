@@ -34,7 +34,7 @@ class TestPacket {
 		unsigned raw_buffer_size = 8;
 		char raw_buffer[raw_buffer_size];
 
-		Reader buf(as_mem_const_area(raw_buffer, raw_buffer_size));
+		Reader buf(as_mcarea(raw_buffer, raw_buffer_size));
 
 		assert(buf.available() == raw_buffer_size);
 		for (unsigned i = 0; i < raw_buffer_size; i++) {
@@ -60,7 +60,7 @@ class TestPacket {
 		unsigned raw_buffer_size = 8;
 		char raw_buffer[raw_buffer_size];
 
-		Reader buf(as_mem_const_area(raw_buffer, raw_buffer_size));
+		Reader buf(as_mcarea(raw_buffer, raw_buffer_size));
 
 		assert(buf.available() == raw_buffer_size);
 		for (unsigned i = 0; i < raw_buffer_size; i++) {
@@ -87,7 +87,7 @@ class TestPacket {
 		using DataType = unsigned long long;
 		unsigned raw_buffer_size = 32;
 		DataType raw_buffer[raw_buffer_size];
-		Reader buf(as_mem_const_area(raw_buffer, raw_buffer_size));
+		Reader buf(as_mcarea(raw_buffer, raw_buffer_size));
 
 		DataType value0;
 		DataType value1;
@@ -120,7 +120,7 @@ class TestPacket {
 		unsigned raw_buffer_size = 32;
 		DataType raw_buffer[raw_buffer_size];
 
-		Writer buf(as_mem_area(raw_buffer, raw_buffer_size));
+		Writer buf(as_marea(raw_buffer, raw_buffer_size));
 
 		DataType value0;
 		DataType value1;
@@ -149,10 +149,10 @@ class TestPacket {
 
 	}
 
-	static void test_distances_as_mem_area() noexcept {
+	static void test_distances_as_marea() noexcept {
 		unsigned raw_buffer_size = 8;
 		char raw_buffer[raw_buffer_size];
-		Reader buf(as_mem_const_area(raw_buffer, raw_buffer_size));
+		Reader buf(as_mcarea(raw_buffer, raw_buffer_size));
 
 		buf.reset();
 
@@ -163,10 +163,10 @@ class TestPacket {
 			assert(buf.padding() == 0);
 			assert(buf.size() == raw_buffer_size - i);
 			buf.head_move(1);
-			buf = Reader(buf.available_mem_area());
+			buf = Reader(buf.marea_available());
 		}
 
-		buf = Reader(as_mem_const_area(raw_buffer, raw_buffer_size));
+		buf = Reader(as_mcarea(raw_buffer, raw_buffer_size));
 		for (unsigned i = 0; i < raw_buffer_size; i++) {
 			assert(buf.offset() == 0);
 			assert(buf.available() == raw_buffer_size - i);
@@ -174,7 +174,7 @@ class TestPacket {
 			assert(buf.padding() == 0);
 			assert(buf.size() == raw_buffer_size - i);
 			buf.tail_move_back(1);
-			buf = Reader(buf.available_mem_area());
+			buf = Reader(buf.marea_available());
 		}
 
 	}
@@ -182,7 +182,7 @@ class TestPacket {
 	static void test_distances_reset() noexcept {
 		unsigned raw_buffer_size = 8;
 		char raw_buffer[raw_buffer_size];
-		Reader buf(as_mem_const_area(raw_buffer, raw_buffer_size));
+		Reader buf(as_mcarea(raw_buffer, raw_buffer_size));
 
 		assert(buf.offset() == 0);
 		assert(buf.available() == raw_buffer_size);
@@ -207,7 +207,7 @@ class TestPacket {
 		unsigned raw_buffer_size = 2;
 		DataSet raw_buffer[raw_buffer_size];
 
-		Writer buf(as_mem_area(raw_buffer, raw_buffer_size));
+		Writer buf(as_marea(raw_buffer, raw_buffer_size));
 		assert(buf.available() == sizeof (DataSet) * raw_buffer_size);
 
 		// writing
@@ -231,7 +231,7 @@ class TestPacket {
 
 		unsigned raw_buffer_size = sizeof (DataSet) * 2;
 		char raw_buffer[raw_buffer_size];
-		Writer buf(as_mem_area(raw_buffer, raw_buffer_size));
+		Writer buf(as_marea(raw_buffer, raw_buffer_size));
 
 		// writing
 		buf.write(set);
@@ -280,21 +280,25 @@ class TestPacket {
 			raw_input[i] = i;
 		}
 
-		Writer buf(as_mem_area(raw_buffer, buf_size));
+		Writer buf(as_marea(raw_buffer, buf_size));
 		assert(buf.size() == sizeof (RawType) * buf_size);
 
 		for (int i = 0; i < buf_size; i += 4) {
-			buf.write_memory(raw_input + i, 4);
+			buf.write_mcarea(as_mcarea(raw_input + i, 4));
 		}
 
 		buf.reset();
 		for (int i = 0; i < buf_size; i += 4) {
-			buf.read_memory(raw_output + i, 4);
+			buf.read_marea(as_marea(raw_output + i, 4));
 		}
 
 		for (int i = 0; i < buf_size; i++) {
 			assert(raw_input[i] == raw_output[i]);
 		}
+	}
+
+	static void test_read_write_memory_area() noexcept {
+		// TODO:
 	}
 
 public:
@@ -304,10 +308,11 @@ public:
 		test_distances_tail();
 		test_distances_read();
 		test_distances_write();
-		test_distances_as_mem_area();
+		test_distances_as_marea();
 		test_distances_reset();
 		test_read_write_assign();
 		test_read_write_memory();
+		test_read_write_memory_area();
 	}
 
 };

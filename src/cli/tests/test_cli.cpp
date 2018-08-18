@@ -7,7 +7,7 @@
 #include "../Config.h"
 #include "../Parser.h"
 
-#include "../../utils/Logger.h"
+#include "../../logger/Logger.h"
 #include "../../utils/Types.h"
 #include "../../utils/Tokenizer.h"
 #include "../../stack_ip/VlanFilter.h"
@@ -65,8 +65,8 @@ void print_version() noexcept {
 	LOG_RAW("%u.%u", 0, 0);
 }
 
-int main(int argc, char** argv) {
-	//	int main_cli(int argc, char** argv) {
+//int main(int argc, char** argv) {
+		int main_cli(int argc, char** argv) {
 
 	const char* bin = argv[0];
 	OptionList list;
