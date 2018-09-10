@@ -275,7 +275,7 @@ public:
 		return ConstReverseIterator_t(m_tail);
 	}
 
-	inline Iterator_t end() noexcept {
+	inline Iterator_t end() const noexcept {
 		return Iterator_t();
 	}
 

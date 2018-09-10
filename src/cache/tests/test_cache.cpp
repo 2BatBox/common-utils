@@ -13,7 +13,7 @@ typedef unsigned Key_t;
 typedef unsigned Value_t;
 
 int main_cache(int, char**) {
-//int main(int, char**) {
+	//int main(int, char**) {
 	unsigned storage_size = 1024;
 	float load_factor_one = 0.2f;
 	float load_factor_two = 10.0f;

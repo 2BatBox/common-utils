@@ -8,6 +8,20 @@
 
 namespace cache {
 
+template <typename K>
+struct LinkedHashPoolEmptyNode : public intrusive::ListHook<LinkedHashPoolEmptyNode<K> >, intrusive::MapHook<K, LinkedHashPoolEmptyNode<K> > {
+	using Key_t = K;
+
+	LinkedHashPoolEmptyNode() noexcept = default;
+
+	LinkedHashPoolEmptyNode(const LinkedHashPoolEmptyNode&) = delete;
+	LinkedHashPoolEmptyNode& operator=(const LinkedHashPoolEmptyNode&) = delete;
+
+	LinkedHashPoolEmptyNode(LinkedHashPoolEmptyNode&&) = delete;
+	LinkedHashPoolEmptyNode& operator=(LinkedHashPoolEmptyNode&&) = delete;
+
+};
+
 template <typename K, typename V>
 struct LinkedHashPoolNode : public intrusive::ListHook<LinkedHashPoolNode<K, V> >, intrusive::MapHook<K, LinkedHashPoolNode<K, V> > {
 	using Key_t = K;
@@ -37,7 +51,6 @@ class LinkedHashPool {
 	friend class TestLinkedHashPool;
 
 	using Key_t = typename Node_t::Key_t;
-	using Value_t = typename Node_t::Value_t;
 	using List_t = intrusive::List<Node_t>;
 	using Map_t = intrusive::Map<Key_t, Node_t, H, BA>;
 	using Bucket_t = typename Map_t::Bucket_t;
@@ -77,13 +90,13 @@ public:
 	 * Allocate the node storage.
 	 * @return true - if the cache has been allocated successfully.
 	 */
-	bool allocate() noexcept {
+	int allocate() noexcept {
 		if (m_storage)
-			return false;
+			return -1;
 
 		m_storage = m_allocator.allocate(m_capacity);
 		if (m_storage == nullptr)
-			return false;
+			return -1;
 
 		for (unsigned i = 0; i < m_capacity; i++) {
 			m_allocator.construct(m_storage + i);
@@ -92,9 +105,9 @@ public:
 
 		if (not m_map.allocate()) {
 			destroy();
-			return false;
+			return -1;
 		}
-		return true;
+		return 0;
 	}
 
 	inline Iterator_t begin() noexcept {
@@ -113,7 +126,7 @@ public:
 		return m_list_cached.crbegin();
 	}
 
-	inline Iterator_t end() noexcept {
+	inline Iterator_t end() const noexcept {
 		return m_list_cached.end();
 	}
 
@@ -157,8 +170,8 @@ public:
 		return Iterator_t(result);
 	}
 
-	inline Iterator_t find(const Key_t& key) const noexcept {
-		return Iterator_t(m_map.find(key).get());
+	inline ConstIterator_t find(const Key_t& key) const noexcept {
+		return ConstIterator_t(m_map.find(key).get());
 	}
 
 	inline Iterator_t find(const Key_t& key) noexcept {
