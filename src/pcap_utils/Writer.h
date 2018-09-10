@@ -15,13 +15,13 @@ class Writer {
 	pcap_dumper_t* pcap_dumper;
 	unsigned frame_index;
 
-	Writer(pcap_dumper_t* pcap_handler = nullptr) noexcept: pcap_dumper(pcap_handler), frame_index(0) { }
+	Writer(pcap_dumper_t* pcap_handler = nullptr) noexcept : pcap_dumper(pcap_handler), frame_index(0) { }
 
 public:
 	Writer(const Writer&) = delete;
 	Writer& operator=(const Writer&) = delete;
 
-	Writer(Writer&& rvalue) noexcept: pcap_dumper(rvalue.pcap_dumper), frame_index(rvalue.frame_index) {
+	Writer(Writer&& rvalue) noexcept : pcap_dumper(rvalue.pcap_dumper), frame_index(rvalue.frame_index) {
 		rvalue.make_empty();
 	}
 

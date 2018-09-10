@@ -66,7 +66,8 @@ void print_version() noexcept {
 }
 
 //int main(int argc, char** argv) {
-		int main_cli(int argc, char** argv) {
+
+int main_cli(int argc, char** argv) {
 
 	const char* bin = argv[0];
 	OptionList list;
@@ -120,7 +121,7 @@ void print_version() noexcept {
 		return 1;
 	}
 
-	stack_ip::VlanFilter vlan_filter(opt_exclude.presented());
+	stack_ip::VlanFilter vlan_filter;
 
 	if (opt_include.has_arg()) {
 		utils::Tokenizer tkn(opt_include.arg_value(), ",");

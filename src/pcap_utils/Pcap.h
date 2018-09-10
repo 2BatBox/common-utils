@@ -10,8 +10,10 @@ namespace pcap_utils {
 struct Frame {
 	pcap_pkthdr hdr;
 	const uint8_t* data;
-    Frame() noexcept : hdr(), data(nullptr) {} 
-    Frame(const pcap_pkthdr& hdr, const uint8_t* data) noexcept : hdr(hdr), data(data) {} 
+
+	Frame() noexcept : hdr(), data(nullptr) { }
+
+	Frame(const pcap_pkthdr& hdr, const uint8_t* data) noexcept : hdr(hdr), data(data) { }
 };
 
 class FrameMutable {
@@ -19,21 +21,21 @@ public:
 	pcap_pkthdr hdr;
 	uint8_t* data;
 
-	FrameMutable() noexcept: hdr(), data(nullptr) { }
+	FrameMutable() noexcept : hdr(), data(nullptr) { }
 
-	FrameMutable(struct timeval ts, unsigned data_size) noexcept: hdr(), data(new unsigned char[data_size]) {
+	FrameMutable(struct timeval ts, unsigned data_size) noexcept : hdr(), data(new unsigned char[data_size]) {
 		hdr.len = hdr.caplen = data_size;
 		hdr.ts = ts;
 	}
 
-	FrameMutable(const Frame& frame) noexcept: hdr(frame.hdr), data(new unsigned char[frame.hdr.len]) {
+	FrameMutable(const Frame& frame) noexcept : hdr(frame.hdr), data(new unsigned char[frame.hdr.len]) {
 		memcpy(data, frame.data, hdr.len);
 	}
 
 	FrameMutable(const FrameMutable&) = delete;
 	FrameMutable& operator=(const FrameMutable&) = delete;
 
-	FrameMutable(FrameMutable&& rvalue) noexcept: hdr(rvalue.hdr), data(rvalue.data) {
+	FrameMutable(FrameMutable&& rvalue) noexcept : hdr(rvalue.hdr), data(rvalue.data) {
 		rvalue.make_empty();
 	}
 
@@ -61,14 +63,14 @@ private:
 		if (data) {
 			delete [] data;
 			data = nullptr;
-            make_empty();
+			make_empty();
 		}
 	}
-    
-    inline void make_empty() noexcept {
+
+	inline void make_empty() noexcept {
 		hdr.len = hdr.caplen = 0;
 		timerclear(&(hdr.ts));
-    }
+	}
 };
 
 }; // namespace pcap_utils

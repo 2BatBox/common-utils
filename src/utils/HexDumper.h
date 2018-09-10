@@ -1,6 +1,8 @@
 #ifndef UTILS_HEX_DUMPER_H
 #define UTILS_HEX_DUMPER_H
 
+#include "../binio/MArea.h"
+
 #include <cstdint>
 #include <cstdio>
 #include <ctype.h>
@@ -13,35 +15,52 @@ class HexDumper {
 
 public:
 
-	template <typename T>
-	static void memory(FILE* out, const T* ptr, unsigned size) {
-		const uint8_t* data = reinterpret_cast<const uint8_t*>(ptr);
-		fprintf(out, "---- %p ---- %u bytes\n", data, size);
+	static void memory(FILE* out, binio::MCArea area) {
+		const uint8_t* data = reinterpret_cast<const uint8_t*>(area.cbegin());
+		fprintf(out, "---- %p ---- %lu bytes\n", data, area.length());
 		unsigned offset = 0;
-		while (offset < size) {
+		while (offset < area.length()) {
 			fprintf(out, "%p ", data + offset);
-			offset += print_hex_ascii(out, data + offset, size - offset);
+			offset += print_hex_ascii(out, data + offset, area.length() - offset);
 		}
 	}
 
-	template <typename T>
-	static void hex(FILE* out, const T* ptr, unsigned size) {
-		const uint8_t* data = reinterpret_cast<const uint8_t*>(ptr);
+	static void hex(FILE* out, binio::MCArea area) {
+		const uint8_t* data = reinterpret_cast<const uint8_t*>(area.cbegin());
+		size_t size = area.length();
 		for (unsigned i = 0; i < size; i++) {
 			fprintf(out, "%02x", data[i]);
 		}
 		fprintf(out, "\n");
 	}
 
-	template <typename T>
-	static void hex_ascii(FILE* out, const T* ptr, unsigned size) {
-		const uint8_t* data = reinterpret_cast<const uint8_t*>(ptr);
+	static void hex_ascii(FILE* out, binio::MCArea area) {
+		const uint8_t* data = reinterpret_cast<const uint8_t*>(area.cbegin());
+		size_t size = area.length();
 		fprintf(out, "\n");
 		unsigned offset = 0;
 		while (offset < size) {
 			offset += print_hex_ascii(out, data + offset, size - offset);
 		}
 	}
+
+	// aliases for raw pointers
+
+	template <typename T>
+	static void memory(FILE* out, const T* ptr, size_t size) {
+		memory(out, binio::as_const_area(ptr, size));
+	}
+
+	template <typename T>
+	static void hex(FILE* out, const T* ptr, size_t size) {
+		hex(out, binio::as_const_area(ptr, size));
+	}
+
+	template <typename T>
+	static void hex_ascii(FILE* out, const T* ptr, size_t size) {
+		hex_ascii(out, binio::as_const_area(ptr, size));
+	}
+
 
 private:
 

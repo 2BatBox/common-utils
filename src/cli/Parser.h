@@ -35,22 +35,21 @@ class DefaultHandler : public EventHandler {
 public:
 
 	DefaultHandler(OptionList& list) noexcept :
-	m_list(list), m_short(nullptr) {
-	}
+	m_list(list), m_short(nullptr) { }
 
 	void begin() throw (std::logic_error) {
-//		LOG("begin()");
+		//		LOG("begin()");
 		m_list.clean();
 		m_short = nullptr;
 	}
 
 	void end() throw (std::logic_error) {
-//		LOG("end()");
+		//		LOG("end()");
 		m_list.validate();
 	}
 
 	void start_short(char opt) throw (std::logic_error) {
-//		LOG("start_short('%c')", opt);
+		//		LOG("start_short('%c')", opt);
 		m_short = m_list.find(opt);
 		if (m_short == nullptr) {
 			fprintf(stderr, "unknown short option '%c'\n", opt);
@@ -60,7 +59,7 @@ public:
 	}
 
 	bool start_short(char opt, std::string arg) throw (std::logic_error) {
-//		LOG("start_short('%c', '%s')", opt, arg.c_str());
+		//		LOG("start_short('%c', '%s')", opt, arg.c_str());
 		m_short = m_list.find(opt);
 		if (m_short == nullptr) {
 			fprintf(stderr, "unknown short option '%c'\n", opt);
@@ -84,7 +83,7 @@ public:
 	}
 
 	void start_long(std::string opt) throw (std::logic_error) {
-//		LOG("start_long('%s')", opt.c_str());
+		//		LOG("start_long('%s')", opt.c_str());
 		Option* long_opt = m_list.find(opt);
 		if (long_opt == nullptr) {
 			fprintf(stderr, "unknown long option '%s'\n", opt.c_str());
@@ -98,7 +97,7 @@ public:
 	}
 
 	void start_long(std::string opt, std::string arg) throw (std::logic_error) {
-//		LOG("start_long('%s', '%s')", opt.c_str(), arg.c_str());
+		//		LOG("start_long('%s', '%s')", opt.c_str(), arg.c_str());
 		Option* long_opt = m_list.find(opt);
 		if (long_opt == nullptr) {
 			fprintf(stderr, "unknown long option '%s'\n", opt.c_str());
@@ -112,7 +111,7 @@ public:
 	}
 
 	bool start_argument(std::string arg) throw (std::logic_error) {
-//		LOG("start_argument('%s')", arg.c_str());
+		//		LOG("start_argument('%s')", arg.c_str());
 		if (m_short != nullptr) {
 			m_short->set_arg_value(arg);
 			m_short = nullptr;
@@ -128,7 +127,7 @@ public:
 
 	static void parse(int& argc, char**& argv, OptionList& list) throw (std::logic_error) {
 		DefaultHandler handler(list);
-		
+
 		unsigned arg_index = 0;
 		handler.begin();
 
@@ -156,7 +155,7 @@ public:
 		argc = arg_index;
 		handler.end();
 	}
-	
+
 private:
 
 	static void parser_long_option(std::string argument, EventHandler* eh) {

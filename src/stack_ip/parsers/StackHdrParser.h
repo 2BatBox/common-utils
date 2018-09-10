@@ -1,5 +1,5 @@
-#ifndef STACK_IP_PARSERS_STACK_IP_PARSER_H
-#define STACK_IP_PARSERS_STACK_IP_PARSER_H
+#ifndef STACK_IP_PARSERS_STACKHDRPARSER_H
+#define STACK_IP_PARSERS_STACKHDRPARSER_H
 
 #include <cstdlib>
 
@@ -14,13 +14,11 @@
 namespace stack_ip {
 
 /**
- * StackParser is a parser of IP packet stack.
- * The packet data MUST be provided completely, it may contain padding.
- * StackHdrParser might be useful to work with packets which contain headers only.
- * see StackHeaderParser.h for more details.
+ * StackHdrParser is a parser of IP packet stack.
+ * Might be useful to work with packets which contain headers only.
  *   
  * Using sample:
- * StackParser parser(...);
+ * StackHdrParser parser(...);
  * 
  * 1.
  * parser.protocol() == Protocol::L2_ETHERNET;
@@ -28,10 +26,9 @@ namespace stack_ip {
  * Methods header(), payload() and packet() would return ByteBuffers as shown
  * in the picture.
  * 
- *   |--Ethernet--|----VLAN----|--IPv4----|----UDP----|--padding--|
+ *   |--Ethernet--|----VLAN----|--IPv4----|----UDP----|
  *   |-header()---|
- *                |-payload()-------------------------------------|
- *   |-packet()---------------------------------------------------|
+ *   |-packet()---------------------------------------|
  * 
  * 2.
  * parser.next();
@@ -39,8 +36,7 @@ namespace stack_ip {
  * assign_stay(ptr) sets 'ptr' to the VLAN header.
  * 
  *                |-header()---|
- *                             |-payload()------------------------|
- *                |-packet()--------------------------------------|
+ *                |-packet()--------------------------|
  * 
  * 3.
  * parser.next();
@@ -48,12 +44,11 @@ namespace stack_ip {
  * assign_stay(ptr) sets 'ptr' to the IPv4 header.
  * 
  *                             |-header()-|
- *                                        |-payload()-|
- *                             |-packet()-------------|
+ *                             |-packet()-|
  * and etc.
  */
 
-class StackParser : protected DefaultPacketReader {
+class StackHdrParser : protected DefaultPacketReader {
 	using Base = DefaultPacketReader;
 
 protected:
@@ -67,7 +62,7 @@ public:
 	using Base::available;
 	using Base::padding;
 
-	StackParser(binio::MCArea pkt) :
+	StackHdrParser(binio::MCArea pkt) :
 	Base(pkt),
 	proto(Protocol::END) { }
 
@@ -76,7 +71,7 @@ public:
 	 * @return true if the packet contains valid IP stack protocols.
 	 */
 	bool parse(Protocol proto_first = Protocol::L2_ETHERNET) noexcept {
-		proto = validate_packet(proto_first);
+		proto = validate_header(proto_first);
 		return proto != Protocol::END;
 	}
 
@@ -123,7 +118,7 @@ public:
 			break;
 		}
 
-		proto = validate_packet(next_proto);
+		proto = validate_header(next_proto);
 		return proto;
 	}
 
@@ -143,42 +138,33 @@ public:
 		return binio::MCArea(ptr, hdr_len);
 	}
 
-	/**
-	 * @return A current protocol payload as a MemArea object.
-	 */
-	binio::MCArea payload() const noexcept {
-		unsigned payload_len = 0;
-		const uint8_t* ptr = payload(payload_len);
-		return binio::MCArea(ptr, payload_len);
-	}
-
 private:
 
-	Protocol validate_packet(Protocol new_proto) noexcept {
+	Protocol validate_header(Protocol new_proto) noexcept {
 		bool result = false;
 		switch (new_proto) {
 		case Protocol::L2_ETHERNET:
-			result = Ethernet::validate_packet(*this);
+			result = Ethernet::validate_header(*this);
 			break;
 
 		case Protocol::L2_VLAN:
-			result = Vlan::validate_packet(*this);
+			result = Vlan::validate_header(*this);
 			break;
 
 		case Protocol::L3_IPv4:
-			result = IPv4::validate_packet(*this);
+			result = IPv4::validate_header(*this);
 			break;
 
 		case Protocol::L4_GRE:
-			result = Gre::validate_packet(*this);
+			result = Gre::validate_header(*this);
 			break;
 
 		case Protocol::L4_UDP:
-			result = Udp::validate_packet(*this);
+			result = Udp::validate_header(*this);
 			break;
 
 		case Protocol::L4_SCTP:
-			result = Sctp::validate_packet(*this);
+			result = Sctp::validate_header(*this);
 			break;
 
 		default:
@@ -223,46 +209,9 @@ private:
 		return Base::m_head;
 	}
 
-	const uint8_t* payload(unsigned& out_payload_len) const noexcept {
-		unsigned hdr_len = 0;
-
-		switch (proto) {
-		case Protocol::L2_ETHERNET:
-			out_payload_len = Ethernet::length_payload(*this);
-			break;
-
-		case Protocol::L2_VLAN:
-			out_payload_len = Vlan::length_payload(*this);
-			break;
-
-		case Protocol::L3_IPv4:
-			out_payload_len = IPv4::length_payload(*this);
-			break;
-
-		case Protocol::L4_GRE:
-			out_payload_len = Gre::length_payload(*this);
-			break;
-
-		case Protocol::L4_UDP:
-			out_payload_len = Udp::length_payload(*this);
-			break;
-
-		case Protocol::L4_SCTP:
-			out_payload_len = Sctp::length_payload(*this);
-			break;
-
-		default:
-			return nullptr;
-		}
-
-		header(hdr_len);
-
-		return Base::m_head + hdr_len;
-	}
-
 };
 
 }; // namespace stack_ip
 
-#endif /* STACK_IP_PARSERS_STACK_IP_PARSER_H */
+#endif /* STACK_IP_PARSERS_STACKHDRPARSER_H */
 

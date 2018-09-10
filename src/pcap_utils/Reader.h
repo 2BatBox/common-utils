@@ -12,13 +12,13 @@ class Reader {
 	pcap_t* pcap_handler;
 	unsigned frame_index;
 
-	Reader(pcap_t* pcap_handler = nullptr) noexcept: pcap_handler(pcap_handler), frame_index(0) { }
+	Reader(pcap_t* pcap_handler = nullptr) noexcept : pcap_handler(pcap_handler), frame_index(0) { }
 
 public:
 	Reader(const Reader&) = delete;
 	Reader& operator=(const Reader&) = delete;
 
-	Reader(Reader&& rvalue) noexcept: pcap_handler(rvalue.pcap_handler), frame_index(rvalue.frame_index) {
+	Reader(Reader&& rvalue) noexcept : pcap_handler(rvalue.pcap_handler), frame_index(rvalue.frame_index) {
 		rvalue.make_empty();
 	}
 
@@ -63,13 +63,13 @@ public:
 		}
 		return Reader(pcap_handler);
 	}
-    
+
 private:
-    
-    inline void make_empty() noexcept {
-        pcap_handler = nullptr;
+
+	inline void make_empty() noexcept {
+		pcap_handler = nullptr;
 		frame_index = 0;
-    }
+	}
 
 };
 

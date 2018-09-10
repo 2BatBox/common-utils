@@ -22,8 +22,7 @@ class OptionState {
 
 public:
 
-	OptionState() noexcept : m_presented(false), m_has_argument(false), m_argument() {
-	}
+	OptionState() noexcept : m_presented(false), m_has_argument(false), m_argument() { }
 
 	bool presented() const noexcept {
 		return m_presented;
@@ -73,8 +72,7 @@ public:
 	m_long_name(long_name),
 	m_arg_type(arg_type),
 	m_desc(),
-	m_arg_name() {
-	}
+	m_arg_name() { }
 
 	bool has_short_name() const noexcept {
 		return m_short_name != SHORT_NAME_NONE;

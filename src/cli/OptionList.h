@@ -16,8 +16,8 @@ class OptionList {
 	std::vector<Option> m_options;
 
 public:
-	
-	OptionList() noexcept : m_options() {}
+
+	OptionList() noexcept : m_options() { }
 
 	Option& add_short(char short_name, bool has_argument) throw (std::logic_error) {
 		validate_short_name(short_name);
@@ -95,15 +95,33 @@ public:
 		return *opt;
 	}
 
+	const std::string& value_except(char name) const throw (std::logic_error) {
+		const Option& opt = find_except(name);
+		if (not opt.presented()) {
+			fprintf(stderr, "option '%c' is not presented\n", name);
+			throw std::logic_error("option is not presented");
+		}
+		return opt.arg_value();
+	}
+
+	const std::string& value_except(const std::string& name) const throw (std::logic_error) {
+		const Option& opt = find_except(name);
+		if (not opt.presented()) {
+			fprintf(stderr, "option '%s' is not presented\n", name.c_str());
+			throw std::logic_error("option is not presented");
+		}
+		return opt.arg_value();
+	}
+
 	size_t size() const noexcept {
 		return m_options.size();
 	}
 
-	const Option& operator[](unsigned index) const noexcept {
+	const Option& operator[](unsigned index)const noexcept {
 		return m_options[index];
 	}
 
-	Option& operator[](unsigned index) noexcept {
+	Option& operator[](unsigned index)noexcept {
 		return m_options[index];
 	}
 
@@ -116,10 +134,10 @@ public:
 	void validate() throw (std::logic_error) {
 		for (auto elem : m_options) {
 			if (
-					elem.arg_type() == ArgumentType::MANDATORY
-					&& elem.presented()
-					&& not elem.has_arg()
-					) {
+				elem.arg_type() == ArgumentType::MANDATORY
+				&& elem.presented()
+				&& not elem.has_arg()
+				) {
 				fprintf(stderr, "option '%s' has a mandatory argument\n", elem.name().c_str());
 				throw std::logic_error("a mandatory argument has not been set");
 			}

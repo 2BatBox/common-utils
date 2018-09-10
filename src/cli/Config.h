@@ -11,10 +11,10 @@ public:
 	static const std::string long_prefix;
 	static const std::string long_arg_start;
 	static const std::string terminator;
-	
+
 	static const unsigned name_offset;
 	static const unsigned description_offset;
-	
+
 };
 
 }; // namespace cli;
