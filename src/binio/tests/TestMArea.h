@@ -6,7 +6,7 @@
 #include <iostream>
 #include <cstdio>
 
-#include "../MArea.h"
+#include "../../../src/binio/MArea.h"
 
 namespace binio {
 
@@ -32,6 +32,7 @@ class TestMArea {
 	};
 
 	static void test_length() noexcept {
+		printf("-> test_length()\n");
 		const void* const_void_ptr = nullptr;
 		void* void_ptr = nullptr;
 
@@ -44,18 +45,18 @@ class TestMArea {
 		Readable readable;
 		Writable writable;
 
-		readable = as_mcarea(const_void_ptr, 1);
+		readable = as_const_area(const_void_ptr, 1);
 		assert(readable.length() == 1);
-		readable = as_mcarea(const_u32_ptr, 1);
+		readable = as_const_area(const_u32_ptr, 1);
 		assert(readable.length() == sizeof (*const_u32_ptr));
-		readable = as_mcarea(c_struct_ptr, 1);
+		readable = as_const_area(c_struct_ptr, 1);
 		assert(readable.length() == sizeof (*c_struct_ptr));
 
-		writable = as_marea(void_ptr, 1);
+		writable = as_area(void_ptr, 1);
 		assert(writable.length() == 1);
-		writable = as_marea(u32_ptr, 1);
+		writable = as_area(u32_ptr, 1);
 		assert(writable.length() == sizeof (*u32_ptr));
-		writable = as_marea(struct_ptr, 1);
+		writable = as_area(struct_ptr, 1);
 		assert(writable.length() == sizeof (*struct_ptr));
 
 	}
@@ -73,6 +74,7 @@ class TestMArea {
 	static void dummy_writable_cref(const Writable&) { }
 
 	static void test_type_converting() noexcept {
+		printf("-> test_type_converting()\n");
 		Readable readable;
 		Writable writable;
 
@@ -96,6 +98,7 @@ class TestMArea {
 	}
 
 	static void test_comparison() noexcept {
+		printf("-> test_comparison()\n");
 		unsigned buf_size = 64 - 1;
 		DataSet array_struc_first[buf_size];
 		DataSet array_struc_second[buf_size];
@@ -107,11 +110,11 @@ class TestMArea {
 		Readable readable_null;
 		Readable writable_null;
 
-		Readable readable_first = as_mcarea(array_struc_first, buf_size);
-		Readable readable_second = as_mcarea(array_struc_second, buf_size);
+		Readable readable_first = as_const_area(array_struc_first, buf_size);
+		Readable readable_second = as_const_area(array_struc_second, buf_size);
 
-		Writable writable_first = as_marea(array_struc_first, buf_size);
-		Writable writable_second = as_marea(array_struc_second, buf_size);
+		Writable writable_first = as_area(array_struc_first, buf_size);
+		Writable writable_second = as_area(array_struc_second, buf_size);
 
 		assert(readable_first != readable_null);
 		assert(readable_second != readable_null);
@@ -128,10 +131,11 @@ class TestMArea {
 	}
 
 	static void test_subarea() noexcept {
+		printf("-> test_subarea()\n");
 		unsigned buf_size = 16;
 		char raw_buffer[buf_size];
 
-		Readable readable = as_marea(raw_buffer, buf_size);
+		Readable readable = as_area(raw_buffer, buf_size);
 		assert(readable == readable.subarea(0));
 		assert(readable == readable.subarea(0, buf_size));
 		assert(readable.subarea(0) == readable.subarea(0, buf_size));

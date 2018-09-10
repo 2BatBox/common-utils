@@ -9,14 +9,14 @@
 namespace binio {
 
 /**
- * A VLArray object represents a static array with variable length.
+ * A VLArray object represents an array with variable length.
  */
 
-template <typename T, size_t capacity_bytes>
+template <typename T, size_t Capacity>
 class VLArray {
 protected:
 	size_t m_length;
-	T m_array[capacity_bytes];
+	T m_array[Capacity];
 
 public:
 
@@ -42,24 +42,24 @@ public:
 		return m_length;
 	}
 
-	inline size_t capacity() const noexcept {
-		return capacity_bytes;
+	inline constexpr size_t capacity() const noexcept {
+		return Capacity;
 	}
 
 	inline MArea assign(size_t length) throw (std::out_of_range) {
-		if (length > capacity_bytes) {
+		if (length > Capacity) {
 			fprintf(stderr, "MArea assign(size_t length = %zu):"
-				"m_array=%p, m_length=%zu, capacity_bytes=%zu\n", length, m_array, m_length, capacity_bytes); //TODO: debug
+				"m_array=%p, m_length=%zu, capacity_bytes=%zu\n", length, m_array, m_length, Capacity); //TODO: debug
 			throw std::out_of_range("VLArray::assign(size_t)");
 		}
 		m_length = length;
-		return as_marea(m_array, m_length);
+		return binio::as_area(m_array, m_length);
 	}
 
 	template <typename Array, size_t S>
 	inline bool operator==(const VLArray<Array, S>& lv) const noexcept {
-		auto self = mcarea();
-		auto other = lv.mcarea();
+		auto self = as_const_area();
+		auto other = lv.as_const_area();
 		return self == other;
 	}
 
@@ -68,12 +68,12 @@ public:
 		return not operator==(lv);
 	}
 
-	inline MCArea mcarea() const noexcept {
-		return as_mcarea(m_array, m_length);
+	inline MCArea as_const_area() const noexcept {
+		return binio::as_const_area(m_array, m_length);
 	}
 
-	inline MArea marea() noexcept {
-		return as_marea(m_array, m_length);
+	inline MArea as_area() noexcept {
+		return binio::as_area(m_array, m_length);
 	}
 
 	//TODO: intersection checkers

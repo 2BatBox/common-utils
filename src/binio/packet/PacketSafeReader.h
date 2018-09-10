@@ -1,5 +1,5 @@
-#ifndef BINIO_PACKET_SAFE_READER_H
-#define BINIO_PACKET_SAFE_READER_H
+#ifndef BINIO_PACKET_PACKETSAFEREADER_H
+#define BINIO_PACKET_PACKETSAFEREADER_H
 
 #include <cstdlib>
 #include <cstring>
@@ -33,13 +33,13 @@ namespace binio {
  * 
  **/
 
-template <typename T, typename S>
-class BasicPacketSafeReader : public BasicPacket<T, S> {
-	using Base = BasicPacket<T, S>;
+template <typename T>
+class BasicPacketSafeReader : public BasicPacket<T> {
+	using Base = BasicPacket<T>;
 protected:
 	bool in_bounds;
 
-	BasicPacketSafeReader(T* buf, S len) noexcept :
+	BasicPacketSafeReader(T* buf, size_t len) noexcept :
 	Base(buf, len),
 	in_bounds(buf != nullptr) { }
 
@@ -58,10 +58,10 @@ public:
 	 */
 	bool reset() noexcept {
 		if (in_bounds) {
-			S off = Base::offset();
-			Base::ptr_head -= off;
-			Base::bytes_available += off + Base::bytes_padding;
-			Base::bytes_padding = 0;
+			size_t off = Base::offset();
+			Base::m_head -= off;
+			Base::m_available += off + Base::m_padding;
+			Base::m_padding = 0;
 		}
 		return in_bounds;
 	}
@@ -71,13 +71,13 @@ public:
 	 * @param bytes - bytes to move.
 	 * @return true - if the packet is in its bounds after moving.
 	 */
-	bool head_move(S bytes) noexcept {
+	bool head_move(size_t bytes) noexcept {
 		if (in_bounds) {
-			if (bytes > Base::bytes_available) {
+			if (bytes > Base::m_available) {
 				in_bounds = false;
 			} else {
-				Base::ptr_head += bytes;
-				Base::bytes_available -= bytes;
+				Base::m_head += bytes;
+				Base::m_available -= bytes;
 			}
 		}
 		return in_bounds;
@@ -88,13 +88,13 @@ public:
 	 * @param bytes - bytes to move.
 	 * @return true - if the packet is in its bounds after moving.
 	 */
-	bool head_move_back(S bytes) noexcept {
+	bool head_move_back(size_t bytes) noexcept {
 		if (in_bounds) {
 			if (bytes > Base::offset()) {
 				in_bounds = false;
 			} else {
-				Base::ptr_head -= bytes;
-				Base::bytes_available += bytes;
+				Base::m_head -= bytes;
+				Base::m_available += bytes;
 			}
 		}
 		return in_bounds;
@@ -105,13 +105,13 @@ public:
 	 * @param bytes - bytes to move.
 	 * @return true - if the packet is in its bounds after moving.
 	 */
-	bool tail_move(S bytes) noexcept {
+	bool tail_move(size_t bytes) noexcept {
 		if (in_bounds) {
-			if (bytes > Base::bytes_padding) {
+			if (bytes > Base::m_padding) {
 				in_bounds = false;
 			} else {
-				Base::bytes_available += bytes;
-				Base::bytes_padding -= bytes;
+				Base::m_available += bytes;
+				Base::m_padding -= bytes;
 			}
 		}
 		return in_bounds;
@@ -122,37 +122,39 @@ public:
 	 * @param bytes - bytes to move.
 	 * @return true - if the packet is in its bounds after moving.
 	 */
-	bool tail_move_back(S bytes) noexcept {
+	bool tail_move_back(size_t bytes) noexcept {
 		if (in_bounds) {
-			if (bytes > Base::bytes_available) {
+			if (bytes > Base::m_available) {
 				in_bounds = false;
 			} else {
-				Base::bytes_available -= bytes;
-				Base::bytes_padding += bytes;
+				Base::m_available -= bytes;
+				Base::m_padding += bytes;
 			}
 		}
 		return in_bounds;
 	}
 
 	/**
-	 * Read @value from the packet and set the head to the new position.
+	 * Read @value from the packet.
+	 * The head moves to the new position.
 	 * @param value - variable to read to.
 	 * @return true - if the packet is in its bounds after reading.
 	 */
 	template <typename V>
 	bool read(V& value) noexcept {
 		if (in_bounds) {
-			if (sizeof (V) > Base::bytes_available) {
+			if (sizeof (V) > Base::m_available) {
 				in_bounds = false;
 			} else {
-				read_unsafe(value);
+				read_impl(value);
 			}
 		}
 		return in_bounds;
 	}
 
 	/**
-	 * Read @value and @args from the packet and set the head to the new position.
+	 * Read @value and @args from the packet.
+	 * The head moves to the new position.
 	 * @param value - a variable to read to.
 	 * @param args - variables to read to.
 	 * @return true - if the packet is in its bounds after reading.
@@ -160,84 +162,106 @@ public:
 	template <typename V, typename... Args>
 	bool read(V& value, Args&... args) noexcept {
 		if (in_bounds) {
-			if (sizeof_args(value, args...) > Base::bytes_available) {
+			if (sizeof_args(value, args...) > Base::m_available) {
 				in_bounds = false;
 			} else {
-				read_unsafe(value, args...);
+				read_impl(value, args...);
 			}
 		}
 		return in_bounds;
 	}
 
 	/**
-	 * Read a memory area from the packet and set the head to the new position.
+	 * Read a memory area from the packet.
+	 * The head moves to the new position.
 	 * @param area - an array to read to.
 	 * @return true - if the packet is in its bounds after reading.
 	 */
-	bool read_marea(MArea area) noexcept {
+	bool read_area(MArea area) noexcept {
 		if (in_bounds) {
-			S array_len = area.length();
-			if (array_len > Base::bytes_available) {
+			size_t array_len = area.length();
+			if (array_len > Base::m_available) {
 				in_bounds = false;
 			} else {
-				memcpy(area.begin(), Base::ptr_head, array_len);
-				Base::ptr_head += array_len;
-				Base::bytes_available -= array_len;
+				memcpy(area.begin(), Base::m_head, array_len);
+				Base::m_head += array_len;
+				Base::m_available -= array_len;
 			}
 		}
 		return in_bounds;
 	}
 
 	/**
-	 * Assign one pointer to the head and set the head to the new position.
+	 * Assign a pointer to the head.
+	 * The head moves to the new position.
 	 * @param pointer - a pointer to assign.
 	 * @return true - if the packet is in its bounds after assigning.
 	 */
 	template <typename V>
 	bool assign(V*& pointer) noexcept {
 		if (in_bounds) {
-			if (sizeof (V) > Base::bytes_available) {
+			if (sizeof (V) > Base::m_available) {
 				in_bounds = false;
 			} else {
-				pointer = reinterpret_cast<V*>(Base::ptr_head);
-				Base::ptr_head += sizeof (V);
-				Base::bytes_available -= sizeof (V);
+				pointer = reinterpret_cast<V*>(Base::m_head);
+				Base::m_head += sizeof (V);
+				Base::m_available -= sizeof (V);
 			}
 		}
 		return in_bounds;
 	}
 
 	/**
-	 * Assign a memory area to the head and set the head to the new position.
-	 * @param area - an area to assign.
-	 * @param area_len - length of the area in bytes.
-	 * @return true - if the packet is in its bounds after assigning.
-	 */
-	bool assign_mcarea(MCArea& area, S area_len) noexcept {
-		if (in_bounds) {
-			if (area_len > Base::bytes_available) {
-				in_bounds = false;
-			} else {
-				area = as_mcarea(Base::ptr_head, area_len);
-				Base::ptr_head += area_len;
-				Base::bytes_available -= area_len;
-			}
-		}
-		return in_bounds;
-	}
-
-	/**
-	 * Assign one pointer to the head.
+	 * Assign a pointer to the head.
+	 * The head doesn't move.
 	 * @param pointer - a pointer to assign.
 	 * @return true - if the packet is in its bounds after assigning.
 	 */
 	template <typename V>
-	bool assign_stay(V*& pointer) const noexcept {
+	bool assign_stay(V*& pointer) noexcept {
 		if (in_bounds) {
-			if (sizeof (V) > Base::bytes_available) {
+			if (sizeof (V) > Base::m_available) {
 				in_bounds = false;
 			} else {
-				pointer = reinterpret_cast<V*>(Base::ptr_head);
+				pointer = reinterpret_cast<V*>(Base::m_head);
+			}
+		}
+		return in_bounds;
+	}
+
+	/**
+	 * Assign a memory area to the head.
+	 * The head moves to the new position.
+	 * @param area - an area to assign.
+	 * @param area_len - length of the area in bytes.
+	 * @return true - if the packet is in its bounds after assigning.
+	 */
+	bool assign_const_area(MCArea& area, size_t area_len) noexcept {
+		if (in_bounds) {
+			if (area_len > Base::m_available) {
+				in_bounds = false;
+			} else {
+				area = as_const_area(Base::m_head, area_len);
+				Base::m_head += area_len;
+				Base::m_available -= area_len;
+			}
+		}
+		return in_bounds;
+	}
+
+	/**
+	 * Assign a memory area to the head.
+	 * The head doesn't move.
+	 * @param area - an area to assign.
+	 * @param area_len - length of the area in bytes.
+	 * @return true - if the packet is in its bounds after assigning.
+	 */
+	bool assign_const_area_stay(MCArea& area, size_t area_len) noexcept {
+		if (in_bounds) {
+			if (area_len > Base::m_available) {
+				in_bounds = false;
+			} else {
+				area = as_const_area(Base::m_head, area_len);
 			}
 		}
 		return in_bounds;
@@ -245,33 +269,32 @@ public:
 
 protected:
 
-	static inline constexpr S sizeof_args() noexcept {
+	static inline constexpr size_t sizeof_args() noexcept {
 		return 0;
 	}
 
 	template <typename V, typename... Args>
-	static inline constexpr S sizeof_args(V& value, Args&... args) noexcept {
+	static inline constexpr size_t sizeof_args(V& value, Args&... args) noexcept {
 		return sizeof (value) + sizeof_args(args...);
 	}
 
 	template <typename V>
-	inline void read_unsafe(V& value) noexcept {
-		value = *reinterpret_cast<const V*>(Base::ptr_head);
-		Base::ptr_head += sizeof (V);
-		Base::bytes_available -= sizeof (V);
+	inline void read_impl(V& value) noexcept {
+		value = *reinterpret_cast<const V*>(Base::m_head);
+		Base::m_head += sizeof (V);
+		Base::m_available -= sizeof (V);
 	}
 
 	template <typename V, typename... Args>
-	inline void read_unsafe(V& value, Args&... args) noexcept {
-		read_unsafe(value);
-		read_unsafe(args...);
+	inline void read_impl(V& value, Args&... args) noexcept {
+		read_impl(value);
+		read_impl(args...);
 	}
 
 };
 
-template <typename S>
-class PacketSafeReader : public BasicPacketSafeReader<const uint8_t, S> {
-	using Base = BasicPacketSafeReader<const uint8_t, S>;
+class PacketSafeReader : public BasicPacketSafeReader<const uint8_t> {
+	using Base = BasicPacketSafeReader<const uint8_t>;
 
 public:
 
@@ -281,10 +304,10 @@ public:
 	PacketSafeReader(MArea range) noexcept :
 	Base(range.begin(), range.length()) { }
 
-	PacketSafeReader(const uint8_t* data, S bytes) noexcept :
+	PacketSafeReader(const uint8_t* data, size_t bytes) noexcept :
 	Base(data, bytes) { }
 };
 
 }; // namespace binio
 
-#endif /* BINIO_PACKET_SAFE_READER_H */
+#endif /* BINIO_PACKET_PACKETSAFEREADER_H */

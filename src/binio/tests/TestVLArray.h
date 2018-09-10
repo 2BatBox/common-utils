@@ -39,7 +39,7 @@ class TestVLArray {
 		array_first[array_first.length() - 1] = 0;
 		assert(array_first != array_second);
 	}
-	
+
 	static void test_assign() noexcept {
 		Array8 array_8;
 		array_8.assign(0);

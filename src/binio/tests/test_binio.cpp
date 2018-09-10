@@ -8,8 +8,8 @@
 
 using namespace binio;
 
-//int main(int, char**) {
-int main_binio(int, char**) {
+int main(int, char**) {
+	//int main_binio(int, char**) {
 
 	TestMArea byte_marea;
 	byte_marea.test();
@@ -19,10 +19,10 @@ int main_binio(int, char**) {
 
 	TestPacketSafe packet_safe;
 	packet_safe.test();
-	
+
 	TestVLArray static_array;
 	static_array.test();
-	
+
 	std::cout << "<---- the end of main_binio() ---->\n";
 	return 0;
 }

@@ -8,15 +8,19 @@
 namespace binio {
 
 /**
- * A BasicMArea object represents an area of the memory as a pointer and length of the area.
+ * A BasicMArea object represents an area of the memory as a pointer and length of the area in bytes.
  * No memory management is provided.
  * Bounds checking is provided for sensitive operations.
+ * 
+ * Notes:
+ * Type T MUST be 'uint8_t' or 'const uint8_t'.
+ * 
  */
 template <typename T>
 class BasicMArea {
 protected:
 	T* m_pointer;
-	size_t m_length; // The length of the buffer in T elements.
+	size_t m_length; // The length of the area in bytes.
 
 public:
 
@@ -78,10 +82,8 @@ public:
 	bool operator==(const BasicMArea<P>& buf) const noexcept {
 		if (m_pointer && buf.cbegin()) {
 			// comparing as byte arrays
-			size_t bytes = m_length * sizeof (T);
-			size_t buf_bytes = buf.length() * sizeof (P);
-			if (bytes == buf_bytes) {
-				return (memcmp(m_pointer, buf.cbegin(), bytes) == 0);
+			if (m_length == buf.length()) {
+				return (memcmp(m_pointer, buf.cbegin(), m_length) == 0);
 			}
 		}
 		return false;
@@ -102,11 +104,11 @@ using MCArea = BasicMArea<const uint8_t>;
 // writable areas
 
 template <typename T>
-inline MArea as_marea(T* ptr, size_t elements) noexcept {
+inline MArea as_area(T* ptr, size_t elements) noexcept {
 	return MArea(reinterpret_cast<uint8_t*>(ptr), elements * sizeof (T));
 }
 
-inline MArea as_marea(void* ptr, size_t bytes) noexcept {
+inline MArea as_area(void* ptr, size_t bytes) noexcept {
 	return MArea(reinterpret_cast<uint8_t*>(ptr), bytes);
 }
 
@@ -114,20 +116,20 @@ inline MArea as_marea(void* ptr, size_t bytes) noexcept {
 // readable areas
 
 template <typename T>
-inline MCArea as_mcarea(const MArea& marea) noexcept {
+inline MCArea as_const_area(const MArea& marea) noexcept {
 	return MCArea(marea.cbegin(), marea.length());
 }
 
 template <typename T>
-inline MCArea as_mcarea(T* ptr, size_t elements) noexcept {
+inline MCArea as_const_area(T* ptr, size_t elements) noexcept {
 	return MCArea(reinterpret_cast<const uint8_t*>(ptr), elements * sizeof (T));
 }
 
-inline MCArea as_mcarea(void* ptr, size_t bytes) noexcept {
+inline MCArea as_const_area(void* ptr, size_t bytes) noexcept {
 	return MCArea(reinterpret_cast<const uint8_t*>(ptr), bytes);
 }
 
-inline MCArea as_mcarea(const void* ptr, size_t bytes) noexcept {
+inline MCArea as_const_area(const void* ptr, size_t bytes) noexcept {
 	return MCArea(reinterpret_cast<const uint8_t*>(ptr), bytes);
 }
 

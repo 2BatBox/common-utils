@@ -1,5 +1,5 @@
-#ifndef BINIO_BASIC_PACKET_H
-#define BINIO_BASIC_PACKET_H
+#ifndef BINIO_PACKET_BASICPACKET_H
+#define BINIO_PACKET_BASICPACKET_H
 
 #include <cstdlib>
 
@@ -27,120 +27,123 @@ namespace binio {
  * There is no way to move 'begin' and 'end' points but 'head' and 'tail' can be moved.
  * Moving 'head' and 'tail' points affect the subareas they start or end with.
  * 
+ * Notes:
+ * Type T MUST be a 8-bit unsigned integer (constant or not constant) type.
+ * 
  **/
 
-template <typename T, typename S>
+template <typename T>
 class BasicPacket {
 protected:
-	T* ptr_head;
-	S bytes_available;
-	S bytes_padding;
-	S bytes_size;
+	T* m_head;
+	size_t m_available; // bytes available to read/write
+	size_t m_padding; // padding bytes
+	size_t m_size; // size of the packet in bytes
 
-	BasicPacket(T* buf, S len) noexcept :
-	ptr_head(buf),
-	bytes_available(len),
-	bytes_padding(0),
-	bytes_size(len) { }
+	BasicPacket(T* buf, size_t len) noexcept :
+	m_head(buf),
+	m_available(len),
+	m_padding(0),
+	m_size(len) { }
 
 public:
 
 	/**
 	 * @return The distance between 'begin' and 'end'
 	 */
-	inline S size() const noexcept {
-		return bytes_size;
+	inline size_t size() const noexcept {
+		return m_size;
 	}
 
 	/**
 	 * @return The distance between 'begin' and 'head'
 	 */
-	inline S offset() const noexcept {
-		return bytes_size - bytes_available - bytes_padding;
+	inline size_t offset() const noexcept {
+		return m_size - m_available - m_padding;
 	}
 
 	/**
 	 * @return The distance between 'head' and 'tail'
 	 */
-	inline S available() const noexcept {
-		return bytes_available;
+	inline size_t available() const noexcept {
+		return m_available;
 	}
 
 	/**
 	 * @return The distance between 'tail' and 'end'
 	 */
-	inline S padding() const noexcept {
-		return bytes_padding;
+	inline size_t padding() const noexcept {
+		return m_padding;
 	}
 
 	/**
 	 * @return true - if at least @bytes are available.
 	 */
-	inline bool available(S bytes) const noexcept {
-		return bytes <= bytes_available;
+	inline bool available(size_t bytes) const noexcept {
+		return bytes <= m_available;
 	}
 
 	/**
-	 * @return the offset subarea as a MArea object.
+	 * @return the offset subarea as a memory area.
 	 */
-	inline BasicMArea<const T> marea_offset() const noexcept {
-		S offset = offset();
-		return BasicMArea<const T>(ptr_head - offset, offset);
+	inline BasicMArea<const T> offset_area() const noexcept {
+		size_t off = offset();
+		return BasicMArea<const T>(m_head - off, off);
 	}
 
 	/**
-	 * @return the offset subarea as a MArea object.
+	 * @return the offset subarea as a memory area.
 	 */
-	inline BasicMArea<T> marea_offset() noexcept {
-		S offset = offset();
-		return BasicMArea<T>(ptr_head - offset, offset);
+	inline BasicMArea<T> offset_area() noexcept {
+		size_t off = offset();
+		return BasicMArea<T>(m_head - off, off);
 	}
 
 	/**
-	 * @return the available subarea as a MArea object.
+	 * @return the available subarea as a memory area.
 	 */
-	inline BasicMArea<const T> marea_available() const noexcept {
-		return BasicMArea<const T>(ptr_head, bytes_available);
+	inline BasicMArea<const T> available_area() const noexcept {
+		return BasicMArea<const T>(m_head, m_available);
 	}
 
 	/**
-	 * @return the available subarea as a MArea object.
+	 * @return the available subarea as a memory area.
 	 */
-	inline BasicMArea<T> marea_available() noexcept {
-		return BasicMArea<T>(ptr_head, bytes_available);
+	inline BasicMArea<T> available_area() noexcept {
+		return BasicMArea<T>(m_head, m_available);
 	}
 
 	/**
-	 * @return the padding subarea as a MArea object.
+	 * @return the padding subarea as a memory area.
 	 */
-	inline BasicMArea<const T> marea_padding() const noexcept {
-		return BasicMArea<const T>(ptr_head + available(), bytes_padding);
+	inline BasicMArea<const T> padding_area() const noexcept {
+		return BasicMArea<const T>(m_head + available(), m_padding);
 	}
 
 	/**
-	 * @return the padding subarea as a MArea object.
+	 * @return the padding subarea as a memory area.
 	 */
-	inline BasicMArea<T> marea_padding() noexcept {
-		return BasicMArea<T>(ptr_head + available(), bytes_padding);
+	inline BasicMArea<T> padding_area() noexcept {
+		return BasicMArea<T>(m_head + available(), m_padding);
 	}
 
 	/**
-	 * @return whole the packet area as a MArea object.
+	 * @return whole the packet memory area except the offset area.
 	 */
-	inline BasicMArea<const T> marea_packet() const noexcept {
-		return BasicMArea<const T>(ptr_head - offset, bytes_size);
+	inline BasicMArea<const T> packet_area() const noexcept {
+		return BasicMArea<const T>(m_head - offset, m_size);
 	}
 
 	/**
-	 * @return whole the packet area as a MArea object.
+	 * @return whole the packet area except the offset area.
 	 */
-	inline BasicMArea<T> marea_packet() noexcept {
-		return BasicMArea<T>(ptr_head - offset, bytes_size);
+	inline BasicMArea<T> packet_area() noexcept {
+		return BasicMArea<T>(m_head - offset, m_size);
 	}
 
 };
 
 }; // namespace binio
 
-#endif /* BINIO_BASIC_PACKET_H */
+#endif /* BINIO_PACKET_BASICPACKET_H */
 

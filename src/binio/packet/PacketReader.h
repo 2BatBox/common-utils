@@ -1,8 +1,7 @@
-#ifndef BINIO_PACKET_READER_H
-#define BINIO_PACKET_READER_H
+#ifndef BINIO_PACKET_PACKETREADER_H
+#define BINIO_PACKET_PACKETREADER_H
 
-#include <cstdlib>
-#include <cstring>
+#include <cstdint>
 
 #include "BasicPacket.h"
 
@@ -21,13 +20,13 @@ namespace binio {
  * 
  **/
 
-template <typename T, typename S>
-class BasicPacketReader : public BasicPacket<T, S> {
-	using Base = BasicPacket<T, S>;
+template <typename T>
+class BasicPacketReader : public BasicPacket<T> {
+	using Base = BasicPacket<T>;
 
 protected:
 
-	BasicPacketReader(T* buf, S len) noexcept :
+	BasicPacketReader(T* buf, size_t len) noexcept :
 	Base(buf, len) { }
 
 public:
@@ -36,130 +35,144 @@ public:
 	 * Reset the state of the packet.
 	 */
 	void reset() noexcept {
-		S off = Base::offset();
-		Base::ptr_head -= off;
-		Base::bytes_available += off + Base::bytes_padding;
-		Base::bytes_padding = 0;
+		size_t off = Base::offset();
+		Base::m_head -= off;
+		Base::m_available += off + Base::m_padding;
+		Base::m_padding = 0;
 	}
 
 	/**
 	 * Move the head @bytes forward.
 	 * @param bytes - bytes to move.
 	 */
-	inline void head_move(S bytes) noexcept {
-		Base::ptr_head += bytes;
-		Base::bytes_available -= bytes;
+	inline void head_move(size_t bytes) noexcept {
+		Base::m_head += bytes;
+		Base::m_available -= bytes;
 	}
 
 	/**
 	 * Move the head @bytes backward.
 	 * @param bytes - bytes to move.
 	 */
-	inline void head_move_back(S bytes) noexcept {
-		Base::ptr_head -= bytes;
-		Base::bytes_available += bytes;
+	inline void head_move_back(size_t bytes) noexcept {
+		Base::m_head -= bytes;
+		Base::m_available += bytes;
 	}
 
 	/**
 	 * Move the tail @bytes forward.
 	 * @param bytes - bytes to move.
 	 */
-	inline void tail_move(S bytes) noexcept {
-		Base::bytes_available += bytes;
-		Base::bytes_padding -= bytes;
+	inline void tail_move(size_t bytes) noexcept {
+		Base::m_available += bytes;
+		Base::m_padding -= bytes;
 	}
 
 	/**
 	 * Move the tail @bytes backward.
 	 * @param bytes - bytes to move.
 	 */
-	inline void tail_move_back(S bytes) noexcept {
-		Base::bytes_available -= bytes;
-		Base::bytes_padding += bytes;
+	inline void tail_move_back(size_t bytes) noexcept {
+		Base::m_available -= bytes;
+		Base::m_padding += bytes;
 	}
 
 	/**
-	 * Read @value from the packet and set the head to the new position.
+	 * Read @value from the packet.
+	 * The head moves to the new position.
 	 * @param value - variable to read to.
 	 */
 	template <typename V>
 	inline void read(V& value) noexcept {
-		read_unsafe(value);
+		read_impl(value);
 	}
 
 	/**
-	 * Read @value and @args from the packet and set the head to the new position.
+	 * Read @value and @args from the packet.
+	 * The head moves to the new position.
 	 * @param value - a variable to read to.
 	 * @param args - variables to read to.
 	 */
 	template <typename V, typename... Args>
 	inline void read(V& value, Args&... args) noexcept {
-		read_unsafe(value, args...);
+		read_impl(value, args...);
 	}
 
 	/**
-	 * Read a memory area from the packet and set the head to the new position.
+	 * Read a memory area from the packet.
+	 * The head moves to the new position.
 	 * @param area - an area to read to.
 	 */
-	void read_marea(MArea area) noexcept {
-		S array_len = area.length();
-		memcpy(area.begin(), Base::ptr_head, array_len);
-		Base::ptr_head += array_len;
-		Base::bytes_available -= array_len;
+	void read_area(MArea area) noexcept {
+		size_t array_len = area.length();
+		memcpy(area.begin(), Base::m_head, array_len);
+		Base::m_head += array_len;
+		Base::m_available -= array_len;
 	}
 
 	/**
-	 * Assign one pointer to the head and set the head to the new position.
+	 * Assign a pointer to the head.
+	 * The head moves to the new position.
 	 * @param pointer - a pointer to assign.
 	 */
 	template <typename V>
 	inline void assign(V*& pointer) noexcept {
-		pointer = reinterpret_cast<V*>(Base::ptr_head);
-		Base::ptr_head += sizeof (V);
-		Base::bytes_available -= sizeof (V);
+		pointer = reinterpret_cast<V*>(Base::m_head);
+		Base::m_head += sizeof (V);
+		Base::m_available -= sizeof (V);
 	}
 
 	/**
-	 * Assign an area to the head and set the head to the new position.
-	 * @param area - an array to assign.
-	 * @param area_len - length of the area in bytes.
-	 */
-	inline void assign_mcarea(MCArea& area, S area_len) noexcept {
-		area = as_mcarea(Base::ptr_head, area_len);
-		Base::ptr_head += area_len;
-		Base::bytes_available -= area_len;
-	}
-
-	/**
-	 * Assign one pointer to the head.
+	 * Assign a pointer to the head.
+	 * The head doesn't move.
 	 * @param pointer - a pointer to assign.
 	 */
 	template <typename V>
 	inline void assign_stay(V*& pointer) const noexcept {
-		pointer = reinterpret_cast<V*>(Base::ptr_head);
+		pointer = reinterpret_cast<V*>(Base::m_head);
 	}
 
+	/**
+	 * Assign a memory area to the head.
+	 * The head moves to the new position.
+	 * @param area - an array to assign.
+	 * @param area_len - length of the area in bytes.
+	 */
+	inline void assign_const_area(MCArea& area, size_t length) noexcept {
+		area = as_const_area(Base::m_head, length);
+		Base::m_head += length;
+		Base::m_available -= length;
+	}
+
+	/**
+	 * Assign a memory area to the head.
+	 * The head doesn't move.
+	 * @param area - an array to assign.
+	 * @param area_len - length of the area in bytes.
+	 */
+	inline void assign_const_area_stay(MCArea& area, size_t area_len) const noexcept {
+		area = as_const_area(Base::m_head, area_len);
+	}
 
 protected:
 
 	template <typename V>
-	inline void read_unsafe(V& value) noexcept {
-		value = *reinterpret_cast<const V*>(Base::ptr_head);
-		Base::ptr_head += sizeof (V);
-		Base::bytes_available -= sizeof (V);
+	inline void read_impl(V& value) noexcept {
+		value = *reinterpret_cast<const V*>(Base::m_head);
+		Base::m_head += sizeof (V);
+		Base::m_available -= sizeof (V);
 	}
 
 	template <typename V, typename... Args>
-	inline void read_unsafe(V& value, Args&... args) noexcept {
-		read_unsafe(value);
-		read_unsafe(args...);
+	inline void read_impl(V& value, Args&... args) noexcept {
+		read_impl(value);
+		read_impl(args...);
 	}
 
 };
 
-template <typename S>
-class PacketReader : public BasicPacketReader<const uint8_t, S> {
-	using Base = BasicPacketReader<const uint8_t, S>;
+class PacketReader : public BasicPacketReader<const uint8_t> {
+	using Base = BasicPacketReader<const uint8_t>;
 
 public:
 
@@ -169,10 +182,10 @@ public:
 	PacketReader(MArea mem) noexcept :
 	Base(mem.begin(), mem.length()) { }
 
-	PacketReader(const uint8_t* data, S bytes) noexcept :
+	PacketReader(const uint8_t* data, size_t bytes) noexcept :
 	Base(data, bytes) { }
 };
 
 }; // namespace binio
 
-#endif /* BINIO_PACKET_READER_H */
+#endif /* BINIO_PACKET_PACKETREADER_H */
