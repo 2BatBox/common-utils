@@ -128,7 +128,7 @@ int main_cli(int argc, char** argv) {
 		while (tkn.has_next()) {
 			std::string vlan_id_str = tkn.next();
 			long vlan_id = utils::Types::str_to_l(vlan_id_str);
-			LOG_INFO("include VLAN id : %ld", vlan_id);
+			LOG_RAW("include VLAN id : %ld", vlan_id);
 			if (vlan_id < 0) {
 				LOG_CRITICAL("VLAN id value must be positive");
 				return 1;
@@ -140,7 +140,7 @@ int main_cli(int argc, char** argv) {
 		while (tkn.has_next()) {
 			std::string vlan_id_str = tkn.next();
 			long vlan_id = utils::Types::str_to_l(vlan_id_str);
-			LOG_INFO("exclude VLAN id : %ld", vlan_id);
+			LOG_RAW("exclude VLAN id : %ld", vlan_id);
 			if (vlan_id < 0) {
 				LOG_CRITICAL("VLAN id value must be positive");
 				return 1;

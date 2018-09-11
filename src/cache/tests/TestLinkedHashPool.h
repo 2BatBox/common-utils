@@ -40,8 +40,7 @@ public:
 
 	TestLinkedHashPool(unsigned capacity, float load_factor) noexcept
 	: m_pool(capacity, load_factor), m_capacity(capacity) {
-		if (not m_pool.allocate())
-			throw std::logic_error("Cannot allocate LruCache instance");
+		assert(m_pool.allocate() == 0);
 	}
 
 	TestLinkedHashPool(const TestLinkedHashPool&) = delete;

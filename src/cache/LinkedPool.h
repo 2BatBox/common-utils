@@ -67,22 +67,22 @@ public:
 
 	/**
 	 * Allocate the node storage.
-	 * @return true - if the cache has been allocated successfully.
+	 * @return 0 - if the cache has been allocated successfully.
 	 */
-	bool allocate() noexcept {
+	int allocate() noexcept {
 		if (m_storage)
-			return false;
+			return -1;
 
 		m_storage = m_allocator.allocate(m_capacity);
 		if (m_storage == nullptr)
-			return false;
+			return -1;
 
 		for (unsigned i = 0; i < m_capacity; i++) {
 			m_allocator.construct(m_storage + i);
 			m_list_freed.push_back(m_storage[i]);
 		}
 
-		return true;
+		return 0;
 	}
 
 	inline Iterator_t begin() noexcept {

@@ -149,9 +149,9 @@ public:
 		for (unsigned i = 0; i < size(); i++) {
 			const Option& opt = m_options[i];
 			if (opt.presented()) {
-				fprintf(out, "%s : ", opt.name().c_str());
+				fprintf(out, "'%s'", opt.name().c_str());
 				if (opt.has_arg()) {
-					fprintf(out, "value='%s'", opt.arg_value().c_str());
+					fprintf(out, " value='%s'", opt.arg_value().c_str());
 				}
 				fprintf(out, "\n");
 			}

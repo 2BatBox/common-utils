@@ -88,7 +88,7 @@ public:
 
 	/**
 	 * Allocate the node storage.
-	 * @return true - if the cache has been allocated successfully.
+	 * @return 0 - if the cache has been allocated successfully.
 	 */
 	int allocate() noexcept {
 		if (m_storage)

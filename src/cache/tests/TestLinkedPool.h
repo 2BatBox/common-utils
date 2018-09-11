@@ -39,8 +39,7 @@ public:
 
 	TestLinkedPool(unsigned capacity) noexcept
 	: m_pool(capacity), m_capacity(capacity) {
-		if (not m_pool.allocate())
-			throw std::logic_error("Cannot allocate LinkedPool instance");
+		assert(m_pool.allocate() == 0);
 	}
 
 	TestLinkedPool(const TestLinkedPool&) = delete;
