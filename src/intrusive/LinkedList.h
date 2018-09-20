@@ -1,5 +1,5 @@
-#ifndef INTRUSIVE_LIST_H
-#define INTRUSIVE_LIST_H
+#ifndef INTRUSIVE_LINKEDLIST_H
+#define INTRUSIVE_LINKEDLIST_H
 
 #include <cstdlib>
 #include <cassert>
@@ -7,22 +7,22 @@
 namespace intrusive {
 
 template <typename N>
-struct ListHook {
+struct LinkedListHook {
 	N* il_next;
 	N* il_prev;
 	bool il_linked;
 
-	ListHook() noexcept : il_next(nullptr), il_prev(nullptr), il_linked(false) { }
+	LinkedListHook() noexcept : il_next(nullptr), il_prev(nullptr), il_linked(false) { }
 
-	ListHook(const ListHook&) = delete;
-	ListHook& operator=(const ListHook&) = delete;
+	LinkedListHook(const LinkedListHook&) = delete;
+	LinkedListHook& operator=(const LinkedListHook&) = delete;
 
-	ListHook(ListHook&&) = delete;
-	ListHook& operator=(ListHook&&) = delete;
+	LinkedListHook(LinkedListHook&&) = delete;
+	LinkedListHook& operator=(LinkedListHook&&) = delete;
 };
 
 template <typename ListNode>
-class List {
+class LinkedList {
 protected:
 	ListNode* m_head;
 	ListNode* m_tail;
@@ -30,7 +30,7 @@ protected:
 
 	template<typename N>
 	struct Iterator {
-		friend class List;
+		friend class LinkedList;
 
 		Iterator() noexcept : node_ptr(nullptr) { }
 
@@ -88,7 +88,7 @@ protected:
 
 	template<typename N>
 	struct ReverseIterator {
-		friend class List;
+		friend class LinkedList;
 
 		ReverseIterator() noexcept : node_ptr(nullptr) { }
 
@@ -147,17 +147,17 @@ public:
 	using ReverseIterator_t = ReverseIterator<ListNode>;
 	using ConstReverseIterator_t = ReverseIterator<const ListNode>;
 
-	List() noexcept : m_head(nullptr), m_tail(nullptr), m_size(0) { }
+	LinkedList() noexcept : m_head(nullptr), m_tail(nullptr), m_size(0) { }
 
-	List(const List&) = delete;
-	List& operator=(const List&) = delete;
+	LinkedList(const LinkedList&) = delete;
+	LinkedList& operator=(const LinkedList&) = delete;
 
-	List(List&& rv) : m_head(rv.m_head), m_tail(rv.m_tail), m_size(rv.m_size) {
+	LinkedList(LinkedList&& rv) : m_head(rv.m_head), m_tail(rv.m_tail), m_size(rv.m_size) {
 		rv.m_head = rv.m_tail = nullptr;
 		rv.m_size = 0;
 	}
 
-	List& operator=(List&& rv) {
+	LinkedList& operator=(LinkedList&& rv) {
 		if (this != &rv) {
 			m_head = rv.m_head;
 			m_tail = rv.m_tail;
@@ -170,7 +170,7 @@ public:
 	/**
 	 * Be careful, The list must be empty before the storage has been destroyed.
 	 */
-	virtual ~List() noexcept {
+	virtual ~LinkedList() noexcept {
 		clear();
 		clean_state();
 	}
@@ -184,7 +184,7 @@ public:
 	}
 
 	void push_front(ListNode& node) noexcept {
-		check_free(node);
+		check_free(node); // TODO: debug
 		if (m_head)
 			link_head(node);
 		else
@@ -192,7 +192,7 @@ public:
 	}
 
 	void push_back(ListNode& node) noexcept {
-		check_free(node);
+		check_free(node); // TODO: debug
 		if (m_tail)
 			link_tail(node);
 		else
@@ -218,8 +218,8 @@ public:
 	}
 
 	void insert_before(ListNode& before, ListNode& node) noexcept {
-		check_linked(before);
-		check_free(node);
+		check_linked(before); // TODO: debug
+		check_free(node); // TODO: debug
 		if (&before == m_head)
 			link_head(node);
 		else
@@ -227,8 +227,8 @@ public:
 	}
 
 	void insert_after(ListNode& after, ListNode& node) noexcept {
-		check_linked(after);
-		check_free(node);
+		check_linked(after); // TODO: debug
+		check_free(node); // TODO: debug
 		if (&after == m_tail)
 			link_tail(node);
 		else
@@ -236,7 +236,7 @@ public:
 	}
 
 	void remove(ListNode& node) noexcept {
-		check_linked(node);
+		check_linked(node); // TODO: debug
 		if (m_head) {
 			if (&node == m_head)
 				pop_front();
@@ -395,4 +395,4 @@ private:
 
 }; // namespace intrusive
 
-#endif /* INTRUSIVE_LIST_H */
+#endif /* INTRUSIVE_LINKEDLIST_H */

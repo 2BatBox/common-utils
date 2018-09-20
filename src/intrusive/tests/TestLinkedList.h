@@ -1,7 +1,7 @@
-#ifndef INTRUSIVE_TESTS_TEST_LIST_H
-#define INTRUSIVE_TESTS_TEST_LIST_H
+#ifndef INTRUSIVE_TESTS_TESTLINKEDLIST_H
+#define INTRUSIVE_TESTS_TESTLINKEDLIST_H
 
-#include "../List.h"
+#include "../LinkedList.h"
 
 #include <assert.h>
 #include <cstdio>
@@ -9,10 +9,10 @@
 
 namespace intrusive {
 
-class TestList {
+class TestLinkedList {
 
 	template <typename V>
-	struct ListNode : public ListHook<ListNode<V> > {
+	struct ListNode : public LinkedListHook<ListNode<V> > {
 		V value;
 
 		ListNode() : value() { }
@@ -40,7 +40,7 @@ class TestList {
 	using Key_t = unsigned;
 	using Value_t = StructValue<unsigned>;
 	using ListNode_t = ListNode<Value_t>;
-	using List_t = List<ListNode_t>;
+	using List_t = LinkedList<ListNode_t>;
 
 	List_t list;
 	const unsigned storage_size;
@@ -48,19 +48,19 @@ class TestList {
 
 public:
 
-	TestList(unsigned storage_size) : list(), storage_size(storage_size), storage(new ListNode_t[storage_size]) {
+	TestLinkedList(unsigned storage_size) : list(), storage_size(storage_size), storage(new ListNode_t[storage_size]) {
 		for (unsigned i = 0; i < storage_size; i++) {
 			storage[i].value = Value_t(i);
 		}
 	}
 
-	TestList(const TestList&) = delete;
-	TestList(TestList&&) = delete;
+	TestLinkedList(const TestLinkedList&) = delete;
+	TestLinkedList(TestLinkedList&&) = delete;
 
-	TestList operator=(const TestList&) = delete;
-	TestList operator=(TestList&&) = delete;
+	TestLinkedList operator=(const TestLinkedList&) = delete;
+	TestLinkedList operator=(TestLinkedList&&) = delete;
 
-	~TestList() {
+	~TestLinkedList() {
 		// The list must be empty before the storage has been destroyed.
 		list.clear();
 		delete [] storage;
@@ -289,5 +289,5 @@ private:
 
 }; // namespace intrusive
 
-#endif /* INTRUSIVE_TESTS_TEST_LIST_H */
+#endif /* INTRUSIVE_TESTS_TESTLINKEDLIST_H */
 
