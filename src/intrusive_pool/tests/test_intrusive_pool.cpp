@@ -12,8 +12,8 @@
 using namespace intrusive;
 
 //int main(int, char**) {
+
 int main_intrusive_pool(int, char**) {
-	
 	unsigned storage_size = 64;
 	float load_factor_one = 0.7f;
 	float load_factor_two = 2.0f;

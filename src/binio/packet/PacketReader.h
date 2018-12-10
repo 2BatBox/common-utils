@@ -158,7 +158,7 @@ protected:
 
 	template <typename V>
 	inline void read_impl(V& value) noexcept {
-		value = *reinterpret_cast<const V*>(Base::m_head);
+		value = *(reinterpret_cast<const V*>(Base::m_head));
 		Base::m_head += sizeof (V);
 		Base::m_available -= sizeof (V);
 	}

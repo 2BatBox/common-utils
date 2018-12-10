@@ -18,7 +18,10 @@ public:
 	 * @return true if 'pkt' paints to a valid Ethernet protocol packet
 	 */
 	static inline bool validate_packet(const DefaultPacketReader& pkt) noexcept {
-		return pkt.available(64);
+		// The original Ethernet IEEE 802.3 standard defined the minimum Ethernet frame size as 64 bytes.
+		// However, it's possible to get an Ethernet packet with length less than 64 bytes from a PCAP dump.
+		// return pkt.available(64); // Should be used in case of following the standard accurately. 
+		return pkt.available(sizeof (Header)); // Should be used in case of ADM. 
 	}
 
 	/**

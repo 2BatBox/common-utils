@@ -1,5 +1,5 @@
-#ifndef ICC_DEQUEDPOOL_H
-#define ICC_DEQUEDPOOL_H
+#ifndef INTRUSIVEPOOL_DEQUEDPOOL_H
+#define INTRUSIVEPOOL_DEQUEDPOOL_H
 
 #include "../intrusive/LinkedList.h"
 #include "../intrusive/HashMap.h"
@@ -200,5 +200,5 @@ private:
 
 }; // namespace intrusive
 
-#endif /* ICC_DEQUEDPOOL_H */
+#endif /* INTRUSIVEPOOL_DEQUEDPOOL_H */
 

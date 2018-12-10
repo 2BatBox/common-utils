@@ -123,7 +123,7 @@ protected:
 
 	template <typename V>
 	inline void write_impl(const V& value) noexcept {
-		*reinterpret_cast<V*>(Base::m_head) = value;
+		*(reinterpret_cast<V*>(Base::m_head)) = value;
 		Base::m_head += sizeof (V);
 		Base::m_available -= sizeof (V);
 	}
