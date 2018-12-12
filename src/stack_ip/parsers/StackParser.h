@@ -68,8 +68,7 @@ public:
 	using Base::padding;
 
 	StackParser(binio::MCArea pkt) :
-	Base(pkt),
-	proto(Protocol::END) { }
+		Base(pkt), proto(Protocol::END) {}
 
 	/**
 	 * @param proto_first - the first protocol in the stack.
@@ -94,33 +93,33 @@ public:
 	 */
 	Protocol next() noexcept {
 		Protocol next_proto = Protocol::END;
-		switch (proto) {
-		case Protocol::L2_ETHERNET:
-			next_proto = Ethernet::next(*this);
-			break;
+		switch(proto) {
+			case Protocol::L2_ETHERNET:
+				next_proto = Ethernet::next(*this);
+				break;
 
-		case Protocol::L2_VLAN:
-			next_proto = Vlan::next(*this);
-			break;
+			case Protocol::L2_VLAN:
+				next_proto = Vlan::next(*this);
+				break;
 
-		case Protocol::L3_IPv4:
-			next_proto = IPv4::next(*this);
-			break;
+			case Protocol::L3_IPv4:
+				next_proto = IPv4::next(*this);
+				break;
 
-		case Protocol::L4_GRE:
-			next_proto = Gre::next(*this);
-			break;
+			case Protocol::L4_GRE:
+				next_proto = Gre::next(*this);
+				break;
 
-		case Protocol::L4_UDP:
-			next_proto = Udp::next(*this);
-			break;
+			case Protocol::L4_UDP:
+				next_proto = Udp::next(*this);
+				break;
 
-		case Protocol::L4_SCTP:
-			next_proto = Sctp::next(*this);
-			break;
+			case Protocol::L4_SCTP:
+				next_proto = Sctp::next(*this);
+				break;
 
-		default:
-			break;
+			default:
+				break;
 		}
 
 		proto = validate_packet(next_proto);
@@ -156,68 +155,68 @@ private:
 
 	Protocol validate_packet(Protocol new_proto) noexcept {
 		bool result = false;
-		switch (new_proto) {
-		case Protocol::L2_ETHERNET:
-			result = Ethernet::validate_packet(*this);
-			break;
+		switch(new_proto) {
+			case Protocol::L2_ETHERNET:
+				result = Ethernet::validate_packet(*this);
+				break;
 
-		case Protocol::L2_VLAN:
-			result = Vlan::validate_packet(*this);
-			break;
+			case Protocol::L2_VLAN:
+				result = Vlan::validate_packet(*this);
+				break;
 
-		case Protocol::L3_IPv4:
-			result = IPv4::validate_packet(*this);
-			break;
+			case Protocol::L3_IPv4:
+				result = IPv4::validate_packet(*this);
+				break;
 
-		case Protocol::L4_GRE:
-			result = Gre::validate_packet(*this);
-			break;
+			case Protocol::L4_GRE:
+				result = Gre::validate_packet(*this);
+				break;
 
-		case Protocol::L4_UDP:
-			result = Udp::validate_packet(*this);
-			break;
+			case Protocol::L4_UDP:
+				result = Udp::validate_packet(*this);
+				break;
 
-		case Protocol::L4_SCTP:
-			result = Sctp::validate_packet(*this);
-			break;
+			case Protocol::L4_SCTP:
+				result = Sctp::validate_packet(*this);
+				break;
 
-		default:
-			break;
+			default:
+				break;
 		}
-		if (not result)
+		if(not result)
 			new_proto = Protocol::END;
 
 		return new_proto;
 	}
 
 	const uint8_t* header(unsigned& out_hdr_len) const noexcept {
-		switch (proto) {
-		case Protocol::L2_ETHERNET:
-			out_hdr_len = Ethernet::length_header(*this);
-			break;
+		switch(proto) {
+			case Protocol::L2_ETHERNET:
+				out_hdr_len = Ethernet::length_header(*this);
+				break;
 
-		case Protocol::L2_VLAN:
-			out_hdr_len = Vlan::length_header(*this);
-			break;
+			case Protocol::L2_VLAN:
+				out_hdr_len = Vlan::length_header(*this);
+				break;
 
-		case Protocol::L3_IPv4:
-			out_hdr_len = IPv4::length_header(*this);
-			break;
+			case Protocol::L3_IPv4:
+				out_hdr_len = IPv4::length_header(*this);
+				break;
 
-		case Protocol::L4_GRE:
-			out_hdr_len = Gre::length_header(*this);
-			break;
+			case Protocol::L4_GRE:
+				out_hdr_len = Gre::length_header(*this);
+				break;
 
-		case Protocol::L4_UDP:
-			out_hdr_len = Udp::length_header(*this);
-			break;
+			case Protocol::L4_UDP:
+				out_hdr_len = Udp::length_header(*this);
+				break;
 
-		case Protocol::L4_SCTP:
-			out_hdr_len = Sctp::length_header(*this);
-			break;
+			case Protocol::L4_SCTP:
+				out_hdr_len = Sctp::length_header(*this);
+				break;
 
-		default:
-			return nullptr;
+			default:
+				return nullptr;
 		}
 
 		return Base::m_head;
@@ -226,33 +225,33 @@ private:
 	const uint8_t* payload(unsigned& out_payload_len) const noexcept {
 		unsigned hdr_len = 0;
 
-		switch (proto) {
-		case Protocol::L2_ETHERNET:
-			out_payload_len = Ethernet::length_payload(*this);
-			break;
+		switch(proto) {
+			case Protocol::L2_ETHERNET:
+				out_payload_len = Ethernet::length_payload(*this);
+				break;
 
-		case Protocol::L2_VLAN:
-			out_payload_len = Vlan::length_payload(*this);
-			break;
+			case Protocol::L2_VLAN:
+				out_payload_len = Vlan::length_payload(*this);
+				break;
 
-		case Protocol::L3_IPv4:
-			out_payload_len = IPv4::length_payload(*this);
-			break;
+			case Protocol::L3_IPv4:
+				out_payload_len = IPv4::length_payload(*this);
+				break;
 
-		case Protocol::L4_GRE:
-			out_payload_len = Gre::length_payload(*this);
-			break;
+			case Protocol::L4_GRE:
+				out_payload_len = Gre::length_payload(*this);
+				break;
 
-		case Protocol::L4_UDP:
-			out_payload_len = Udp::length_payload(*this);
-			break;
+			case Protocol::L4_UDP:
+				out_payload_len = Udp::length_payload(*this);
+				break;
 
-		case Protocol::L4_SCTP:
-			out_payload_len = Sctp::length_payload(*this);
-			break;
+			case Protocol::L4_SCTP:
+				out_payload_len = Sctp::length_payload(*this);
+				break;
 
-		default:
-			return nullptr;
+			default:
+				return nullptr;
 		}
 
 		header(hdr_len);

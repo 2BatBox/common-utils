@@ -23,12 +23,12 @@ public:
 
 	static inline bool validate_packet(DefaultPacketReader& pkt) noexcept {
 		const unsigned available = pkt.available();
-		if (available >= sizeof (Header)) {
+		if(available >= sizeof(Header)) {
 			const Header* hdr;
 			pkt.assign_stay(hdr);
 			u_int16_t header_nb = hdr_len(hdr);
 			u_int16_t packet_nb = pkt_len(hdr);
-			if (
+			if(
 				available >= header_nb
 				&& available >= packet_nb
 				&& hdr->version == 4/*IP_V4*/
@@ -44,7 +44,7 @@ public:
 
 	static inline bool validate_header(const DefaultPacketReader& pkt) noexcept {
 		const unsigned available = pkt.available();
-		if (available >= sizeof (Header)) {
+		if(available >= sizeof(Header)) {
 			const Header* hdr;
 			pkt.assign_stay(hdr);
 			u_int16_t header_nb = hdr_len(hdr);
@@ -52,7 +52,7 @@ public:
 				available >= header_nb
 				&& hdr->version == 4/*IP_V4*/
 				&& not flag_rf_get(hdr)
-				);
+			);
 		}
 		return false;
 	}
@@ -63,20 +63,20 @@ public:
 		u_int16_t header_nb = hdr_len(hdr);
 
 		Protocol result = Protocol::END;
-		switch (hdr->protocol) {
-		case PROTO_UDP:
-			result = Protocol::L4_UDP;
-			break;
-		case PROTO_SCTP:
-			result = Protocol::L4_SCTP;
-			break;
-		case PROTO_GRE:
-			result = Protocol::L4_GRE;
-			break;
+		switch(hdr->protocol) {
+			case PROTO_UDP:
+				result = Protocol::L4_UDP;
+				break;
+			case PROTO_SCTP:
+				result = Protocol::L4_SCTP;
+				break;
+			case PROTO_GRE:
+				result = Protocol::L4_GRE;
+				break;
 
 		}
 
-		if (fragmented(hdr)) {
+		if(fragmented(hdr)) {
 			result = Protocol::END;
 		}
 

@@ -21,9 +21,9 @@ class TestPacketSafe {
 		int i;
 		long l;
 
-		DataSet() noexcept : c(0), s(0), i(0), l(0) { }
+		DataSet() noexcept : c(0), s(0), i(0), l(0) {}
 
-		DataSet(char c, short s, int i, long l) noexcept : c(c), s(s), i(i), l(l) { }
+		DataSet(char c, short s, int i, long l) noexcept : c(c), s(s), i(i), l(l) {}
 
 		bool operator==(const DataSet& ds) noexcept {
 			return c == ds.c && s == ds.s && i == ds.i && l == ds.l;
@@ -38,7 +38,7 @@ class TestPacketSafe {
 
 		assert(buf.available() == raw_buffer_size);
 		assert(buf.bounds());
-		for (unsigned i = 0; i < raw_buffer_size; i++) {
+		for(unsigned i = 0; i < raw_buffer_size; i++) {
 			assert(buf.offset() == i);
 			assert(buf.available() == raw_buffer_size - i);
 			assert(buf.available(raw_buffer_size - i));
@@ -47,7 +47,7 @@ class TestPacketSafe {
 			assert(buf.head_move(1));
 		}
 
-		for (unsigned i = 0; i < raw_buffer_size; i++) {
+		for(unsigned i = 0; i < raw_buffer_size; i++) {
 			assert(buf.offset() == raw_buffer_size - i);
 			assert(buf.available() == i);
 			assert(buf.available(i));
@@ -66,7 +66,7 @@ class TestPacketSafe {
 
 		assert(buf.available() == raw_buffer_size);
 		assert(buf.bounds());
-		for (unsigned i = 0; i < raw_buffer_size; i++) {
+		for(unsigned i = 0; i < raw_buffer_size; i++) {
 			assert(buf.offset() == 0);
 			assert(buf.available() == raw_buffer_size - i);
 			assert(buf.available(raw_buffer_size - i));
@@ -75,7 +75,7 @@ class TestPacketSafe {
 			assert(buf.tail_move_back(1));
 		}
 
-		for (unsigned i = 0; i < raw_buffer_size; i++) {
+		for(unsigned i = 0; i < raw_buffer_size; i++) {
 			assert(buf.offset() == 0);
 			assert(buf.available() == i);
 			assert(buf.available(i));
@@ -95,25 +95,25 @@ class TestPacketSafe {
 		DataType value0;
 		DataType value1;
 
-		assert(buf.available() == raw_buffer_size * sizeof (DataType));
+		assert(buf.available() == raw_buffer_size * sizeof(DataType));
 		assert(buf.bounds());
-		for (unsigned i = 0; i < raw_buffer_size; i++) {
-			assert(buf.offset() == i * sizeof (DataType));
-			assert(buf.available() == (raw_buffer_size - i) * sizeof (DataType));
-			assert(buf.available((raw_buffer_size - i) * sizeof (DataType)));
+		for(unsigned i = 0; i < raw_buffer_size; i++) {
+			assert(buf.offset() == i * sizeof(DataType));
+			assert(buf.available() == (raw_buffer_size - i) * sizeof(DataType));
+			assert(buf.available((raw_buffer_size - i) * sizeof(DataType)));
 			assert(buf.padding() == 0);
-			assert(buf.size() == raw_buffer_size * sizeof (DataType));
+			assert(buf.size() == raw_buffer_size * sizeof(DataType));
 			assert(buf.read(value0));
 		}
 
 		assert(buf.reset());
 		assert(buf.bounds());
-		for (unsigned i = 0; i < raw_buffer_size; i += 2) {
-			assert(buf.offset() == i * sizeof (DataType));
-			assert(buf.available() == (raw_buffer_size - i) * sizeof (DataType));
-			assert(buf.available((raw_buffer_size - i) * sizeof (DataType)));
+		for(unsigned i = 0; i < raw_buffer_size; i += 2) {
+			assert(buf.offset() == i * sizeof(DataType));
+			assert(buf.available() == (raw_buffer_size - i) * sizeof(DataType));
+			assert(buf.available((raw_buffer_size - i) * sizeof(DataType)));
 			assert(buf.padding() == 0);
-			assert(buf.size() == raw_buffer_size * sizeof (DataType));
+			assert(buf.size() == raw_buffer_size * sizeof(DataType));
 			assert(buf.read(value0, value1));
 		}
 		assert(buf.bounds());
@@ -129,25 +129,25 @@ class TestPacketSafe {
 		DataType value0;
 		DataType value1;
 
-		assert(buf.available() == raw_buffer_size * sizeof (DataType));
+		assert(buf.available() == raw_buffer_size * sizeof(DataType));
 		assert(buf.bounds());
-		for (unsigned i = 0; i < raw_buffer_size; i++) {
-			assert(buf.offset() == i * sizeof (DataType));
-			assert(buf.available() == (raw_buffer_size - i) * sizeof (DataType));
-			assert(buf.available((raw_buffer_size - i) * sizeof (DataType)));
+		for(unsigned i = 0; i < raw_buffer_size; i++) {
+			assert(buf.offset() == i * sizeof(DataType));
+			assert(buf.available() == (raw_buffer_size - i) * sizeof(DataType));
+			assert(buf.available((raw_buffer_size - i) * sizeof(DataType)));
 			assert(buf.padding() == 0);
-			assert(buf.size() == raw_buffer_size * sizeof (DataType));
+			assert(buf.size() == raw_buffer_size * sizeof(DataType));
 			assert(buf.write(value0));
 		}
 
 		assert(buf.reset());
 		assert(buf.bounds());
-		for (unsigned i = 0; i < raw_buffer_size; i += 2) {
-			assert(buf.offset() == i * sizeof (DataType));
-			assert(buf.available() == (raw_buffer_size - i) * sizeof (DataType));
-			assert(buf.available((raw_buffer_size - i) * sizeof (DataType)));
+		for(unsigned i = 0; i < raw_buffer_size; i += 2) {
+			assert(buf.offset() == i * sizeof(DataType));
+			assert(buf.available() == (raw_buffer_size - i) * sizeof(DataType));
+			assert(buf.available((raw_buffer_size - i) * sizeof(DataType)));
 			assert(buf.padding() == 0);
-			assert(buf.size() == raw_buffer_size * sizeof (DataType));
+			assert(buf.size() == raw_buffer_size * sizeof(DataType));
 			assert(buf.write(value0, value1));
 		}
 		assert(buf.bounds());
@@ -160,7 +160,7 @@ class TestPacketSafe {
 
 		assert(buf.reset());
 		assert(buf.bounds());
-		for (unsigned i = 0; i < raw_buffer_size; i++) {
+		for(unsigned i = 0; i < raw_buffer_size; i++) {
 			assert(buf.offset() == 0);
 			assert(buf.available() == raw_buffer_size - i);
 			assert(buf.available(raw_buffer_size - i));
@@ -171,7 +171,7 @@ class TestPacketSafe {
 		}
 
 		buf = Reader(as_const_area(raw_buffer, raw_buffer_size));
-		for (unsigned i = 0; i < raw_buffer_size; i++) {
+		for(unsigned i = 0; i < raw_buffer_size; i++) {
 			assert(buf.offset() == 0);
 			assert(buf.available() == raw_buffer_size - i);
 			assert(buf.available(raw_buffer_size - i));
@@ -213,7 +213,7 @@ class TestPacketSafe {
 		DataSet raw_buffer[raw_buffer_size];
 		Writer buf(as_area(raw_buffer, raw_buffer_size));
 
-		assert(buf.available() == sizeof (DataSet) * raw_buffer_size);
+		assert(buf.available() == sizeof(DataSet) * raw_buffer_size);
 		// writing
 		assert(buf.bounds());
 		assert(buf.write(set));
@@ -238,7 +238,7 @@ class TestPacketSafe {
 		int* i_ptr = nullptr;
 		long* l_ptr = nullptr;
 
-		unsigned raw_buffer_size = sizeof (DataSet) * 2;
+		unsigned raw_buffer_size = sizeof(DataSet) * 2;
 		char raw_buffer[raw_buffer_size];
 		Writer buf(as_area(raw_buffer, raw_buffer_size));
 
@@ -288,23 +288,23 @@ class TestPacketSafe {
 		RawType raw_buffer[buf_size];
 		int raw_input[buf_size];
 		int raw_output[buf_size];
-		for (int i = 0; i < buf_size; i++) {
+		for(int i = 0; i < buf_size; i++) {
 			raw_input[i] = i;
 		}
 
 		Writer buf(as_area(raw_buffer, buf_size));
-		assert(buf.size() == sizeof (RawType) * buf_size);
+		assert(buf.size() == sizeof(RawType) * buf_size);
 		assert(buf.bounds());
-		for (int i = 0; i < buf_size; i += 4) {
+		for(int i = 0; i < buf_size; i += 4) {
 			assert(buf.write_mcarea(as_const_area(raw_input + i, 4)));
 		}
 		assert(buf.bounds());
 		assert(buf.reset());
-		for (int i = 0; i < buf_size; i += 4) {
+		for(int i = 0; i < buf_size; i += 4) {
 			assert(buf.read_area(as_area(raw_output + i, 4)));
 		}
 		assert(buf.bounds());
-		for (int i = 0; i < buf_size; i++) {
+		for(int i = 0; i < buf_size; i++) {
 			assert(raw_input[i] == raw_output[i]);
 		}
 	}

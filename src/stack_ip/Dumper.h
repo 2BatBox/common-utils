@@ -20,14 +20,15 @@ class Dumper {
 
 public:
 
-	static void dump_stack(FILE* out, bool hex_dump, binio::MCArea data, Protocol proto = Protocol::L2_ETHERNET) noexcept {
+	static void
+	dump_stack(FILE* out, bool hex_dump, binio::MCArea data, Protocol proto = Protocol::L2_ETHERNET) noexcept {
 		StackParser packet(data);
-		if (packet.parse(proto)) {
-			while (packet.protocol() != Protocol::END) {
+		if(packet.parse(proto)) {
+			while(packet.protocol() != Protocol::END) {
 				dump_proto(out, packet, hex_dump);
 				packet.next();
 			}
-			if (packet.padding()) {
+			if(packet.padding()) {
 				fprintf(out, "    |-Padding [%zu bytes]\n", packet.padding());
 				//		fprintf(out, "[ %u : %u : %u]\n", packet.offset(), packet.available(), packet.padding());
 			}
@@ -37,54 +38,54 @@ public:
 	static void dump_proto(FILE* out, const StackParser& packet, bool hex_dump) {
 		bool hex_dump_proto = false;
 
-		switch (packet.protocol()) {
+		switch(packet.protocol()) {
 
-		case Protocol::L2_ETHERNET:
-			hex_dump_proto = hex_dump & DUMP_PAYLOAD_ETHERNET;
-			dump_ethernet(out, packet);
-			break;
+			case Protocol::L2_ETHERNET:
+				hex_dump_proto = hex_dump & DUMP_PAYLOAD_ETHERNET;
+				dump_ethernet(out, packet);
+				break;
 
-		case Protocol::L2_VLAN:
-			hex_dump_proto = hex_dump & DUMP_PAYLOAD_VLAN;
-			dump_vlan(out, packet);
-			break;
+			case Protocol::L2_VLAN:
+				hex_dump_proto = hex_dump & DUMP_PAYLOAD_VLAN;
+				dump_vlan(out, packet);
+				break;
 
-		case Protocol::L3_IPv4:
-			hex_dump_proto = hex_dump & DUMP_PAYLOAD_IPv4;
-			dump_ipv4(out, packet);
-			break;
+			case Protocol::L3_IPv4:
+				hex_dump_proto = hex_dump & DUMP_PAYLOAD_IPv4;
+				dump_ipv4(out, packet);
+				break;
 
-		case Protocol::L4_UDP:
-			hex_dump_proto = hex_dump & DUMP_PAYLOAD_UDP;
-			dump_udp(out, packet);
-			break;
+			case Protocol::L4_UDP:
+				hex_dump_proto = hex_dump & DUMP_PAYLOAD_UDP;
+				dump_udp(out, packet);
+				break;
 
-		case Protocol::L4_GRE:
-			hex_dump_proto = hex_dump & DUMP_PAYLOAD_GRE;
-			dump_gre(out, packet);
-			break;
+			case Protocol::L4_GRE:
+				hex_dump_proto = hex_dump & DUMP_PAYLOAD_GRE;
+				dump_gre(out, packet);
+				break;
 
-		case Protocol::L4_SCTP:
-			hex_dump_proto = hex_dump & DUMP_PAYLOAD_SCTP;
-			dump_sctp(out, packet, hex_dump_proto);
-			break;
+			case Protocol::L4_SCTP:
+				hex_dump_proto = hex_dump & DUMP_PAYLOAD_SCTP;
+				dump_sctp(out, packet, hex_dump_proto);
+				break;
 
-		default:
-			fprintf(out, "[UNKNOWN]\n");
-			hex_dump = false;
-			break;
+			default:
+				fprintf(out, "[UNKNOWN]\n");
+				hex_dump = false;
+				break;
 		}
 
-		if (hex_dump_proto) {
+		if(hex_dump_proto) {
 			binio::MCArea header = packet.header();
 			binio::MCArea payload = packet.payload();
 
-			if (header) {
+			if(header) {
 				fprintf(out, "    |-Header [%zu] : ", header.length());
 				utils::HexDumper::hex_ascii(out, header);
 			}
 
-			if (payload) {
+			if(payload) {
 				fprintf(out, "    |-Payload [%zu] : ", payload.length());
 				utils::HexDumper::hex_ascii(out, payload);
 			}
@@ -140,10 +141,10 @@ public:
 		fprintf(out, "    |-Offset      : %u\n", (frag & IP_OFFMASK) * 8);
 
 		fprintf(out, "    |-Flags       :%s%s%s\n",
-			((frag & IP_RF) ? " IP_RF" : ""),
-			((frag & IP_DF) ? " IP_DF" : ""),
-			((frag & IP_MF) ? " IP_MF" : "")
-			);
+		        ((frag & IP_RF) ? " IP_RF" : ""),
+		        ((frag & IP_DF) ? " IP_DF" : ""),
+		        ((frag & IP_MF) ? " IP_MF" : "")
+		);
 
 		fprintf(out, "    |-Protocol    : %u\n", hdr->protocol);
 		fprintf(out, "    |-Checksum    : 0x%04X\n", ntohs(hdr->check));
@@ -176,7 +177,7 @@ public:
 
 	static void dump_sctp(FILE* out, const StackParser& pkt, bool payload) noexcept {
 		SctpParser sctp(pkt.packet());
-		if (sctp.parse()) {
+		if(sctp.parse()) {
 			const Sctp::Header* hdr = sctp.header_ptr();
 			const Sctp::ChunkHeader* chunk = sctp.chunk_ptr();
 
@@ -186,33 +187,33 @@ public:
 			fprintf(out, "    |-Ver.tag     : 0x%08X\n", ntohl(hdr->verefication_tag));
 			fprintf(out, "    |-Checksum    : 0x%08X\n", ntohl(hdr->check_sum));
 
-			while (chunk) {
+			while(chunk) {
 				uint16_t length = ntohs(chunk->length);
 				fprintf(out, "  [%s] ", Sctp::chunk_name(chunk->type));
 				fprintf(out, "type=%u ", chunk->type);
 				fprintf(out, "flags=0x%02x ", chunk->flags);
 				fprintf(out, "length=%u\n", length);
 
-				switch (chunk->type) {
-				case Sctp::DATA:
-					const Sctp::ChunkData* chunk_data;
-					sctp.assign_stay(chunk_data);
-					fprintf(out, "    |-Trns.number : %u\n", ntohl(chunk_data->transmission_sequence_number));
-					fprintf(out, "    |-Stream ID   : 0x%04X\n", ntohs(chunk_data->stream_identifier));
-					fprintf(out, "    |-Seq. number : %u\n", ntohs(chunk_data->stream_sequence_number));
-					fprintf(out, "    |-Protocol ID : %u\n", ntohl(chunk_data->payload_protocol_identifier));
-					break;
+				switch(chunk->type) {
+					case Sctp::DATA:
+						const Sctp::ChunkData* chunk_data;
+						sctp.assign_stay(chunk_data);
+						fprintf(out, "    |-Trns.number : %u\n", ntohl(chunk_data->transmission_sequence_number));
+						fprintf(out, "    |-Stream ID   : 0x%04X\n", ntohs(chunk_data->stream_identifier));
+						fprintf(out, "    |-Seq. number : %u\n", ntohs(chunk_data->stream_sequence_number));
+						fprintf(out, "    |-Protocol ID : %u\n", ntohl(chunk_data->payload_protocol_identifier));
+						break;
 				}
 
-				if (payload) {
+				if(payload) {
 					binio::MCArea header = sctp.chunk_header();
-					if (header) {
+					if(header) {
 						fprintf(out, "    |-Header [%zu] : ", header.length());
 						utils::HexDumper::hex(out, header);
 					}
 
 					binio::MCArea payload = sctp.chunk_payload();
-					if (payload) {
+					if(payload) {
 						fprintf(out, "    |-Payload [%zu] : ", payload.length());
 						utils::HexDumper::hex(out, payload);
 					}
@@ -229,7 +230,8 @@ public:
 	}
 
 	static inline void print_ip(FILE* file, IPv4::Addr ip) {
-		fprintf(file, "%01u.%01u.%01u.%01u", ((ip >> 24) & 0xFF), ((ip >> 16) & 0xFF), ((ip >> 8) & 0xFF), ((ip) & 0xFF));
+		fprintf(file, "%01u.%01u.%01u.%01u", ((ip >> 24) & 0xFF), ((ip >> 16) & 0xFF), ((ip >> 8) & 0xFF),
+		        ((ip) & 0xFF));
 	}
 
 private:

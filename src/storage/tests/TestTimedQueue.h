@@ -11,13 +11,13 @@ namespace storage {
 
 class TestTimedQueue {
 
-	template <typename T>
+	template<typename T>
 	struct StructValue {
 		T value;
 
-		StructValue() : value(0) { };
+		StructValue() : value(0) {};
 
-		StructValue(T x) : value(x) { };
+		StructValue(T x) : value(x) {};
 
 		bool operator==(const StructValue& st_val) const {
 			return value == st_val.value;
@@ -40,7 +40,7 @@ class TestTimedQueue {
 public:
 
 	TestTimedQueue(unsigned capacity, float load_factor) noexcept
-	: m_queue(capacity, load_factor), m_capacity(capacity) {
+		: m_queue(capacity, load_factor), m_capacity(capacity) {
 		assert(m_queue.allocate() == 0);
 	}
 
@@ -50,11 +50,11 @@ public:
 	TestTimedQueue operator=(const TestTimedQueue&) = delete;
 	TestTimedQueue operator=(TestTimedQueue&&) = delete;
 
-	~TestTimedQueue() { }
+	~TestTimedQueue() {}
 
 	void test() noexcept {
 		printf("<TestTimedHashQueue>...\n");
-		printf("sizeof(Node_t)=%zu\n", sizeof (Node_t));
+		printf("sizeof(Node_t)=%zu\n", sizeof(Node_t));
 		printf("capacity=%zu\n", m_capacity);
 
 		unsigned step = 1;
@@ -73,7 +73,7 @@ public:
 		assert(m_queue.size() == 0);
 
 		// test with one item
-		for (size_t i = 0; i < m_capacity * 2; i++) {
+		for(size_t i = 0; i < m_capacity * 2; i++) {
 			push_back(i * step, i + step);
 			pop_front_one(i * step, i + step, 0);
 		}
@@ -81,15 +81,15 @@ public:
 		assert(m_queue.size() == 0);
 
 		// test with full capacity
-		for (size_t i = 0; i < m_capacity * 2; i++) {
-			if (i < m_capacity) {
+		for(size_t i = 0; i < m_capacity * 2; i++) {
+			if(i < m_capacity) {
 				push_back(i * step, i + step);
 			} else {
 				push_back_oversize(i * step);
 			}
 		}
 
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			pop_front_one(i * step, i + step, 0);
 		}
 
@@ -101,7 +101,7 @@ public:
 		assert(m_queue.size() == 0);
 
 		// test with one item
-		for (size_t i = 0; i < m_capacity * 2; i++) {
+		for(size_t i = 0; i < m_capacity * 2; i++) {
 			push_back(step, i + step);
 			pop_front_one(step, i + step, 0);
 		}
@@ -109,15 +109,15 @@ public:
 		assert(m_queue.size() == 0);
 
 		// test with full capacity
-		for (size_t i = 0; i < m_capacity * 2; i++) {
-			if (i < m_capacity) {
+		for(size_t i = 0; i < m_capacity * 2; i++) {
+			if(i < m_capacity) {
 				push_back(step, i + step);
 			} else {
 				push_back_oversize(step);
 			}
 		}
 
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			pop_front_one(step, i + step, 0);
 		}
 
@@ -129,7 +129,7 @@ public:
 		assert(m_queue.size() == 0);
 
 		// test with one item
-		for (size_t i = 0; i < m_capacity * 2; i++) {
+		for(size_t i = 0; i < m_capacity * 2; i++) {
 			push_back(i * step, i + step);
 			remove_one(i * step, i + step);
 		}
@@ -137,15 +137,15 @@ public:
 		assert(m_queue.size() == 0);
 
 		// test with full capacity
-		for (size_t i = 0; i < m_capacity * 2; i++) {
-			if (i < m_capacity) {
+		for(size_t i = 0; i < m_capacity * 2; i++) {
+			if(i < m_capacity) {
 				push_back(i * step, i + step);
 			} else {
 				push_back_oversize(i * step);
 			}
 		}
 
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			remove_one(i * step, i + step);
 		}
 
@@ -157,7 +157,7 @@ public:
 		assert(m_queue.size() == 0);
 
 		// test with one item
-		for (size_t i = 0; i < m_capacity * 2; i++) {
+		for(size_t i = 0; i < m_capacity * 2; i++) {
 			push_back(step, i + step);
 			remove_one(step, i + step);
 		}
@@ -165,15 +165,15 @@ public:
 		assert(m_queue.size() == 0);
 
 		// test with full capacity
-		for (size_t i = 0; i < m_capacity * 2; i++) {
-			if (i < m_capacity) {
+		for(size_t i = 0; i < m_capacity * 2; i++) {
+			if(i < m_capacity) {
 				push_back(step, i + step);
 			} else {
 				push_back_oversize(i * step);
 			}
 		}
 
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			remove_one(step, i + step);
 		}
 
@@ -185,8 +185,8 @@ public:
 		assert(m_queue.size() == 0);
 
 		// test with full capacity
-		for (size_t i = 0; i < m_capacity; i++) {
-			if (i % 2 == 0) {
+		for(size_t i = 0; i < m_capacity; i++) {
+			if(i % 2 == 0) {
 				push_back(i * step, i + step);
 			} else {
 				push_back(m_capacity, i + step);
@@ -195,8 +195,8 @@ public:
 
 		m_queue.remove_all(m_capacity);
 
-		for (size_t i = 0; i < m_capacity; i++) {
-			if (i % 2 == 0) {
+		for(size_t i = 0; i < m_capacity; i++) {
+			if(i % 2 == 0) {
 				remove_one(i * step, i + step);
 			}
 		}
@@ -215,7 +215,7 @@ public:
 		std::time_t after;
 
 		// test with one item
-		for (size_t i = 0; i < time_slots; i++) {
+		for(size_t i = 0; i < time_slots; i++) {
 			before = std::time(nullptr);
 			push_back(i * step, i + step);
 			printf("push_back(%zu)\n", i);
@@ -230,13 +230,13 @@ public:
 
 		printf("test with full capacity\n");
 		// test with full capacity
-		for (size_t i = 0; i < time_slots; i++) {
+		for(size_t i = 0; i < time_slots; i++) {
 			push_back(i * step, i + step);
 			printf("push_back(%zu)\n", i);
 			std::this_thread::sleep_for(std::chrono::seconds(time_sec));
 		}
 
-		for (size_t i = 0; i < time_slots; i++) {
+		for(size_t i = 0; i < time_slots; i++) {
 			before = std::time(nullptr);
 			pop_front_one(i * step, i + step, time_slots * time_sec + time_sec);
 			printf("pop_front_one(%zu)\n", i);
@@ -254,7 +254,7 @@ public:
 		m_queue.reset();
 
 		assert(m_queue.size() == 0);
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			push_back(i * step, i + step);
 		}
 		m_queue.reset();
@@ -277,7 +277,7 @@ private:
 
 	void pop_front_one(const Key_t& key, const Value_t& value, unsigned timeout) noexcept {
 		Queue_t::Iterator_t it;
-		while (not (it = m_queue.pop_front(timeout)));
+		while(not(it = m_queue.pop_front(timeout)));
 		assert(it != m_queue.end());
 		it->value = value;
 		assert(it->im_key == key);

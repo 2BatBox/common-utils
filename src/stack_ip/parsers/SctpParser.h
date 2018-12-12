@@ -48,15 +48,13 @@ public:
 	using Base::padding;
 
 	SctpParser(binio::MCArea pkt) :
-	Base(pkt),
-	ptr_header(nullptr),
-	ptr_chunk(nullptr) { }
+		Base(pkt), ptr_header(nullptr), ptr_chunk(nullptr) {}
 
 	/**
 	 * @return true if the parser contains valid SCTP packet.
 	 */
 	bool parse() noexcept {
-		if (Sctp::validate_packet(*this)) {
+		if(Sctp::validate_packet(*this)) {
 			assign(ptr_header);
 			ptr_chunk = validate_chunk();
 			return ptr_chunk != nullptr;
@@ -110,7 +108,7 @@ public:
 	 * @return - the next chunk pointer of nullptr.
 	 */
 	const Sctp::ChunkHeader* next() noexcept {
-		if (ptr_chunk) {
+		if(ptr_chunk) {
 			uint16_t length_total = ntohs(ptr_chunk->length);
 			head_move(length_total);
 			ptr_chunk = validate_chunk();
@@ -123,11 +121,11 @@ protected:
 
 	const Sctp::ChunkHeader* validate_chunk() noexcept {
 		const Sctp::ChunkHeader* result;
-		if (available(sizeof (Sctp::ChunkHeader))) {
+		if(available(sizeof(Sctp::ChunkHeader))) {
 			assign_stay(result);
 			uint16_t length_total = ntohs(result->length);
 			uint16_t length_header = Sctp::chunk_header_size(result->type);
-			if (length_header <= length_total && available(length_total)) {
+			if(length_header <= length_total && available(length_total)) {
 				return result;
 			}
 		}
@@ -135,7 +133,7 @@ protected:
 	}
 
 	inline const uint8_t* chunk(unsigned& chunk_bytes) const noexcept {
-		if (ptr_chunk) {
+		if(ptr_chunk) {
 			chunk_bytes = ntohs(ptr_chunk->length);
 			return m_head;
 		}
@@ -144,7 +142,7 @@ protected:
 
 	const uint8_t* chunk_header(unsigned& header_bytes) const noexcept {
 		const uint8_t* result = nullptr;
-		if (ptr_chunk) {
+		if(ptr_chunk) {
 			header_bytes = Sctp::chunk_header_size(ptr_chunk->type);
 			result = m_head;
 		}
@@ -153,7 +151,7 @@ protected:
 
 	const uint8_t* chunk_payload(unsigned& payload_bytes) const noexcept {
 		const uint8_t* result = nullptr;
-		if (ptr_chunk) {
+		if(ptr_chunk) {
 			uint16_t length_total = ntohs(ptr_chunk->length);
 			uint16_t length_header = Sctp::chunk_header_size(ptr_chunk->type);
 			result = m_head + length_header;

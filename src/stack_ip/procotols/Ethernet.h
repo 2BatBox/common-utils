@@ -21,7 +21,7 @@ public:
 		// The original Ethernet IEEE 802.3 standard defined the minimum Ethernet frame size as 64 bytes.
 		// However, it's possible to get an Ethernet packet with length less than 64 bytes from a PCAP dump.
 		// return pkt.available(64); // Should be used in case of following the standard accurately. 
-		return pkt.available(sizeof (Header)); // Should be used in case of ADM. 
+		return pkt.available(sizeof(Header)); // Should be used in case of ADM.
 	}
 
 	/**
@@ -29,7 +29,7 @@ public:
 	 * @return true if 'pkt' paints to a valid Ethernet protocol header
 	 */
 	static inline bool validate_header(const DefaultPacketReader& pkt) noexcept {
-		return pkt.available(sizeof (Header));
+		return pkt.available(sizeof(Header));
 	}
 
 	/**
@@ -44,26 +44,26 @@ public:
 		pkt.assign(hdr);
 		Protocol result = Protocol::END;
 
-		switch (ntohs(hdr->h_proto)) {
-		case ETH_P_IP:
-			result = Protocol::L3_IPv4;
-			break;
-		case ETH_P_8021Q:
-			result = Protocol::L2_VLAN;
-			break;
-		default:
-			break;
+		switch(ntohs(hdr->h_proto)) {
+			case ETH_P_IP:
+				result = Protocol::L3_IPv4;
+				break;
+			case ETH_P_8021Q:
+				result = Protocol::L2_VLAN;
+				break;
+			default:
+				break;
 		}
 
 		return result;
 	}
 
 	static inline constexpr unsigned length_header(const DefaultPacketReader&) noexcept {
-		return sizeof (Header);
+		return sizeof(Header);
 	}
 
 	static inline unsigned length_payload(const DefaultPacketReader& pkt) noexcept {
-		return pkt.available() - sizeof (Header);
+		return pkt.available() - sizeof(Header);
 	}
 
 };

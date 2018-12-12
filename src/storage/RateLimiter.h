@@ -13,10 +13,13 @@
 
 namespace storage {
 
-template <typename K>
-struct RateLimiterNode : public intrusive::LinkedListHook<RateLimiterNode<K> >, intrusive::HashMapHook<K, RateLimiterNode<K> > {
-	template <typename Tmp1, typename Tmp2>
-	friend class RateLimiter;
+template<typename K>
+struct RateLimiterNode
+	: public intrusive::LinkedListHook<RateLimiterNode<K> >, intrusive::HashMapHook<K, RateLimiterNode<K> > {
+	template<typename Tmp1, typename Tmp2>
+	friend
+	class RateLimiter;
+
 private:
 	uint64_t time;
 public:
@@ -32,9 +35,9 @@ public:
 
 };
 
-template <
-typename Node_t,
-typename H = std::hash<typename Node_t::Key_t>
+template<
+	typename Node_t,
+	typename H = std::hash<typename Node_t::Key_t>
 >
 class RateLimiter {
 	friend class TestRateLimiter;
@@ -53,10 +56,10 @@ public:
 	using Iterator_t = typename Pool_t::Iterator_t;
 
 	RateLimiter(size_t capacity, float load_factor) noexcept
-	: m_pool(capacity, load_factor)
-	, m_capacity(capacity)
-	, m_push_time(0)
-	, m_stat() { }
+		: m_pool(capacity, load_factor)
+		, m_capacity(capacity)
+		, m_push_time(0)
+		, m_stat() {}
 
 	void set_period(uint64_t period) noexcept {
 		m_period = period;
@@ -70,8 +73,8 @@ public:
 		bool result = true;
 		uint64_t current = rte_rdtsc();
 		auto it = m_pool.find(key);
-		if (it) {
-			if (current - it->time > m_period) {
+		if(it) {
+			if(current - it->time > m_period) {
 				m_pool.remove(it);
 				it = m_pool.push_back(key);
 				it->time = current;
@@ -79,7 +82,7 @@ public:
 				result = false;
 			}
 		} else {
-			if (not m_pool.available()) {
+			if(not m_pool.available()) {
 				m_pool.pop_front();
 			}
 			it = m_pool.push_back(key);
@@ -90,7 +93,7 @@ public:
 
 	Iterator_t remove(const Key_t& key) noexcept {
 		auto it = m_pool.find(key);
-		if (it) {
+		if(it) {
 			m_pool.remove(it);
 		}
 		return it;

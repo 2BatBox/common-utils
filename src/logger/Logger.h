@@ -20,14 +20,14 @@
 #define LOG_INFO(...) { \
     fprintf(Logger::log_file, "[info] %s() %s:%d ", __FUNCTION__, __FILE__, __LINE__); \
     fprintf(Logger::log_file, __VA_ARGS__);\
-	fprintf(Logger::log_file, "\n");\
+    fprintf(Logger::log_file, "\n");\
     fflush(Logger::log_file); \
 }
 
 #define LOG_CRITICAL(...) { \
     fprintf(Logger::log_file, "[critical] %s() %s:%d ", __FUNCTION__, __FILE__, __LINE__); \
     fprintf(Logger::log_file, __VA_ARGS__);\
-	fprintf(Logger::log_file, "\n");\
+    fprintf(Logger::log_file, "\n");\
     fflush(Logger::log_file); \
 }
 

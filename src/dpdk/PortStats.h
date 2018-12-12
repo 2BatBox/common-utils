@@ -27,21 +27,21 @@ public:
 	static void print_port_stat(FILE* out, uint8_t port, bool rx = true, bool tx = true) {
 		rte_eth_stats stat;
 		rte_eth_stats_get(port, &stat);
-		if (rx) {
+		if(rx) {
 			fprintf(out, "%sipackets    : %lu\n", utils::Colors::GREEN, stat.ipackets);
 			fprintf(out, "%sibytes      : %lu\n", utils::Colors::GREEN, stat.ibytes);
 		}
-		if (tx) {
+		if(tx) {
 			fprintf(out, "%sopackets    : %lu\n", utils::Colors::GREEN, stat.opackets);
 			fprintf(out, "%sobytes      : %lu\n", utils::Colors::GREEN, stat.obytes);
 		}
 
-		if (rx) {
+		if(rx) {
 			fprintf(out, "%simissed     : %lu\n", utils::Colors::RED, stat.imissed);
 			fprintf(out, "%sierrors     : %lu\n", utils::Colors::RED, stat.ierrors);
 			fprintf(out, "%srx_nombuf   : %lu%s\n", utils::Colors::RED, stat.rx_nombuf, utils::Colors::NORMAL);
 		}
-		if (tx) {
+		if(tx) {
 			fprintf(out, "%soerrors     : %lu%s\n", utils::Colors::RED, stat.oerrors, utils::Colors::NORMAL);
 		}
 	}
@@ -51,17 +51,17 @@ public:
 		std::vector<rte_eth_xstat> values;
 
 		int size = rte_eth_xstats_get_names(port, nullptr, 0);
-		if (size > 0) {
+		if(size > 0) {
 
 			names.resize(size);
 			values.resize(size);
 
 			int ret = rte_eth_xstats_get_names(port, &names.front(), size);
-			if (ret > 0) {
+			if(ret > 0) {
 
 				int ret = rte_eth_xstats_get(port, &values.front(), names.size());
-				if (ret > 0 && (unsigned)ret == names.size()) {
-					for (unsigned i = 0; i < names.size(); i++) {
+				if(ret > 0 && (unsigned) ret == names.size()) {
+					for(unsigned i = 0; i < names.size(); i++) {
 						const char* mode = get_mode(names[i].name);
 						fprintf(out, "%s%30s:\t%lu\n", mode, names[i].name, values[i].value);
 					}
@@ -72,7 +72,7 @@ public:
 	}
 
 	static void get_io_rate(uint8_t port, rte_eth_stats& delta) noexcept {
-		static rte_eth_stats previous [RTE_MAX_ETHPORTS];
+		static rte_eth_stats previous[RTE_MAX_ETHPORTS];
 		rte_eth_stats current;
 		rte_eth_stats_get(port, &current);
 
@@ -112,7 +112,7 @@ public:
 
 	static void link_status(FILE* file, uint8_t port) {
 		rte_eth_link link;
-		memset(&link, 0, sizeof (link));
+		memset(&link, 0, sizeof(link));
 		rte_eth_link_get(port, &link);
 
 		fprintf(file, "link=%s ", (link.link_status ? "UP" : "DOWN"));
@@ -185,22 +185,22 @@ public:
 	static void print_port_mac(FILE* file, unsigned port) {
 		ether_addr addr;
 		rte_eth_macaddr_get(port, &addr);
-		for (int i = 0; i < 6; i++) {
+		for(int i = 0; i < 6; i++) {
 			fprintf(file, "%02x", addr.addr_bytes[i]);
-			if (i < 5)
+			if(i < 5)
 				fprintf(file, ".");
 		}
 	}
 
-	template <typename T>
+	template<typename T>
 	static char factorize_value(T& value) noexcept {
-		if (value > FACTOR_GIGA) {
+		if(value > FACTOR_GIGA) {
 			value /= FACTOR_GIGA;
 			return 'G';
-		} else if (value > FACTOR_MEGA) {
+		} else if(value > FACTOR_MEGA) {
 			value /= FACTOR_MEGA;
 			return 'M';
-		} else if (value > FACTOR_KILO) {
+		} else if(value > FACTOR_KILO) {
 			value /= FACTOR_KILO;
 			return 'K';
 		} else {
@@ -208,11 +208,11 @@ public:
 		}
 	}
 
-	template <typename T>
+	template<typename T>
 	static void print_factorize(FILE* out, T input, const char* postfix) noexcept {
 		float value = input;
 		char factor = factorize_value(value);
-		if (factor) {
+		if(factor) {
 			fprintf(out, "%.2f %c%s", value, factor, postfix);
 		} else {
 			fprintf(out, "%zu %s", uint64_t(value), postfix);
@@ -223,9 +223,9 @@ private:
 
 	static const char* get_mode(const char* statName) {
 		const char* mode = utils::Colors::GREEN;
-		if (statName == nullptr || strlen(statName) == 0)
+		if(statName == nullptr || strlen(statName) == 0)
 			return mode;
-		if (strstr(statName, "error") || strstr(statName, "missed"))
+		if(strstr(statName, "error") || strstr(statName, "missed"))
 			mode = utils::Colors::RED;
 		return mode;
 	}

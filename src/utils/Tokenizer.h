@@ -12,7 +12,9 @@ class Tokenizer {
 
 public:
 
-	Tokenizer(const std::string& string, const std::string& splitter) noexcept : m_string(string), m_splitter(splitter), m_current(0) { }
+	Tokenizer(const std::string& string, const std::string& splitter) noexcept : m_string(string)
+		, m_splitter(splitter)
+		, m_current(0) {}
 
 	bool has_next() noexcept {
 		return m_current != std::string::npos;
@@ -21,7 +23,7 @@ public:
 	std::string next() noexcept {
 		auto new_position = m_string.find_first_of(m_splitter, m_current);
 		std::string result;
-		if (new_position == std::string::npos) {
+		if(new_position == std::string::npos) {
 			result = m_string.substr(m_current);
 			m_current = new_position;
 		} else {

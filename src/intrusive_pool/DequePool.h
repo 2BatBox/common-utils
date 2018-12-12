@@ -8,12 +8,12 @@
 
 namespace intrusive {
 
-template <typename T>
+template<typename T>
 struct DequePoolNode : public intrusive::LinkedListHook<DequePoolNode<T> > {
 	using Value_t = T;
 	T value;
 
-	DequePoolNode() : value() { }
+	DequePoolNode() : value() {}
 
 	DequePoolNode(const DequePoolNode&) = delete;
 	DequePoolNode& operator=(const DequePoolNode&) = delete;
@@ -26,9 +26,9 @@ struct DequePoolNode : public intrusive::LinkedListHook<DequePoolNode<T> > {
 	}
 };
 
-template <
-typename Node_t,
-typename SA = std::allocator<Node_t>
+template<
+	typename Node_t,
+	typename SA = std::allocator<Node_t>
 >
 class DequePool {
 	friend class TestDequePool;
@@ -49,11 +49,7 @@ public:
 	using ConstReverseIterator_t = typename List_t::ConstReverseIterator_t;
 
 	DequePool(unsigned capacity) noexcept
-	: m_capacity(capacity),
-	m_storage(nullptr),
-	m_list_cached(),
-	m_list_freed(),
-	m_allocator() { }
+		: m_capacity(capacity), m_storage(nullptr), m_list_cached(), m_list_freed(), m_allocator() {}
 
 	DequePool(const DequePool&) = delete;
 	DequePool& operator=(const DequePool&) = delete;
@@ -70,14 +66,14 @@ public:
 	 * @return 0 - if the cache has been allocated successfully.
 	 */
 	int allocate() noexcept {
-		if (m_storage)
+		if(m_storage)
 			return -1;
 
 		m_storage = m_allocator.allocate(m_capacity);
-		if (m_storage == nullptr)
+		if(m_storage == nullptr)
 			return -1;
 
-		for (unsigned i = 0; i < m_capacity; i++) {
+		for(unsigned i = 0; i < m_capacity; i++) {
 			m_allocator.construct(m_storage + i);
 			m_list_freed.push_back(m_storage[i]);
 		}
@@ -119,7 +115,7 @@ public:
 
 	inline Iterator_t push_front() noexcept {
 		Node_t* result = nullptr;
-		if (available()) {
+		if(available()) {
 			result = m_list_freed.pop_back();
 			m_list_cached.push_front(*result);
 		}
@@ -128,7 +124,7 @@ public:
 
 	inline Iterator_t push_back() noexcept {
 		Node_t* result = nullptr;
-		if (available()) {
+		if(available()) {
 			result = m_list_freed.pop_back();
 			m_list_cached.push_back(*result);
 		}
@@ -137,7 +133,7 @@ public:
 
 	inline Iterator_t pop_front() noexcept {
 		Node_t* result = nullptr;
-		if (size()) {
+		if(size()) {
 			result = m_list_cached.pop_front();
 			m_list_freed.push_back(*result);
 		}
@@ -146,7 +142,7 @@ public:
 
 	inline Iterator_t pop_back() noexcept {
 		Node_t* result = nullptr;
-		if (size()) {
+		if(size()) {
 			result = m_list_cached.pop_back();
 			m_list_freed.push_back(*result);
 		}
@@ -165,7 +161,7 @@ public:
 
 	void reset() noexcept {
 		m_list_cached.clear();
-		for (unsigned i = 0; i < m_capacity; i++) {
+		for(unsigned i = 0; i < m_capacity; i++) {
 			m_list_freed.push_back(m_storage[i]);
 		}
 	}
@@ -185,10 +181,10 @@ public:
 private:
 
 	void destroy() noexcept {
-		if (m_storage) {
+		if(m_storage) {
 			m_list_freed.clear();
 			m_list_cached.clear();
-			for (size_t i = 0; i < m_capacity; i++) {
+			for(size_t i = 0; i < m_capacity; i++) {
 				m_allocator.destroy(m_storage + i);
 			}
 			m_allocator.deallocate(m_storage, m_capacity);

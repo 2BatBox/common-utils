@@ -32,7 +32,7 @@ namespace binio {
  * 
  **/
 
-template <typename T>
+template<typename T>
 class BasicPacket {
 protected:
 	T* m_head;
@@ -40,11 +40,11 @@ protected:
 	size_t m_padding; // padding bytes
 	size_t m_size; // size of the packet in bytes
 
-	BasicPacket(T* buf, size_t len) noexcept :
-	m_head(buf),
-	m_available(len),
-	m_padding(0),
-	m_size(len) { }
+	BasicPacket(T* buf, size_t len) noexcept
+		: m_head(buf)
+		, m_available(len)
+		, m_padding(0)
+		, m_size(len) {}
 
 public:
 
@@ -94,7 +94,7 @@ public:
 	/**
 	 * @return the offset subarea as a memory area.
 	 */
-	inline BasicMArea<T> offset_area() noexcept {
+	inline BasicMArea <T> offset_area() noexcept {
 		size_t off = offset();
 		return BasicMArea<T>(m_head - off, off);
 	}
@@ -109,7 +109,7 @@ public:
 	/**
 	 * @return the available subarea as a memory area.
 	 */
-	inline BasicMArea<T> available_area() noexcept {
+	inline BasicMArea <T> available_area() noexcept {
 		return BasicMArea<T>(m_head, m_available);
 	}
 
@@ -123,7 +123,7 @@ public:
 	/**
 	 * @return the padding subarea as a memory area.
 	 */
-	inline BasicMArea<T> padding_area() noexcept {
+	inline BasicMArea <T> padding_area() noexcept {
 		return BasicMArea<T>(m_head + available(), m_padding);
 	}
 
@@ -131,14 +131,14 @@ public:
 	 * @return whole the packet memory area except the offset area.
 	 */
 	inline BasicMArea<const T> packet_area() const noexcept {
-		return BasicMArea<const T>(m_head - offset, m_size);
+		return BasicMArea<const T>(m_head - offset(), m_size);
 	}
 
 	/**
 	 * @return whole the packet area except the offset area.
 	 */
-	inline BasicMArea<T> packet_area() noexcept {
-		return BasicMArea<T>(m_head - offset, m_size);
+	inline BasicMArea <T> packet_area() noexcept {
+		return BasicMArea<T>(m_head - offset(), m_size);
 	}
 
 };

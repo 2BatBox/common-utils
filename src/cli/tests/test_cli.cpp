@@ -1,10 +1,8 @@
 #include <iostream>
-#include <cstdio>
 #include <vector>
 
 #include "../OptionList.h"
 #include "../Formatter.h"
-#include "../Config.h"
 #include "../Parser.h"
 
 #include "../../logger/Logger.h"
@@ -17,7 +15,7 @@ using namespace cli;
 void dump(FILE* out, int argc, char** argv, const OptionList& list) noexcept {
 	list.dump(out);
 	fprintf(out, "==== Presented Argument List ====\n");
-	for (int i = 0; i < argc; i++) {
+	for(int i = 0; i < argc; i++) {
 		fprintf(out, "[%u] %s\n", i, argv[i]);
 	}
 }
@@ -91,57 +89,57 @@ int main_cli(int argc, char** argv) {
 	bool opt_version = list.find_except('v').presented();
 
 	// checking input conditions
-	if (opt_help) {
+	if(opt_help) {
 		print_usage(bin, list);
 		return 0;
-	} else if (opt_version) {
+	} else if(opt_version) {
 		print_version();
 		return 0;
 	}
 
-	if (opt_verbose) {
+	if(opt_verbose) {
 		dump(stdout, argc, argv, list);
 	}
 
 	long log_period = utils::Types::str_to_l(opt_log_per);
 	long cdr_period = utils::Types::str_to_l(opt_cdr_per);
 
-	if (log_period < 1) {
+	if(log_period < 1) {
 		LOG_CRITICAL("log-period value must be positive");
 		return 1;
 	}
 
-	if (cdr_period < 1) {
+	if(cdr_period < 1) {
 		LOG_CRITICAL("cdr_period value must be positive");
 		return 1;
 	}
 
-	if (opt_include.presented() && opt_exclude.presented()) {
+	if(opt_include.presented() && opt_exclude.presented()) {
 		LOG_CRITICAL("Wrong VLAN filtering mode, both of --vlan-include and --vlan-exclude are presented.");
 		return 1;
 	}
 
 	stack_ip::VlanFilter vlan_filter;
 
-	if (opt_include.has_arg()) {
+	if(opt_include.has_arg()) {
 		utils::Tokenizer tkn(opt_include.arg_value(), ",");
-		while (tkn.has_next()) {
+		while(tkn.has_next()) {
 			std::string vlan_id_str = tkn.next();
 			long vlan_id = utils::Types::str_to_l(vlan_id_str);
 			LOG_RAW("include VLAN id : %ld", vlan_id);
-			if (vlan_id < 0) {
+			if(vlan_id < 0) {
 				LOG_CRITICAL("VLAN id value must be positive");
 				return 1;
 			}
 			vlan_filter.set(vlan_id, true);
 		}
-	} else if (opt_exclude.has_arg()) {
+	} else if(opt_exclude.has_arg()) {
 		utils::Tokenizer tkn(opt_exclude.arg_value(), ",");
-		while (tkn.has_next()) {
+		while(tkn.has_next()) {
 			std::string vlan_id_str = tkn.next();
 			long vlan_id = utils::Types::str_to_l(vlan_id_str);
 			LOG_RAW("exclude VLAN id : %ld", vlan_id);
-			if (vlan_id < 0) {
+			if(vlan_id < 0) {
 				LOG_CRITICAL("VLAN id value must be positive");
 				return 1;
 			}

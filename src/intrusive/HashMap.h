@@ -6,13 +6,13 @@
 
 namespace intrusive {
 
-template <typename K, typename V>
+template<typename K, typename V>
 struct HashMapHook {
 	V* im_next;
 	K im_key;
 	bool im_linked;
 
-	HashMapHook() noexcept : im_next(nullptr), im_key(), im_linked(false) { }
+	HashMapHook() noexcept : im_next(nullptr), im_key(), im_linked(false) {}
 
 	HashMapHook(const HashMapHook&) = delete;
 	HashMapHook& operator=(const HashMapHook&) = delete;
@@ -21,12 +21,12 @@ struct HashMapHook {
 	HashMapHook& operator=(HashMapHook&&) = delete;
 };
 
-template <typename MapData_t>
+template<typename MapData_t>
 struct HashMapBucket {
 	MapData_t* head;
 	size_t size;
 
-	HashMapBucket() noexcept : head(nullptr), size(0) { }
+	HashMapBucket() noexcept : head(nullptr), size(0) {}
 
 	HashMapBucket(const HashMapBucket&) = delete;
 	HashMapBucket& operator=(const HashMapBucket&) = delete;
@@ -40,13 +40,13 @@ struct HashMapBucket {
  * Can hold many items for one key.
  */
 
-template <typename K, typename MapNode, typename H = std::hash<K>, typename A = std::allocator<HashMapBucket<MapNode> > >
+template<typename K, typename MapNode, typename H = std::hash<K>, typename A = std::allocator<HashMapBucket<MapNode> > >
 class HashMap {
 public:
 	using Bucket_t = HashMapBucket<MapNode>;
 
 private:
-	Bucket_t * bucket_list;
+	Bucket_t* bucket_list;
 	size_t bucket_list_size;
 	size_t elements;
 	H hasher;
@@ -56,9 +56,9 @@ private:
 	struct Iterator {
 		friend class HashMap;
 
-		Iterator() noexcept : m_node(nullptr) { }
+		Iterator() noexcept : m_node(nullptr) {}
 
-		Iterator(N* node) noexcept : m_node(node) { }
+		Iterator(N* node) noexcept : m_node(node) {}
 
 		inline bool operator==(const Iterator& it) const noexcept {
 			return m_node == it.m_node;
@@ -80,8 +80,8 @@ private:
 
 		inline Iterator& next(const K& key) noexcept {
 			m_node = m_node->im_next;
-			while (m_node) {
-				if (m_node->im_key == key) {
+			while(m_node) {
+				if(m_node->im_key == key) {
 					break;
 				}
 				m_node = m_node->im_next;
@@ -131,27 +131,23 @@ public:
 	using ConstIterator_t = Iterator<const MapNode>;
 
 	HashMap(size_t bucket_list_size) noexcept :
-	bucket_list(nullptr),
-	bucket_list_size(bucket_list_size),
-	elements(0),
-	hasher(),
-	allocator() { }
+		bucket_list(nullptr), bucket_list_size(bucket_list_size), elements(0), hasher(), allocator() {}
 
 	HashMap(const HashMap&) = delete;
 	HashMap& operator=(const HashMap&) = delete;
 
 	HashMap(HashMap&& rv) noexcept :
-	bucket_list(rv.bucket_list),
-	bucket_list_size(rv.bucket_list_size),
-	elements(rv.elements),
-	hasher(rv.hasher),
-	allocator(rv.allocator) {
+		bucket_list(rv.bucket_list)
+		, bucket_list_size(rv.bucket_list_size)
+		, elements(rv.elements)
+		, hasher(rv.hasher)
+		, allocator(rv.allocator) {
 		rv.bucket_list = nullptr;
 		rv.destroy();
 	}
 
 	HashMap& operator=(HashMap&& rv) noexcept {
-		if (this != &rv) {
+		if(this != &rv) {
 			destroy();
 			bucket_list = rv.bucket_list;
 			bucket_list_size = rv.bucket_list_size;
@@ -176,12 +172,12 @@ public:
 	 * @return true - if the bucket storage has been allocated successfully.
 	 */
 	bool allocate() noexcept {
-		if (bucket_list)
+		if(bucket_list)
 			return false;
 
 		bucket_list = allocator.allocate(bucket_list_size);
-		if (bucket_list) {
-			for (size_t i = 0; i < bucket_list_size; i++) {
+		if(bucket_list) {
+			for(size_t i = 0; i < bucket_list_size; i++) {
 				allocator.construct(bucket_list + i);
 			}
 		}
@@ -192,8 +188,8 @@ public:
 	 * Unlink all the objects the map contains.
 	 */
 	void clear() noexcept {
-		for (size_t i = 0; i < bucket_list_size; i++) {
-			while (bucket_list[i].head)
+		for(size_t i = 0; i < bucket_list_size; i++) {
+			while(bucket_list[i].head)
 				unlink_front(i);
 		}
 	}
@@ -241,7 +237,7 @@ public:
 	void remove(MapNode& node) noexcept {
 		check_linked(node); // TODO: debug
 		size_t bucket_id = hasher(node.im_key) % bucket_list_size;
-		if (&node == bucket_list[bucket_id].head) {
+		if(&node == bucket_list[bucket_id].head) {
 			unlink_front(bucket_id);
 		} else {
 			MapNode* prev = find_prev(bucket_id, &node);
@@ -292,9 +288,9 @@ public:
 private:
 
 	void destroy() noexcept {
-		if (bucket_list) {
+		if(bucket_list) {
 			clear();
-			for (size_t i = 0; i < bucket_list_size; i++) {
+			for(size_t i = 0; i < bucket_list_size; i++) {
 				allocator.destroy(bucket_list + i);
 			}
 			allocator.deallocate(bucket_list, bucket_list_size);
@@ -342,8 +338,8 @@ private:
 
 	inline MapNode* find(size_t bucket_id, const K& key) noexcept {
 		MapNode* cur = bucket_list[bucket_id].head;
-		while (cur) {
-			if (cur->im_key == key)
+		while(cur) {
+			if(cur->im_key == key)
 				break;
 			cur = cur->im_next;
 		}
@@ -352,8 +348,8 @@ private:
 
 	inline const MapNode* find(size_t bucket_id, const K& key) const noexcept {
 		MapNode* cur = bucket_list[bucket_id].head;
-		while (cur) {
-			if (cur->im_key == key) {
+		while(cur) {
+			if(cur->im_key == key) {
 				break;
 			}
 			cur = cur->im_next;
@@ -364,8 +360,8 @@ private:
 	inline MapNode* find_prev(size_t bucket_id, const MapNode* node) const noexcept {
 		MapNode* cur = bucket_list[bucket_id].head;
 		MapNode* prev = nullptr;
-		while (cur) {
-			if (cur == node) {
+		while(cur) {
+			if(cur == node) {
 				return prev;
 			}
 			prev = cur;

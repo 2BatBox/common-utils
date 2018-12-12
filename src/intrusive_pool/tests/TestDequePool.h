@@ -10,13 +10,13 @@ namespace intrusive {
 
 class TestDequePool {
 
-	template <typename T>
+	template<typename T>
 	struct StructValue {
 		T value;
 
-		StructValue() : value(0) { };
+		StructValue() : value(0) {};
 
-		StructValue(T x) : value(x) { };
+		StructValue(T x) : value(x) {};
 
 		bool operator==(const StructValue& st_val) const {
 			return value == st_val.value;
@@ -38,7 +38,7 @@ class TestDequePool {
 public:
 
 	TestDequePool(unsigned capacity) noexcept
-	: m_pool(capacity), m_capacity(capacity) {
+		: m_pool(capacity), m_capacity(capacity) {
 		assert(m_pool.allocate() == 0);
 	}
 
@@ -48,12 +48,12 @@ public:
 	TestDequePool operator=(const TestDequePool&) = delete;
 	TestDequePool operator=(TestDequePool&&) = delete;
 
-	~TestDequePool() { }
+	~TestDequePool() {}
 
 	void test() noexcept {
-		float mem_used = m_pool.capacity() * sizeof (Node_t);
+		float mem_used = m_pool.capacity() * sizeof(Node_t);
 		printf("<TestDequePool>...\n");
-		printf("sizeof(Node_t)=%zu\n", sizeof (Node_t));
+		printf("sizeof(Node_t)=%zu\n", sizeof(Node_t));
 		printf("capacity=%zu\n", m_capacity);
 		printf("memory used %.2f Kb\n", mem_used / 1024);
 
@@ -73,7 +73,7 @@ public:
 		assert(m_pool.size() == 0);
 
 		// test with one item
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			push_back_one(i * step);
 			peek_front_one(i * step);
 			pop_front_one(i * step);
@@ -83,12 +83,12 @@ public:
 		test_sanity();
 
 		// test with full capacity
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			push_back_one(i * step);
 		}
 		oversize_one();
 
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			peek_front_one(i * step);
 			pop_front_one(i * step);
 		}
@@ -102,7 +102,7 @@ public:
 		assert(m_pool.size() == 0);
 
 		// test with one item
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			push_front_one(i * step);
 			peek_back_one(i * step);
 			pop_back_one(i * step);
@@ -112,12 +112,12 @@ public:
 		test_sanity();
 
 		// test with full capacity
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			push_front_one(i * step);
 		}
 		oversize_one();
 
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			peek_back_one(i * step);
 			pop_back_one(i * step);
 		}
@@ -131,7 +131,7 @@ public:
 		assert(m_pool.size() == 0);
 
 		// test with one item
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			push_back_one(i * step);
 			peek_back_one(i * step);
 			pop_back_one(i * step);
@@ -141,12 +141,12 @@ public:
 		test_sanity();
 
 		// test with full capacity
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			push_back_one(i * step);
 		}
 		oversize_one();
 
-		for (int i = m_capacity - 1; i >= 0; i--) {
+		for(int i = m_capacity - 1; i >= 0; i--) {
 			peek_back_one(i * step);
 			pop_back_one(i * step);
 		}
@@ -160,7 +160,7 @@ public:
 		assert(m_pool.size() == 0);
 
 		// test with one item
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			push_front_one(i * step);
 			peek_front_one(i * step);
 			pop_front_one(i * step);
@@ -170,12 +170,12 @@ public:
 		test_sanity();
 
 		// test with full capacity
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			push_front_one(i * step);
 		}
 		oversize_one();
 
-		for (int i = m_capacity - 1; i >= 0; i--) {
+		for(int i = m_capacity - 1; i >= 0; i--) {
 			peek_front_one(i * step);
 			pop_front_one(i * step);
 		}
@@ -189,7 +189,7 @@ public:
 		assert(m_pool.size() == 0);
 
 		// test with one item
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			push_back_one(i * step);
 			remove_front_one(i * step);
 			push_back_one(i * step);
@@ -200,21 +200,21 @@ public:
 		test_sanity();
 
 		// test with full capacity
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			push_back_one(i * step);
 		}
 		oversize_one();
 
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			remove_front_one(i * step);
 		}
 
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			push_front_one(i * step);
 		}
 		oversize_one();
 
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			remove_back_one(i * step);
 		}
 
@@ -224,7 +224,7 @@ public:
 
 	void test_reset(unsigned step) {
 		printf("-> test_reset()\n");
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			push_back_one(i * step);
 		}
 		m_pool.reset();
@@ -237,66 +237,66 @@ public:
 		printf("-> test_iterators()\n");
 		assert(m_pool.size() == 0);
 
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			push_back_one(i * step);
 		}
 		oversize_one();
 
 		size_t index = 0;
-		for (auto& elem : m_pool) {
+		for(auto& elem : m_pool) {
 			assert(elem.value == index * step);
 			index++;
 		}
 
 		index = 0;
-		for (auto it = m_pool.begin(); it != m_pool.end(); ++it) {
+		for(auto it = m_pool.begin(); it != m_pool.end(); ++it) {
 			assert(it->value == index * step);
 			index++;
 		}
 
 		index = 0;
-		for (auto it = m_pool.begin(); it != m_pool.end(); it++) {
+		for(auto it = m_pool.begin(); it != m_pool.end(); it++) {
 			assert(it->value == index * step);
 			index++;
 		}
 
 		index = 0;
-		for (auto it = m_pool.cbegin(); it != m_pool.cend(); ++it) {
+		for(auto it = m_pool.cbegin(); it != m_pool.cend(); ++it) {
 			assert(it->value == index * step);
 			index++;
 		}
 
 		index = 0;
-		for (auto it = m_pool.cbegin(); it != m_pool.cend(); it++) {
+		for(auto it = m_pool.cbegin(); it != m_pool.cend(); it++) {
 			assert(it->value == index * step);
 			index++;
 		}
 
 		index = m_capacity - 1;
-		for (auto it = m_pool.rbegin(); it != m_pool.rend(); ++it) {
+		for(auto it = m_pool.rbegin(); it != m_pool.rend(); ++it) {
 			assert(it->value == index * step);
 			index--;
 		}
 
 		index = m_capacity - 1;
-		for (auto it = m_pool.rbegin(); it != m_pool.rend(); it++) {
+		for(auto it = m_pool.rbegin(); it != m_pool.rend(); it++) {
 			assert(it->value == index * step);
 			index--;
 		}
 
 		index = m_capacity - 1;
-		for (auto it = m_pool.crbegin(); it != m_pool.crend(); ++it) {
+		for(auto it = m_pool.crbegin(); it != m_pool.crend(); ++it) {
 			assert(it->value == index * step);
 			index--;
 		}
 
 		index = m_capacity - 1;
-		for (auto it = m_pool.crbegin(); it != m_pool.crend(); it++) {
+		for(auto it = m_pool.crbegin(); it != m_pool.crend(); it++) {
 			assert(it->value == index * step);
 			index--;
 		}
 
-		for (size_t i = 0; i < m_capacity; i++) {
+		for(size_t i = 0; i < m_capacity; i++) {
 			peek_front_one(i * step);
 			pop_front_one(i * step);
 		}
@@ -307,12 +307,12 @@ public:
 
 	void dump() {
 		std::cout << "cached list has " << m_pool.m_list_cached.size() << " elements \n";
-		for (auto it = m_pool.m_list_cached.cbegin(); it != m_pool.m_list_cached.cend(); ++it) {
+		for(auto it = m_pool.m_list_cached.cbegin(); it != m_pool.m_list_cached.cend(); ++it) {
 			std::cout << (*it).value.value << ", ";
 		}
 		std::cout << "\n";
 		std::cout << "freed list has " << m_pool.m_list_freed.size() << " elements \n";
-		for (auto it = m_pool.m_list_freed.cbegin(); it != m_pool.m_list_freed.cend(); ++it) {
+		for(auto it = m_pool.m_list_freed.cbegin(); it != m_pool.m_list_freed.cend(); ++it) {
 			std::cout << (*it).value.value << ", ";
 		}
 		std::cout << "\n";
@@ -388,7 +388,7 @@ private:
 	}
 
 	void test_sanity() {
-		for (unsigned i = 0; i < m_capacity; i++) {
+		for(unsigned i = 0; i < m_capacity; i++) {
 			assert(m_pool.m_storage[i].il_linked);
 		}
 	}

@@ -12,7 +12,7 @@ class Reader {
 	pcap_t* pcap_handler;
 	unsigned frame_index;
 
-	Reader(pcap_t* pcap_handler = nullptr) noexcept : pcap_handler(pcap_handler), frame_index(0) { }
+	Reader(pcap_t* pcap_handler = nullptr) noexcept : pcap_handler(pcap_handler), frame_index(0) {}
 
 public:
 	Reader(const Reader&) = delete;
@@ -23,7 +23,7 @@ public:
 	}
 
 	Reader& operator=(Reader&& rvalue) noexcept {
-		if (this != &rvalue) {
+		if(this != &rvalue) {
 			close();
 			pcap_handler = rvalue.pcap_handler;
 			frame_index = rvalue.frame_index;
@@ -37,7 +37,7 @@ public:
 	}
 
 	inline void close() noexcept {
-		if (pcap_handler) {
+		if(pcap_handler) {
 			pcap_close(pcap_handler);
 			make_empty();
 		}
@@ -45,7 +45,7 @@ public:
 
 	inline bool read_next(Frame& frame) noexcept {
 		frame.data = pcap_next(pcap_handler, &(frame.hdr));
-		if (frame.data) {
+		if(frame.data) {
 			frame_index++;
 		}
 		return (frame.data != nullptr);
@@ -55,10 +55,10 @@ public:
 		return frame_index;
 	}
 
-	static Reader open(const char* file_name) throw (std::logic_error) {
+	static Reader open(const char* file_name) throw(std::logic_error) {
 		char error_buffer[PCAP_ERRBUF_SIZE];
 		pcap_t* pcap_handler = pcap_open_offline(file_name, error_buffer);
-		if (pcap_handler == nullptr) {
+		if(pcap_handler == nullptr) {
 			throw std::logic_error(error_buffer);
 		}
 		return Reader(pcap_handler);

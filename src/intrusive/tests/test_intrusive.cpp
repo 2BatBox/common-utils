@@ -7,6 +7,7 @@
 #include "TestHashMap.h"
 
 typedef unsigned Key_t;
+
 typedef unsigned Value_t;
 
 int main_intrusive(int, char**) {

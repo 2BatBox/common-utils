@@ -8,8 +8,10 @@
 
 namespace intrusive {
 
-template <typename K>
-struct HashQueuePoolEmptyNode : public intrusive::LinkedListHook<HashQueuePoolEmptyNode<K> >, intrusive::HashMapHook<K, HashQueuePoolEmptyNode<K> > {
+template<typename K>
+struct HashQueuePoolEmptyNode
+	: public intrusive::LinkedListHook<HashQueuePoolEmptyNode<K> >,
+	  intrusive::HashMapHook<K, HashQueuePoolEmptyNode<K> > {
 	using Key_t = K;
 
 	HashQueuePoolEmptyNode() noexcept = default;
@@ -22,13 +24,14 @@ struct HashQueuePoolEmptyNode : public intrusive::LinkedListHook<HashQueuePoolEm
 
 };
 
-template <typename K, typename V>
-struct HashQueuePoolNode : public intrusive::LinkedListHook<HashQueuePoolNode<K, V> >, intrusive::HashMapHook<K, HashQueuePoolNode<K, V> > {
+template<typename K, typename V>
+struct HashQueuePoolNode
+	: public intrusive::LinkedListHook<HashQueuePoolNode<K, V> >, intrusive::HashMapHook<K, HashQueuePoolNode<K, V> > {
 	using Key_t = K;
 	using Value_t = V;
 	V value;
 
-	HashQueuePoolNode() : value() { }
+	HashQueuePoolNode() : value() {}
 
 	HashQueuePoolNode(const HashQueuePoolNode&) = delete;
 	HashQueuePoolNode& operator=(const HashQueuePoolNode&) = delete;
@@ -41,11 +44,11 @@ struct HashQueuePoolNode : public intrusive::LinkedListHook<HashQueuePoolNode<K,
 	}
 };
 
-template <
-typename Node_t,
-typename H = std::hash<typename Node_t::Key_t>,
-typename SA = std::allocator<Node_t>,
-typename BA = std::allocator<intrusive::HashMapBucket<Node_t> >
+template<
+	typename Node_t,
+	typename H = std::hash<typename Node_t::Key_t>,
+	typename SA = std::allocator<Node_t>,
+	typename BA = std::allocator<intrusive::HashMapBucket<Node_t> >
 >
 class HashQueuePool {
 	friend class TestHashQueuePool;
@@ -67,12 +70,12 @@ public:
 	using ConstIterator_t = typename Map_t::ConstIterator_t;
 
 	HashQueuePool(unsigned capacity, float load_factor) noexcept
-	: m_capacity(capacity),
-	m_storage(nullptr),
-	m_map((capacity / load_factor) + 1),
-	m_list_cached(),
-	m_list_freed(),
-	m_allocator() { }
+		: m_capacity(capacity)
+		, m_storage(nullptr)
+		, m_map((capacity / load_factor) + 1)
+		, m_list_cached()
+		, m_list_freed()
+		, m_allocator() {}
 
 	HashQueuePool(const HashQueuePool&) = delete;
 	HashQueuePool& operator=(const HashQueuePool&) = delete;
@@ -89,20 +92,20 @@ public:
 	 * @return 0 - if the storage has been allocated successfully.
 	 */
 	int allocate() noexcept {
-		if (m_storage)
+		if(m_storage)
 			return -1;
 
 		m_storage = m_allocator.allocate(m_capacity);
 
-		if (m_storage == nullptr)
+		if(m_storage == nullptr)
 			return -1;
 
-		for (unsigned i = 0; i < m_capacity; i++) {
+		for(unsigned i = 0; i < m_capacity; i++) {
 			m_allocator.construct(m_storage + i);
 			m_list_freed.push_back(m_storage[i]);
 		}
 
-		if (not m_map.allocate()) {
+		if(not m_map.allocate()) {
 			destroy();
 			return -1;
 		}
@@ -119,7 +122,7 @@ public:
 
 	Iterator_t push_back(const Key_t& key) noexcept {
 		Node_t* freed = nullptr;
-		if (available()) {
+		if(available()) {
 			freed = m_list_freed.pop_back();
 			m_list_cached.push_back(*freed);
 			m_map.link(key, *freed);
@@ -129,7 +132,7 @@ public:
 
 	inline Iterator_t peek_front() noexcept {
 		Iterator_t result;
-		if (size()) {
+		if(size()) {
 			result = Iterator_t(m_list_cached.begin().get());
 		}
 		return result;
@@ -137,7 +140,7 @@ public:
 
 	inline Iterator_t pop_front() noexcept {
 		Node_t* result = nullptr;
-		if (size()) {
+		if(size()) {
 			result = m_list_cached.pop_front();
 			m_list_freed.push_back(*result);
 			m_map.remove(*result);
@@ -168,7 +171,7 @@ public:
 		m_map.clear();
 		m_list_cached.clear();
 		m_list_freed.clear();
-		for (unsigned i = 0; i < m_capacity; i++) {
+		for(unsigned i = 0; i < m_capacity; i++) {
 			m_list_freed.push_back(m_storage[i]);
 		}
 	}
@@ -186,17 +189,17 @@ public:
 	}
 
 	inline size_t storage_bytes() noexcept {
-		return m_capacity * sizeof (Node_t) + m_map.buckets() * sizeof (Bucket_t);
+		return m_capacity * sizeof(Node_t) + m_map.buckets() * sizeof(Bucket_t);
 	}
 
 private:
 
 	void destroy() noexcept {
-		if (m_storage) {
+		if(m_storage) {
 			m_list_freed.clear();
 			m_list_cached.clear();
 			m_map.clear();
-			for (size_t i = 0; i < m_capacity; i++) {
+			for(size_t i = 0; i < m_capacity; i++) {
 				m_allocator.destroy(m_storage + i);
 			}
 			m_allocator.deallocate(m_storage, m_capacity);

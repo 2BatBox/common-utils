@@ -16,19 +16,18 @@ class PacketWriter : public BasicPacketReader<uint8_t> {
 	using Base = BasicPacketReader<uint8_t>;
 
 public:
-
 	PacketWriter(MArea range) noexcept :
-	Base(range.begin(), range.length()) { }
+		Base(range.begin(), range.length()) {}
 
 	PacketWriter(uint8_t* data, size_t bytes) noexcept :
-	Base(data, bytes) { }
+		Base(data, bytes) {}
 
 	/**
 	 * Write @value to the packet.
 	 * The head moves to the new position.
 	 * @param value - variable to write from.
 	 */
-	template <typename V>
+	template<typename V>
 	inline void write(const V& value) noexcept {
 		write_impl(value);
 	}
@@ -39,8 +38,8 @@ public:
 	 * @param value - variable to write from.
 	 * @param args - variables to write from.
 	 */
-	template <typename V, typename... Args>
-	inline void write(const V& value, const Args&... args) noexcept {
+	template<typename V, typename... Args>
+	inline void write(const V& value, const Args& ... args) noexcept {
 		write_impl(value, args...);
 	}
 
@@ -80,15 +79,15 @@ public:
 
 protected:
 
-	template <typename V>
+	template<typename V>
 	inline void write_impl(const V& value) noexcept {
 		*reinterpret_cast<V*>(Base::m_head) = value;
-		Base::m_head += sizeof (V);
-		Base::m_available -= sizeof (V);
+		Base::m_head += sizeof(V);
+		Base::m_available -= sizeof(V);
 	}
 
-	template <typename V, typename... Args>
-	inline void write_impl(const V& value, const Args&... args) noexcept {
+	template<typename V, typename... Args>
+	inline void write_impl(const V& value, const Args& ... args) noexcept {
 		write_impl(value);
 		write_impl(args...);
 	}

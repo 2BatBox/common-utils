@@ -5,12 +5,12 @@
 
 namespace dpdk {
 
-template <typename T>
+template<typename T>
 class Allocator {
 public:
 
 	T* allocate(size_t size) noexcept {
-		return reinterpret_cast<T*>(rte_malloc(nullptr, size * sizeof (T), 0));
+		return reinterpret_cast<T*>(rte_malloc(nullptr, size * sizeof(T), 0));
 	}
 
 	void deallocate(T* ptr, size_t) noexcept {
@@ -18,11 +18,11 @@ public:
 	}
 
 	void construct(T* ptr) noexcept {
-		new (ptr)T();
+		new(ptr)T();
 	}
 
 	void construct(T* ptr, const T& t) noexcept {
-		new (ptr)T(t);
+		new(ptr)T(t);
 	}
 
 	void destroy(T* ptr) noexcept {

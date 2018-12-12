@@ -20,14 +20,13 @@ namespace binio {
  * 
  **/
 
-template <typename T>
+template<typename T>
 class BasicPacketReader : public BasicPacket<T> {
 	using Base = BasicPacket<T>;
 
 protected:
-
 	BasicPacketReader(T* buf, size_t len) noexcept :
-	Base(buf, len) { }
+		Base(buf, len) {}
 
 public:
 
@@ -82,7 +81,7 @@ public:
 	 * The head moves to the new position.
 	 * @param value - variable to read to.
 	 */
-	template <typename V>
+	template<typename V>
 	inline void read(V& value) noexcept {
 		read_impl(value);
 	}
@@ -93,8 +92,8 @@ public:
 	 * @param value - a variable to read to.
 	 * @param args - variables to read to.
 	 */
-	template <typename V, typename... Args>
-	inline void read(V& value, Args&... args) noexcept {
+	template<typename V, typename... Args>
+	inline void read(V& value, Args& ... args) noexcept {
 		read_impl(value, args...);
 	}
 
@@ -115,11 +114,11 @@ public:
 	 * The head moves to the new position.
 	 * @param pointer - a pointer to assign.
 	 */
-	template <typename V>
+	template<typename V>
 	inline void assign(V*& pointer) noexcept {
 		pointer = reinterpret_cast<V*>(Base::m_head);
-		Base::m_head += sizeof (V);
-		Base::m_available -= sizeof (V);
+		Base::m_head += sizeof(V);
+		Base::m_available -= sizeof(V);
 	}
 
 	/**
@@ -127,7 +126,7 @@ public:
 	 * The head doesn't move.
 	 * @param pointer - a pointer to assign.
 	 */
-	template <typename V>
+	template<typename V>
 	inline void assign_stay(V*& pointer) const noexcept {
 		pointer = reinterpret_cast<V*>(Base::m_head);
 	}
@@ -156,15 +155,15 @@ public:
 
 protected:
 
-	template <typename V>
+	template<typename V>
 	inline void read_impl(V& value) noexcept {
 		value = *(reinterpret_cast<const V*>(Base::m_head));
-		Base::m_head += sizeof (V);
-		Base::m_available -= sizeof (V);
+		Base::m_head += sizeof(V);
+		Base::m_available -= sizeof(V);
 	}
 
-	template <typename V, typename... Args>
-	inline void read_impl(V& value, Args&... args) noexcept {
+	template<typename V, typename... Args>
+	inline void read_impl(V& value, Args& ... args) noexcept {
 		read_impl(value);
 		read_impl(args...);
 	}
@@ -177,13 +176,13 @@ class PacketReader : public BasicPacketReader<const uint8_t> {
 public:
 
 	PacketReader(MCArea mem) noexcept :
-	Base(mem.begin(), mem.length()) { }
+		Base(mem.begin(), mem.length()) {}
 
 	PacketReader(MArea mem) noexcept :
-	Base(mem.begin(), mem.length()) { }
+		Base(mem.begin(), mem.length()) {}
 
 	PacketReader(const uint8_t* data, size_t bytes) noexcept :
-	Base(data, bytes) { }
+		Base(data, bytes) {}
 };
 
 }; // namespace binio

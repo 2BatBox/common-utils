@@ -17,7 +17,7 @@ class TestVLArray {
 	static void test_init_state() noexcept {
 		Array8 array_8;
 		assert(array_8.length() == 0);
-		for (unsigned i = 0; i < array_8.capacity(); i++) {
+		for(unsigned i = 0; i < array_8.capacity(); i++) {
 			assert(array_8[i] == 0);
 		}
 	}
@@ -25,7 +25,7 @@ class TestVLArray {
 	static void test_comparison() noexcept {
 		Array8 array_first;
 		Array8 array_second;
-		for (unsigned i = 0; i < array_first.capacity(); i++) {
+		for(unsigned i = 0; i < array_first.capacity(); i++) {
 			array_first[i] = i;
 			*(array_second + i) = i;
 		}

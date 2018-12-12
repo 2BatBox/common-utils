@@ -11,9 +11,9 @@ public:
 
 	// long long int
 
-	static long long int str_to_ll(const std::string& str, int base = 0) throw (std::logic_error) {
+	static long long int str_to_ll(const std::string& str, int base = 0) throw(std::logic_error) {
 		long long int result;
-		if (not str_to_ll(str, result, base)) {
+		if(not str_to_ll(str, result, base)) {
 			fprintf(stderr, "cannot parse long long int value '%s'\n", str.c_str());
 			throw std::logic_error("cannot parse long long int value");
 		}
@@ -24,7 +24,7 @@ public:
 		const char* strptr = str.c_str();
 		char* endptr;
 		long long int result = strtoll(strptr, &endptr, base);
-		if (str.size() && size_t(endptr - strptr) == strlen(strptr)) {
+		if(str.size() && size_t(endptr - strptr) == strlen(strptr)) {
 			value = result;
 			return true;
 		}
@@ -33,9 +33,9 @@ public:
 
 	// long int
 
-	static long int str_to_l(const std::string& str, int base = 0) throw (std::logic_error) {
+	static long int str_to_l(const std::string& str, int base = 0) throw(std::logic_error) {
 		long int result;
-		if (not str_to_l(str, result, base)) {
+		if(not str_to_l(str, result, base)) {
 			fprintf(stderr, "cannot parse long int value '%s'\n", str.c_str());
 			throw std::logic_error("cannot parse long int value");
 		}
@@ -46,7 +46,7 @@ public:
 		const char* strptr = str.c_str();
 		char* endptr;
 		long int result = strtol(strptr, &endptr, base);
-		if (str.size() && size_t(endptr - strptr) == strlen(strptr)) {
+		if(str.size() && size_t(endptr - strptr) == strlen(strptr)) {
 			value = result;
 			return true;
 		}
@@ -55,9 +55,9 @@ public:
 
 	// unsigned long int
 
-	static unsigned long int str_to_ul(const std::string& str, int base = 0) throw (std::logic_error) {
+	static unsigned long int str_to_ul(const std::string& str, int base = 0) throw(std::logic_error) {
 		unsigned long int result;
-		if (not str_to_ul(str, result, base)) {
+		if(not str_to_ul(str, result, base)) {
 			fprintf(stderr, "cannot parse unsigned long int value '%s'\n", str.c_str());
 			throw std::logic_error("cannot parse unsigned long int value");
 		}
@@ -68,7 +68,7 @@ public:
 		const char* strptr = str.c_str();
 		char* endptr;
 		unsigned long int result = strtoul(strptr, &endptr, base);
-		if (str.size() && size_t(endptr - strptr) == strlen(strptr)) {
+		if(str.size() && size_t(endptr - strptr) == strlen(strptr)) {
 			value = result;
 			return true;
 		}

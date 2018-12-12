@@ -27,7 +27,7 @@ public:
 		fprintf(file, "%s", buf->ol_flags & CTRL_MBUF_FLAG ? "CTRL_MBUF_FLAG " : "");
 		fprintf(file, "\n");
 
-		fprintf(file, "struct mbuf=%zu | ", sizeof (rte_mbuf));
+		fprintf(file, "struct mbuf=%zu | ", sizeof(rte_mbuf));
 		fprintf(file, "private=%u | ", buf->priv_size);
 		fprintf(file, "head_room=%u | ", buf->data_off);
 		fprintf(file, "data=%u | ", buf->data_len);
@@ -39,7 +39,7 @@ public:
 		fprintf(file, "nb_segs=%u ", buf->nb_segs);
 		fprintf(file, "next=%p\n", buf->next);
 
-		if (buf->next && seg_num > -1)
+		if(buf->next && seg_num > -1)
 			m_buf(file, buf->next, ++seg_num);
 
 	}
@@ -55,8 +55,8 @@ public:
 		fprintf(file, "\tuint32_t lcore_count: %u\n", config->lcore_count);
 		fprintf(file, "\tprocess type: %s\n", proc_type_as_string(config->process_type));
 		fprintf(file, "\tRTE enabled cores:\n");
-		for (unsigned i = 0; i < RTE_MAX_LCORE; i++) {
-			if (config->lcore_role[i] == ROLE_RTE)
+		for(unsigned i = 0; i < RTE_MAX_LCORE; i++) {
+			if(config->lcore_role[i] == ROLE_RTE)
 				fprintf(file, "\t\tlcore %u\n", i);
 		}
 		mem_config(file, config->mem_config);
@@ -67,7 +67,7 @@ public:
 		fprintf(file, "\tuint32_t nchannel: %u\n", config->nchannel);
 		fprintf(file, "\tuint32_t nrank: %u\n", config->nrank);
 		fprintf(file, "\tuint32_t memzone_cnt: %u\n", config->memzone_cnt);
-		for (unsigned i = 0; i < config->memzone_cnt; ++i)
+		for(unsigned i = 0; i < config->memzone_cnt; ++i)
 			memzone(file, config->memzone + i);
 	}
 
@@ -75,7 +75,7 @@ public:
 		fprintf(file, "==== rte_memzone (%p) \"rte_memzone.h\" ====\n", zone);
 		fprintf(file, "\tname: %s\n", zone->name);
 		fprintf(file, "\tphys_addr: 0x%lx (%lu)\n", zone->phys_addr, zone->phys_addr);
-		fprintf(file, "\tvirtual addr: %p (%lu)\n", zone->addr, (uint64_t)zone->addr);
+		fprintf(file, "\tvirtual addr: %p (%lu)\n", zone->addr, (uint64_t) zone->addr);
 		fprintf(file, "\tlen: 0x%zx (%zu)\n", zone->len, zone->len);
 		fprintf(file, "\thugepage_sz: 0x%lx (%lu)\n", zone->hugepage_sz, zone->hugepage_sz);
 		fprintf(file, "\tsocket_id: %u\n", zone->socket_id);
@@ -84,26 +84,26 @@ public:
 	}
 
 	static const char* proc_type_as_string(enum rte_proc_type_t type) {
-		switch (type) {
-		case RTE_PROC_AUTO:
-			return "RTE_PROC_AUTO";
-		case RTE_PROC_PRIMARY:
-			return "RTE_PROC_PRIMARY";
-		case RTE_PROC_SECONDARY:
-			return "RTE_PROC_SECONDARY";
-		case RTE_PROC_INVALID:
-			return "RTE_PROC_INVALID";
-		default:
-			return "UNKNOWN";
+		switch(type) {
+			case RTE_PROC_AUTO:
+				return "RTE_PROC_AUTO";
+			case RTE_PROC_PRIMARY:
+				return "RTE_PROC_PRIMARY";
+			case RTE_PROC_SECONDARY:
+				return "RTE_PROC_SECONDARY";
+			case RTE_PROC_INVALID:
+				return "RTE_PROC_INVALID";
+			default:
+				return "UNKNOWN";
 		}
 	}
 
 	static void malloc_stat(FILE* out) noexcept {
 		rte_malloc_socket_stats stat;
 		fprintf(out, "---- malloc statistics ----\n");
-		for (unsigned i = 0; i < RTE_MAX_NUMA_NODES; i++) {
+		for(unsigned i = 0; i < RTE_MAX_NUMA_NODES; i++) {
 			rte_malloc_get_socket_stats(i, &stat);
-			if (stat.heap_totalsz_bytes) {
+			if(stat.heap_totalsz_bytes) {
 				fprintf(out, "socket[%u] : ", i);
 				fprintf(out, "heap_total=%zuMb ", (stat.heap_totalsz_bytes) / 1024 / 1024);
 				fprintf(out, "heap_allocated=%zuMb ", (stat.heap_allocsz_bytes) / 1024 / 1024);

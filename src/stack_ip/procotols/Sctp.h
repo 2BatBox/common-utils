@@ -60,63 +60,91 @@ public:
 	} __attribute__ ((__packed__));
 
 	static inline bool validate_packet(const DefaultPacketReader& pkt) noexcept {
-		return pkt.available(sizeof (Header));
+		return pkt.available(sizeof(Header));
 	}
 
 	static inline bool validate_header(const DefaultPacketReader& pkt) noexcept {
-		return pkt.available(sizeof (Header));
+		return pkt.available(sizeof(Header));
 	}
 
 	static Protocol next(DefaultPacketReader& pkt) noexcept {
-		pkt.head_move(sizeof (Header));
+		pkt.head_move(sizeof(Header));
 		return Protocol::END;
 	}
 
 	static inline constexpr unsigned length_header(const DefaultPacketReader&) noexcept {
-		return sizeof (Header);
+		return sizeof(Header);
 	}
 
 	static inline unsigned length_payload(const DefaultPacketReader& pkt) noexcept {
-		return pkt.available() - sizeof (Header);
+		return pkt.available() - sizeof(Header);
 	}
 
 	static const char* chunk_name(uint8_t chunk) noexcept {
-		switch (chunk) {
-		case DATA: return "DATA";
-		case INIT: return "INIT";
-		case INIT_ACK: return "INIT_ACK";
-		case SACK: return "SACK";
-		case HEARTBEAT: return "HEARTBEAT";
-		case HEARTBEAT_ACK: return "HEARTBEAT_ACK";
-		case ABORT: return "ABORT";
-		case SHUTDOWN: return "SHUTDOWN";
-		case SHUTDOWN_ACK: return "SHUTDOWN_ACK";
-		case ERROR: return "ERROR";
-		case COOKIE_ECHO: return "COOKIE_ECHO";
-		case COOKIE_ACK: return "COOKIE_ACK";
-		case ECNE: return "ECNE";
-		case CWR: return "CWR";
-		case SHUTDOWN_COMPLETE: return "SHUTDOWN_COMPLETE";
-		case AUTH: return "AUTH";
-		case IETF_EXT_63: return "IETF_EXT_63";
-		case I_DATA: return "I_DATA";
-		case IETF_EXT_127: return "IETF_EXT_127";
-		case ASCONF_ACK: return "ASCONF_ACK";
-		case RE_CONFIG: return "RE_CONFIG";
-		case PAD: return "PAD";
-		case IETF_EXT_191: return "IETF_EXT_191";
-		case FORWARD_TSN: return "FORWARD_TSN";
-		case ASCONF: return "ASCONF";
-		case I_FORWARD_TSN: return "I_FORWARD_TSN";
-		case IETF_EXT_255: return "IETF_EXT_255";
-		default: return "UNKNOWN";
+		switch(chunk) {
+			case DATA:
+				return "DATA";
+			case INIT:
+				return "INIT";
+			case INIT_ACK:
+				return "INIT_ACK";
+			case SACK:
+				return "SACK";
+			case HEARTBEAT:
+				return "HEARTBEAT";
+			case HEARTBEAT_ACK:
+				return "HEARTBEAT_ACK";
+			case ABORT:
+				return "ABORT";
+			case SHUTDOWN:
+				return "SHUTDOWN";
+			case SHUTDOWN_ACK:
+				return "SHUTDOWN_ACK";
+			case ERROR:
+				return "ERROR";
+			case COOKIE_ECHO:
+				return "COOKIE_ECHO";
+			case COOKIE_ACK:
+				return "COOKIE_ACK";
+			case ECNE:
+				return "ECNE";
+			case CWR:
+				return "CWR";
+			case SHUTDOWN_COMPLETE:
+				return "SHUTDOWN_COMPLETE";
+			case AUTH:
+				return "AUTH";
+			case IETF_EXT_63:
+				return "IETF_EXT_63";
+			case I_DATA:
+				return "I_DATA";
+			case IETF_EXT_127:
+				return "IETF_EXT_127";
+			case ASCONF_ACK:
+				return "ASCONF_ACK";
+			case RE_CONFIG:
+				return "RE_CONFIG";
+			case PAD:
+				return "PAD";
+			case IETF_EXT_191:
+				return "IETF_EXT_191";
+			case FORWARD_TSN:
+				return "FORWARD_TSN";
+			case ASCONF:
+				return "ASCONF";
+			case I_FORWARD_TSN:
+				return "I_FORWARD_TSN";
+			case IETF_EXT_255:
+				return "IETF_EXT_255";
+			default:
+				return "UNKNOWN";
 		}
 	}
 
 	static unsigned chunk_header_size(uint8_t type) noexcept {
-		switch (type) {
-		case Sctp::DATA:
-			return sizeof (Sctp::ChunkData);
+		switch(type) {
+			case Sctp::DATA:
+				return sizeof(Sctp::ChunkData);
 		}
 		return 0;
 	}

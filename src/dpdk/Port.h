@@ -29,15 +29,15 @@ class Port {
 public:
 
 	Port(uint8_t port) noexcept :
-	m_port_id(port),
-	m_nb_rx_queues(0),
-	m_nb_rx_descriptors(0),
-	m_nb_tx_queues(0),
-	m_nb_tx_descriptors(0),
-	m_rx_mem_pool(nullptr),
-	m_config(default_eth_config()),
-	m_rx_config(default_rx_conf()),
-	m_tx_config(default_tx_conf()) { }
+		m_port_id(port)
+		, m_nb_rx_queues(0)
+		, m_nb_rx_descriptors(0)
+		, m_nb_tx_queues(0)
+		, m_nb_tx_descriptors(0)
+		, m_rx_mem_pool(nullptr)
+		, m_config(default_eth_config())
+		, m_rx_config(default_rx_conf())
+		, m_tx_config(default_tx_conf()) {}
 
 	uint8_t id() const noexcept {
 		return m_port_id;
@@ -69,22 +69,22 @@ public:
 	int init() noexcept {
 		int socket_id = rte_eth_dev_socket_id(m_port_id);
 
-		if (m_port_id >= rte_eth_dev_count())
+		if(m_port_id >= rte_eth_dev_count())
 			return -1;
 
 		int result = rte_eth_dev_configure(m_port_id, m_nb_rx_queues, m_nb_tx_queues, &m_config);
-		if (result)
+		if(result)
 			return result;
 
-		for (uint16_t queue = 0; queue < m_nb_rx_queues; queue++) {
+		for(uint16_t queue = 0; queue < m_nb_rx_queues; queue++) {
 			result = rte_eth_rx_queue_setup(m_port_id, queue, m_nb_rx_descriptors, socket_id, nullptr, m_rx_mem_pool);
-			if (result < 0)
+			if(result < 0)
 				return result;
 		}
 
-		for (uint16_t queue = 0; queue < m_nb_tx_queues; queue++) {
+		for(uint16_t queue = 0; queue < m_nb_tx_queues; queue++) {
 			result = rte_eth_tx_queue_setup(m_port_id, queue, m_nb_tx_descriptors, socket_id, nullptr);
-			if (result < 0)
+			if(result < 0)
 				return result;
 		}
 
@@ -93,10 +93,10 @@ public:
 
 	int start(bool promiscuous = true) noexcept {
 		int result = rte_eth_dev_start(m_port_id);
-		if (result)
+		if(result)
 			return result;
 
-		if (promiscuous) {
+		if(promiscuous) {
 			rte_eth_promiscuous_enable(m_port_id);
 		}
 		return result;
@@ -106,7 +106,7 @@ private:
 
 	static rte_eth_conf default_eth_config() noexcept {
 		rte_eth_conf conf;
-		memset(&conf, 0, sizeof (conf));
+		memset(&conf, 0, sizeof(conf));
 		rte_eth_rxmode* rxmode = &conf.rxmode;
 		rxmode->max_rx_pkt_len = ETHER_MAX_LEN;
 		return conf;
@@ -114,7 +114,7 @@ private:
 
 	const struct rte_eth_conf* get_port_conf() noexcept {
 		static rte_eth_conf result;
-		memset(&result, 0, sizeof (result));
+		memset(&result, 0, sizeof(result));
 		result.rxmode.split_hdr_size = 0;
 		result.rxmode.header_split = 0; /**< Header Split disabled */
 		result.rxmode.hw_ip_checksum = 0; /**< IP checksum offload disable */
@@ -127,7 +127,7 @@ private:
 
 	const rte_eth_rxconf default_rx_conf() noexcept {
 		static rte_eth_rxconf result;
-		memset(&result, 0, sizeof (result));
+		memset(&result, 0, sizeof(result));
 		result.rx_thresh.pthresh = RX_PTHRESH;
 		result.rx_thresh.hthresh = RX_HTHRESH;
 		result.rx_thresh.wthresh = RX_WTHRESH;
@@ -136,7 +136,7 @@ private:
 
 	const rte_eth_txconf default_tx_conf() noexcept {
 		static rte_eth_txconf result;
-		memset(&result, 0, sizeof (result));
+		memset(&result, 0, sizeof(result));
 		result.tx_thresh.pthresh = TX_PTHRESH;
 		result.tx_thresh.hthresh = TX_HTHRESH;
 		result.tx_thresh.wthresh = TX_WTHRESH;

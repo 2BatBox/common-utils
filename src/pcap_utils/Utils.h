@@ -26,8 +26,8 @@ struct FrameHeaderComparator {
 
 	bool operator()(const Frame& x, const Frame& y) const noexcept {
 		return x.hdr.len == y.hdr.len
-			&& x.hdr.caplen == y.hdr.caplen
-			&& timercmp(&(x.hdr.ts), &(y.hdr.ts), ==);
+		       && x.hdr.caplen == y.hdr.caplen
+		       && timercmp(&(x.hdr.ts), &(y.hdr.ts), ==);
 	}
 };
 
@@ -35,8 +35,8 @@ struct FramePayloadComparator {
 
 	bool operator()(const Frame& x, const Frame& y) const noexcept {
 		return x.hdr.len == y.hdr.len
-			&& x.hdr.caplen == y.hdr.caplen
-			&& (memcmp(x.data, y.data, x.hdr.len) == 0);
+		       && x.hdr.caplen == y.hdr.caplen
+		       && (memcmp(x.data, y.data, x.hdr.len) == 0);
 	}
 };
 
@@ -44,9 +44,9 @@ struct FrameComparator {
 
 	bool operator()(const Frame& x, const Frame& y) const noexcept {
 		return x.hdr.len == y.hdr.len
-			&& x.hdr.caplen == y.hdr.caplen
-			&& timercmp(&(x.hdr.ts), &(y.hdr.ts), ==)
-			&& (memcmp(x.data, y.data, x.hdr.len) == 0);
+		       && x.hdr.caplen == y.hdr.caplen
+		       && timercmp(&(x.hdr.ts), &(y.hdr.ts), ==)
+		       && (memcmp(x.data, y.data, x.hdr.len) == 0);
 	}
 };
 

@@ -12,7 +12,7 @@ namespace binio {
  * A VLArray object represents an array with variable length.
  */
 
-template <typename T, size_t Capacity>
+template<typename T, size_t Capacity>
 class VLArray {
 protected:
 	size_t m_length;
@@ -20,9 +20,9 @@ protected:
 
 public:
 
-	VLArray() noexcept : m_length(0), m_array() { }
+	VLArray() noexcept : m_length(0), m_array() {}
 
-	inline const T& operator[](unsigned index)const noexcept {
+	inline const T& operator[](unsigned index) const noexcept {
 		return m_array[index];
 	}
 
@@ -30,7 +30,7 @@ public:
 		return m_array[index];
 	}
 
-	inline const T* operator+(unsigned index)const noexcept {
+	inline const T* operator+(unsigned index) const noexcept {
 		return m_array + index;
 	}
 
@@ -46,24 +46,25 @@ public:
 		return Capacity;
 	}
 
-	inline MArea assign(size_t length) throw (std::out_of_range) {
-		if (length > Capacity) {
+	inline MArea assign(size_t length) throw(std::out_of_range) {
+		if(length > Capacity) {
 			fprintf(stderr, "MArea assign(size_t length = %zu):"
-				"m_array=%p, m_length=%zu, capacity_bytes=%zu\n", length, m_array, m_length, Capacity); //TODO: debug
+			                "m_array=%p, m_length=%zu, capacity_bytes=%zu\n", length, m_array, m_length,
+			        Capacity); //TODO: debug
 			throw std::out_of_range("VLArray::assign(size_t)");
 		}
 		m_length = length;
 		return binio::as_area(m_array, m_length);
 	}
 
-	template <typename Array, size_t S>
+	template<typename Array, size_t S>
 	inline bool operator==(const VLArray<Array, S>& lv) const noexcept {
 		auto self = as_const_area();
 		auto other = lv.as_const_area();
 		return self == other;
 	}
 
-	template <typename Array, size_t S>
+	template<typename Array, size_t S>
 	inline bool operator!=(const VLArray<Array, S>& lv) const noexcept {
 		return not operator==(lv);
 	}

@@ -7,7 +7,7 @@ namespace binio {
  * Class binio::OptValue represents an option value.
  * No memory management is provided.
  */
-template <typename T>
+template<typename T>
 struct OptValue {
 protected:
 	T m_value;
@@ -17,11 +17,11 @@ public:
 
 	using Value_t = T;
 
-	OptValue() noexcept : m_value(), m_has_value(false) { }
+	OptValue() noexcept : m_value(), m_has_value(false) {}
 
-	OptValue(const T& v) noexcept : m_value(v), m_has_value(true) { }
+	OptValue(const T& v) noexcept : m_value(v), m_has_value(true) {}
 
-	OptValue(T&& v) noexcept : m_value(std::move(v)), m_has_value(true) { }
+	OptValue(T&& v) noexcept : m_value(std::move(v)), m_has_value(true) {}
 
 	OptValue(const OptValue&) noexcept = default;
 	OptValue(OptValue&&) noexcept = default;
@@ -39,7 +39,7 @@ public:
 	}
 
 	OptValue& operator=(const OptValue& opt) noexcept {
-		if (this != &opt) {
+		if(this != &opt) {
 			m_value = opt.m_value;
 			m_has_value = opt.m_has_value;
 		}
@@ -47,7 +47,7 @@ public:
 	}
 
 	OptValue& operator=(OptValue&& opt) noexcept {
-		if (this != &opt) {
+		if(this != &opt) {
 			m_value = std::move(opt.m_value);
 			m_has_value = opt.m_has_value;
 			opt.reset();

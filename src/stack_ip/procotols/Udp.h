@@ -19,8 +19,8 @@ public:
 		uint16_t packet_nb = ntohs(hdr->len);
 		unsigned available = pkt.available();
 
-		if (
-			size_t(packet_nb) < sizeof (Header)
+		if(
+			size_t(packet_nb) < sizeof(Header)
 			|| available < packet_nb
 			) {
 			return false;
@@ -31,22 +31,22 @@ public:
 	}
 
 	static inline bool validate_header(const DefaultPacketReader& pkt) noexcept {
-		return pkt.available(sizeof (Header));
+		return pkt.available(sizeof(Header));
 	}
 
 	static Protocol next(DefaultPacketReader& pkt) noexcept {
-		pkt.head_move(sizeof (Header));
+		pkt.head_move(sizeof(Header));
 		return Protocol::END;
 	}
 
 	static inline constexpr unsigned length_header(const DefaultPacketReader&) noexcept {
-		return sizeof (Header);
+		return sizeof(Header);
 	}
 
 	static inline unsigned length_payload(const DefaultPacketReader& pkt) noexcept {
 		const Header* hdr;
 		pkt.assign_stay(hdr);
-		return ntohs(hdr->len) - sizeof (Header);
+		return ntohs(hdr->len) - sizeof(Header);
 	}
 
 };

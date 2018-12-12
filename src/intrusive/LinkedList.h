@@ -6,13 +6,13 @@
 
 namespace intrusive {
 
-template <typename N>
+template<typename N>
 struct LinkedListHook {
 	N* il_next;
 	N* il_prev;
 	bool il_linked;
 
-	LinkedListHook() noexcept : il_next(nullptr), il_prev(nullptr), il_linked(false) { }
+	LinkedListHook() noexcept : il_next(nullptr), il_prev(nullptr), il_linked(false) {}
 
 	LinkedListHook(const LinkedListHook&) = delete;
 	LinkedListHook& operator=(const LinkedListHook&) = delete;
@@ -21,7 +21,7 @@ struct LinkedListHook {
 	LinkedListHook& operator=(LinkedListHook&&) = delete;
 };
 
-template <typename ListNode>
+template<typename ListNode>
 class LinkedList {
 protected:
 	ListNode* m_head;
@@ -32,9 +32,9 @@ protected:
 	struct Iterator {
 		friend class LinkedList;
 
-		Iterator() noexcept : node_ptr(nullptr) { }
+		Iterator() noexcept : node_ptr(nullptr) {}
 
-		Iterator(N* node) noexcept : node_ptr(node) { }
+		Iterator(N* node) noexcept : node_ptr(node) {}
 
 		bool operator==(const Iterator& it) const noexcept {
 			return node_ptr == it.node_ptr;
@@ -90,9 +90,9 @@ protected:
 	struct ReverseIterator {
 		friend class LinkedList;
 
-		ReverseIterator() noexcept : node_ptr(nullptr) { }
+		ReverseIterator() noexcept : node_ptr(nullptr) {}
 
-		ReverseIterator(N* value) noexcept : node_ptr(value) { }
+		ReverseIterator(N* value) noexcept : node_ptr(value) {}
 
 		bool operator==(const ReverseIterator& it) const noexcept {
 			return node_ptr == it.node_ptr;
@@ -147,7 +147,7 @@ public:
 	using ReverseIterator_t = ReverseIterator<ListNode>;
 	using ConstReverseIterator_t = ReverseIterator<const ListNode>;
 
-	LinkedList() noexcept : m_head(nullptr), m_tail(nullptr), m_size(0) { }
+	LinkedList() noexcept : m_head(nullptr), m_tail(nullptr), m_size(0) {}
 
 	LinkedList(const LinkedList&) = delete;
 	LinkedList& operator=(const LinkedList&) = delete;
@@ -158,7 +158,7 @@ public:
 	}
 
 	LinkedList& operator=(LinkedList&& rv) {
-		if (this != &rv) {
+		if(this != &rv) {
 			m_head = rv.m_head;
 			m_tail = rv.m_tail;
 			m_size = rv.m_size;
@@ -185,7 +185,7 @@ public:
 
 	void push_front(ListNode& node) noexcept {
 		check_free(node); // TODO: debug
-		if (m_head)
+		if(m_head)
 			link_head(node);
 		else
 			link_first(node);
@@ -193,25 +193,25 @@ public:
 
 	void push_back(ListNode& node) noexcept {
 		check_free(node); // TODO: debug
-		if (m_tail)
+		if(m_tail)
 			link_tail(node);
 		else
 			link_first(node);
 	}
 
 	ListNode* pop_front() noexcept {
-		if (m_head != m_tail) {
+		if(m_head != m_tail) {
 			return unlink_head();
-		} else if (m_head) {
+		} else if(m_head) {
 			return unlink_last();
 		}
 		return nullptr;
 	}
 
 	ListNode* pop_back() noexcept {
-		if (m_head != m_tail) {
+		if(m_head != m_tail) {
 			return unlink_tail();
-		} else if (m_head) {
+		} else if(m_head) {
 			return unlink_last();
 		}
 		return nullptr;
@@ -220,7 +220,7 @@ public:
 	void insert_before(ListNode& before, ListNode& node) noexcept {
 		check_linked(before); // TODO: debug
 		check_free(node); // TODO: debug
-		if (&before == m_head)
+		if(&before == m_head)
 			link_head(node);
 		else
 			link_before(before, node);
@@ -229,7 +229,7 @@ public:
 	void insert_after(ListNode& after, ListNode& node) noexcept {
 		check_linked(after); // TODO: debug
 		check_free(node); // TODO: debug
-		if (&after == m_tail)
+		if(&after == m_tail)
 			link_tail(node);
 		else
 			link_after(after, node);
@@ -237,10 +237,10 @@ public:
 
 	void remove(ListNode& node) noexcept {
 		check_linked(node); // TODO: debug
-		if (m_head) {
-			if (&node == m_head)
+		if(m_head) {
+			if(&node == m_head)
 				pop_front();
-			else if (&node == m_tail)
+			else if(&node == m_tail)
 				pop_back();
 			else
 				unlink(node);
@@ -251,7 +251,7 @@ public:
 	 * Unlink all objects in the list.
 	 */
 	void clear() noexcept {
-		while (m_head)
+		while(m_head)
 			pop_front();
 	}
 

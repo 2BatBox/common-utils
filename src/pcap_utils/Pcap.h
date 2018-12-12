@@ -11,9 +11,9 @@ struct Frame {
 	pcap_pkthdr hdr;
 	const uint8_t* data;
 
-	Frame() noexcept : hdr(), data(nullptr) { }
+	Frame() noexcept : hdr(), data(nullptr) {}
 
-	Frame(const pcap_pkthdr& hdr, const uint8_t* data) noexcept : hdr(hdr), data(data) { }
+	Frame(const pcap_pkthdr& hdr, const uint8_t* data) noexcept : hdr(hdr), data(data) {}
 };
 
 class FrameMutable {
@@ -21,7 +21,7 @@ public:
 	pcap_pkthdr hdr;
 	uint8_t* data;
 
-	FrameMutable() noexcept : hdr(), data(nullptr) { }
+	FrameMutable() noexcept : hdr(), data(nullptr) {}
 
 	FrameMutable(struct timeval ts, unsigned data_size) noexcept : hdr(), data(new unsigned char[data_size]) {
 		hdr.len = hdr.caplen = data_size;
@@ -40,7 +40,7 @@ public:
 	}
 
 	FrameMutable& operator=(FrameMutable&& rvalue) noexcept {
-		if (this != &rvalue) {
+		if(this != &rvalue) {
 			destroy();
 			hdr = rvalue.hdr;
 			data = rvalue.data;
@@ -60,8 +60,8 @@ public:
 private:
 
 	inline void destroy() noexcept {
-		if (data) {
-			delete [] data;
+		if(data) {
+			delete[] data;
 			data = nullptr;
 			make_empty();
 		}

@@ -27,7 +27,7 @@ public:
 	static void dump(FILE* out) noexcept {
 		fprintf(out, "---- launch configuration ----\n");
 		fprintf(out, "files  : ");
-		for (auto elem : CliContext::files) {
+		for(auto elem : CliContext::files) {
 			fprintf(out, "'%s' ", elem.c_str());
 		}
 		fprintf(out, "\n");
@@ -35,12 +35,12 @@ public:
 		fprintf(out, "log_period : %lu sec\n", log_period);
 		fprintf(out, "cdr_period : %lu sec\n", cdr_period);
 
-		if (log_stdout) {
+		if(log_stdout) {
 			fprintf(out, "+log_stdout\n");
 		}
 	}
 
-	static void parse_args(int argc, char **argv) throw (std::logic_error) {
+	static void parse_args(int argc, char** argv) throw(std::logic_error) {
 		cli::OptionList list;
 		fill_option_list(list);
 		cli::Parser::parse(argc, argv, list);
@@ -51,11 +51,11 @@ public:
 		log_period = utils::Types::str_to_l(arg_log_period);
 		cdr_period = utils::Types::str_to_l(arg_cdr_period);
 
-		if (log_period < 1) {
+		if(log_period < 1) {
 			throw std::logic_error("log-period value must be positive");
 		}
 
-		if (cdr_period < 1) {
+		if(cdr_period < 1) {
 			throw std::logic_error("cdr_period value must be positive");
 		}
 
@@ -74,7 +74,7 @@ public:
 		help = list.find_except('h').presented();
 		version = list.find_except('v').presented();
 
-		for (int i = 1; i < argc; i++) {
+		for(int i = 1; i < argc; i++) {
 			files.push_back(argv[i]);
 		}
 

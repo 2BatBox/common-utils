@@ -22,7 +22,7 @@ class OptionState {
 
 public:
 
-	OptionState() noexcept : m_presented(false), m_has_argument(false), m_argument() { }
+	OptionState() noexcept : m_presented(false), m_has_argument(false), m_argument() {}
 
 	bool presented() const noexcept {
 		return m_presented;
@@ -67,12 +67,7 @@ public:
 	static constexpr char SHORT_NAME_NONE = 0;
 
 	Option(char short_name, const std::string& long_name, ArgumentType arg_type) noexcept :
-	OptionState(),
-	m_short_name(short_name),
-	m_long_name(long_name),
-	m_arg_type(arg_type),
-	m_desc(),
-	m_arg_name() { }
+		OptionState(), m_short_name(short_name), m_long_name(long_name), m_arg_type(arg_type), m_desc(), m_arg_name() {}
 
 	bool has_short_name() const noexcept {
 		return m_short_name != SHORT_NAME_NONE;
@@ -106,7 +101,7 @@ public:
 
 	std::string name() const noexcept {
 		std::string result;
-		if (has_short_name()) {
+		if(has_short_name()) {
 			result = short_name();
 		} else {
 			result = long_name();

@@ -23,31 +23,31 @@ public:
 		NONE // none VLAN packages are allowed
 	};
 
-	VlanFilter() noexcept : m_table(TABLE_SIZE) { }
+	VlanFilter() noexcept : m_table(TABLE_SIZE) {}
 
 	void set_mode(Mode mode, const std::vector<uint16_t>& vlan_list) noexcept {
-		switch (mode) {
-		case Mode::ANY:
-			allow_by_default(true);
-			break;
+		switch(mode) {
+			case Mode::ANY:
+				allow_by_default(true);
+				break;
 
-		case Mode::INCLUDE_LIST:
-			allow_by_default(false);
-			for (auto elem : vlan_list) {
-				set(elem, true);
-			}
-			break;
+			case Mode::INCLUDE_LIST:
+				allow_by_default(false);
+				for(auto elem : vlan_list) {
+					set(elem, true);
+				}
+				break;
 
-		case Mode::EXCLUDE_LIST:
-			allow_by_default(true);
-			for (auto elem : vlan_list) {
-				set(elem, false);
-			}
-			break;
+			case Mode::EXCLUDE_LIST:
+				allow_by_default(true);
+				for(auto elem : vlan_list) {
+					set(elem, false);
+				}
+				break;
 
-		case Mode::NONE:
-			allow_by_default(false);
-			break;
+			case Mode::NONE:
+				allow_by_default(false);
+				break;
 		}
 	}
 
@@ -55,7 +55,7 @@ public:
 	 * @param index - VLAN id in host byte order
 	 * @param state - true if VLAN id @index is allowed
 	 */
-	inline void set(uint16_t index, bool state) throw (std::out_of_range) {
+	inline void set(uint16_t index, bool state) throw(std::out_of_range) {
 		m_table.at(index) = state;
 	}
 
@@ -63,7 +63,7 @@ public:
 	 * @param index - VLAN id in host byte order
 	 * @return - true if VLAN id @index is allowed
 	 */
-	inline bool check(uint16_t index) throw (std::out_of_range) {
+	inline bool check(uint16_t index) throw(std::out_of_range) {
 		return m_table.at(index); // using bounds checking on purpose
 	}
 
@@ -71,7 +71,7 @@ public:
 	 * @param hdr - VLAN header
 	 * @return - true if VLAN id @index is allowed
 	 */
-	inline bool check(const Vlan::Header * hdr) throw (std::out_of_range) {
+	inline bool check(const Vlan::Header* hdr) throw(std::out_of_range) {
 		uint16_t vlan_tci;
 		vlan_tci = ntohs(hdr->vlan_tci);
 		vlan_tci = vlan_tci & 0xfff;
@@ -79,12 +79,17 @@ public:
 	}
 
 	static const char* mode_name(Mode mode) noexcept {
-		switch (mode) {
-		case Mode::ANY: return "Any";
-		case Mode::EXCLUDE_LIST: return "exclude list";
-		case Mode::INCLUDE_LIST: return "include list";
-		case Mode::NONE: return "none";
-		default: return "unknown";
+		switch(mode) {
+			case Mode::ANY:
+				return "Any";
+			case Mode::EXCLUDE_LIST:
+				return "exclude list";
+			case Mode::INCLUDE_LIST:
+				return "include list";
+			case Mode::NONE:
+				return "none";
+			default:
+				return "unknown";
 		}
 
 	}
@@ -92,7 +97,7 @@ public:
 private:
 
 	void allow_by_default(bool state) noexcept {
-		for (auto elem : m_table) {
+		for(auto elem : m_table) {
 			elem = state;
 		}
 	}

@@ -20,11 +20,11 @@ class TestMArea {
 		int i;
 		long l;
 
-		DataSet() noexcept : c(0), s(0), i(0), l(0) { }
+		DataSet() noexcept : c(0), s(0), i(0), l(0) {}
 
-		DataSet(int value) noexcept : c((char)value), s((short)value), i(value), l(value << 16) { }
+		DataSet(int value) noexcept : c((char) value), s((short) value), i(value), l(value << 16) {}
 
-		DataSet(char c, short s, int i, long l) noexcept : c(c), s(s), i(i), l(l) { }
+		DataSet(char c, short s, int i, long l) noexcept : c(c), s(s), i(i), l(l) {}
 
 		bool operator==(const DataSet& ds) noexcept {
 			return c == ds.c && s == ds.s && i == ds.i && l == ds.l;
@@ -48,30 +48,30 @@ class TestMArea {
 		readable = as_const_area(const_void_ptr, 1);
 		assert(readable.length() == 1);
 		readable = as_const_area(const_u32_ptr, 1);
-		assert(readable.length() == sizeof (*const_u32_ptr));
+		assert(readable.length() == sizeof(*const_u32_ptr));
 		readable = as_const_area(c_struct_ptr, 1);
-		assert(readable.length() == sizeof (*c_struct_ptr));
+		assert(readable.length() == sizeof(*c_struct_ptr));
 
 		writable = as_area(void_ptr, 1);
 		assert(writable.length() == 1);
 		writable = as_area(u32_ptr, 1);
-		assert(writable.length() == sizeof (*u32_ptr));
+		assert(writable.length() == sizeof(*u32_ptr));
 		writable = as_area(struct_ptr, 1);
-		assert(writable.length() == sizeof (*struct_ptr));
+		assert(writable.length() == sizeof(*struct_ptr));
 
 	}
 
-	static void dummy_readable(Readable) { }
+	static void dummy_readable(Readable) {}
 
-	static void dummy_readable_ref(Readable&) { }
+	static void dummy_readable_ref(Readable&) {}
 
-	static void dummy_readable_cref(const Readable&) { }
+	static void dummy_readable_cref(const Readable&) {}
 
-	static void dummy_writable(Writable) { }
+	static void dummy_writable(Writable) {}
 
-	static void dummy_writable_ref(Writable&) { }
+	static void dummy_writable_ref(Writable&) {}
 
-	static void dummy_writable_cref(const Writable&) { }
+	static void dummy_writable_cref(const Writable&) {}
 
 	static void test_type_converting() noexcept {
 		printf("-> test_type_converting()\n");
@@ -93,7 +93,7 @@ class TestMArea {
 		readable = writable;
 
 		// data comparison
-		if (readable == readable && readable == writable && writable == writable) {
+		if(readable == readable && readable == writable && writable == writable) {
 		}
 	}
 
@@ -102,7 +102,7 @@ class TestMArea {
 		unsigned buf_size = 64 - 1;
 		DataSet array_struc_first[buf_size];
 		DataSet array_struc_second[buf_size];
-		for (unsigned i = 0; i < buf_size; i++) {
+		for(unsigned i = 0; i < buf_size; i++) {
 			array_struc_first[i] = DataSet(i);
 			array_struc_second[i] = DataSet(i);
 		}

@@ -22,12 +22,8 @@ class ChunkedFile {
 public:
 
 	ChunkedFile(const char* root_dir, const char* file_pref, const char* file_ext) :
-	m_root(root_dir),
-	m_file_pref(file_pref),
-	m_file_ext(file_ext),
-	m_file(nullptr),
-	m_time_split_sec(DEFAULT_SPLIT_TIME),
-	m_time_last_update(0) { }
+		m_root(root_dir), m_file_pref(file_pref), m_file_ext(file_ext), m_file(nullptr), m_time_split_sec(
+		DEFAULT_SPLIT_TIME), m_time_last_update(0) {}
 
 	ChunkedFile(const ChunkedFile&) = delete;
 	ChunkedFile& operator=(const ChunkedFile&) = delete;
@@ -44,7 +40,7 @@ public:
 	}
 
 	int open() {
-		if (m_file)
+		if(m_file)
 			return -1;
 
 		time_t cur_time = time(nullptr);
@@ -54,9 +50,9 @@ public:
 		std::string current_dir = dir_name(local_time);
 		std::string current_file = file_name(local_time);
 
-		if (create_dir(current_dir) == 0) {
+		if(create_dir(current_dir) == 0) {
 			m_file = open_file(current_file);
-			if (m_file) {
+			if(m_file) {
 				m_time_last_update = cur_time;
 			}
 		}
@@ -65,14 +61,14 @@ public:
 	}
 
 	void close() {
-		if (m_file)
+		if(m_file)
 			fclose(m_file);
 		m_file = nullptr;
 	}
 
 	bool update() {
 		time_t time_current = time(NULL);
-		if (time_current - m_time_last_update >= m_time_split_sec || not same_day(time_current, m_time_last_update)) {
+		if(time_current - m_time_last_update >= m_time_split_sec || not same_day(time_current, m_time_last_update)) {
 			close();
 			return open() == 0;
 		}
@@ -119,9 +115,9 @@ private:
 		char buffer[BUF_SIZE];
 
 		snprintf(buffer, BUF_SIZE, "%04d-%02d-%02d_%02d-%02d-%02d",
-			time.tm_year + 1900, time.tm_mon + 1, time.tm_mday,
-			time.tm_hour, time.tm_min, time.tm_sec
-			);
+		         time.tm_year + 1900, time.tm_mon + 1, time.tm_mday,
+		         time.tm_hour, time.tm_min, time.tm_sec
+		);
 		return std::string(buffer);
 	}
 

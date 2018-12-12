@@ -25,9 +25,9 @@ class TestPacket {
 		int i;
 		long l;
 
-		DataSet() noexcept : c(0), s(0), i(0), l(0) { }
+		DataSet() noexcept : c(0), s(0), i(0), l(0) {}
 
-		DataSet(char c, short s, int i, long l) noexcept : c(c), s(s), i(i), l(l) { }
+		DataSet(char c, short s, int i, long l) noexcept : c(c), s(s), i(i), l(l) {}
 
 		bool operator==(const DataSet& ds) const noexcept {
 			return c == ds.c && s == ds.s && i == ds.i && l == ds.l;
@@ -40,25 +40,25 @@ class TestPacket {
 		int i;
 		long l;
 
-		DataSetPacket() noexcept : c(0), s(0), i(0), l(0) { }
+		DataSetPacket() noexcept : c(0), s(0), i(0), l(0) {}
 
-		DataSetPacket(char c, short s, int i, long l) noexcept : c(c), s(s), i(i), l(l) { }
+		DataSetPacket(char c, short s, int i, long l) noexcept : c(c), s(s), i(i), l(l) {}
 
 		bool operator==(const DataSetPacket& ds) noexcept {
 			return c == ds.c && s == ds.s && i == ds.i && l == ds.l;
 		}
 	} __attribute__ ((packed));
 
-	template <typename T, typename R>
+	template<typename T, typename R>
 	static void test_distances_head() noexcept {
 		printf("-> test_distances_head()\n");
 
 		T raw_buffer[BUFFER_SIZE];
 		R buf(as_const_area(raw_buffer, BUFFER_SIZE));
-		unsigned bn_bytes = BUFFER_SIZE * sizeof (T);
+		unsigned bn_bytes = BUFFER_SIZE * sizeof(T);
 
 		assert(buf.available() == bn_bytes);
-		for (unsigned i = 0; i < bn_bytes; i++) {
+		for(unsigned i = 0; i < bn_bytes; i++) {
 			assert(buf.offset() == i);
 			assert(buf.available() == bn_bytes - i);
 			assert(buf.available(bn_bytes - i));
@@ -67,7 +67,7 @@ class TestPacket {
 			buf.head_move(1);
 		}
 
-		for (unsigned i = 0; i < bn_bytes; i++) {
+		for(unsigned i = 0; i < bn_bytes; i++) {
 			assert(buf.offset() == bn_bytes - i);
 			assert(buf.available() == i);
 			assert(buf.available(i));
@@ -77,16 +77,16 @@ class TestPacket {
 		}
 	}
 
-	template <typename T, typename R>
+	template<typename T, typename R>
 	static void test_distances_tail() noexcept {
 		printf("-> test_distances_tail()\n");
 
 		T raw_buffer[BUFFER_SIZE];
 		R buf(as_const_area(raw_buffer, BUFFER_SIZE));
-		unsigned bn_bytes = BUFFER_SIZE * sizeof (T);
+		unsigned bn_bytes = BUFFER_SIZE * sizeof(T);
 
 		assert(buf.available() == bn_bytes);
-		for (unsigned i = 0; i < bn_bytes; i++) {
+		for(unsigned i = 0; i < bn_bytes; i++) {
 			assert(buf.offset() == 0);
 			assert(buf.available() == bn_bytes - i);
 			assert(buf.available(bn_bytes - i));
@@ -95,7 +95,7 @@ class TestPacket {
 			buf.tail_move_back(1);
 		}
 
-		for (unsigned i = 0; i < bn_bytes; i++) {
+		for(unsigned i = 0; i < bn_bytes; i++) {
 			assert(buf.offset() == 0);
 			assert(buf.available() == i);
 			assert(buf.available(i));
@@ -106,83 +106,83 @@ class TestPacket {
 
 	}
 
-	template <typename T, typename R>
+	template<typename T, typename R>
 	static void test_distances_read() noexcept {
 		printf("-> test_distances_read()\n");
 
 		T raw_buffer[BUFFER_SIZE];
 		R buf(as_const_area(raw_buffer, BUFFER_SIZE));
-		unsigned bn_bytes = BUFFER_SIZE * sizeof (T);
+		unsigned bn_bytes = BUFFER_SIZE * sizeof(T);
 
 		T value0;
 		T value1;
 
 		assert(buf.available() == bn_bytes);
 
-		for (unsigned i = 0; i < BUFFER_SIZE; i++) {
-			assert(buf.offset() == i * sizeof (T));
-			assert(buf.available() == bn_bytes - (i * sizeof (T)));
-			assert(buf.available(bn_bytes - (i * sizeof (T))));
+		for(unsigned i = 0; i < BUFFER_SIZE; i++) {
+			assert(buf.offset() == i * sizeof(T));
+			assert(buf.available() == bn_bytes - (i * sizeof(T)));
+			assert(buf.available(bn_bytes - (i * sizeof(T))));
 			assert(buf.padding() == 0);
 			assert(buf.size() == bn_bytes);
 			buf.read(value0);
 		}
 		buf.reset();
 
-		for (unsigned i = 0; i < BUFFER_SIZE; i += 2) {
-			assert(buf.offset() == i * sizeof (T));
-			assert(buf.available() == (bn_bytes - (i * sizeof (T))));
-			assert(buf.available(bn_bytes - (i * sizeof (T))));
+		for(unsigned i = 0; i < BUFFER_SIZE; i += 2) {
+			assert(buf.offset() == i * sizeof(T));
+			assert(buf.available() == (bn_bytes - (i * sizeof(T))));
+			assert(buf.available(bn_bytes - (i * sizeof(T))));
 			assert(buf.padding() == 0);
 			assert(buf.size() == bn_bytes);
 			buf.read(value0, value1);
 		}
 	}
 
-	template <typename T, typename W>
+	template<typename T, typename W>
 	static void test_distances_write() noexcept {
 		printf("-> test_distances_write()\n");
 
 		T raw_buffer[BUFFER_SIZE];
 		W buf(as_area(raw_buffer, BUFFER_SIZE));
-		unsigned bn_bytes = BUFFER_SIZE * sizeof (T);
+		unsigned bn_bytes = BUFFER_SIZE * sizeof(T);
 
 		T value0;
 		T value1;
 
 		assert(buf.available() == bn_bytes);
 
-		for (unsigned i = 0; i < BUFFER_SIZE; i++) {
-			assert(buf.offset() == i * sizeof (T));
-			assert(buf.available() == bn_bytes - (i * sizeof (T)));
-			assert(buf.available(bn_bytes - (i * sizeof (T))));
+		for(unsigned i = 0; i < BUFFER_SIZE; i++) {
+			assert(buf.offset() == i * sizeof(T));
+			assert(buf.available() == bn_bytes - (i * sizeof(T)));
+			assert(buf.available(bn_bytes - (i * sizeof(T))));
 			assert(buf.padding() == 0);
 			assert(buf.size() == bn_bytes);
 			buf.write(value0);
 		}
 		buf.reset();
 
-		for (unsigned i = 0; i < BUFFER_SIZE; i += 2) {
-			assert(buf.offset() == i * sizeof (T));
-			assert(buf.available() == (bn_bytes - (i * sizeof (T))));
-			assert(buf.available(bn_bytes - (i * sizeof (T))));
+		for(unsigned i = 0; i < BUFFER_SIZE; i += 2) {
+			assert(buf.offset() == i * sizeof(T));
+			assert(buf.available() == (bn_bytes - (i * sizeof(T))));
+			assert(buf.available(bn_bytes - (i * sizeof(T))));
 			assert(buf.padding() == 0);
 			assert(buf.size() == bn_bytes);
 			buf.write(value0, value1);
 		}
 	}
 
-	template <typename T, typename W>
+	template<typename T, typename W>
 	static void test_distances_as_area() noexcept {
 		printf("-> test_distances_as_area()\n");
 
 		T raw_buffer[BUFFER_SIZE];
 		W buf(as_area(raw_buffer, BUFFER_SIZE));
-		unsigned bn_bytes = BUFFER_SIZE * sizeof (T);
+		unsigned bn_bytes = BUFFER_SIZE * sizeof(T);
 
 		buf.reset();
 
-		for (unsigned i = 0; i < bn_bytes; i++) {
+		for(unsigned i = 0; i < bn_bytes; i++) {
 			assert(buf.offset() == 0);
 			assert(buf.available() == bn_bytes - i);
 			assert(buf.available(bn_bytes - i));
@@ -193,7 +193,7 @@ class TestPacket {
 		}
 
 		buf = W(as_area(raw_buffer, BUFFER_SIZE));
-		for (unsigned i = 0; i < bn_bytes; i++) {
+		for(unsigned i = 0; i < bn_bytes; i++) {
 			assert(buf.offset() == 0);
 			assert(buf.available() == bn_bytes - i);
 			assert(buf.available(bn_bytes - i));
@@ -204,13 +204,13 @@ class TestPacket {
 		}
 	}
 
-	template <typename T, typename W>
+	template<typename T, typename W>
 	static void test_distances_reset() noexcept {
 		printf("-> test_distances_reset()\n");
 
 		T raw_buffer[BUFFER_SIZE];
 		W buf(as_area(raw_buffer, BUFFER_SIZE));
-		unsigned bn_bytes = BUFFER_SIZE * sizeof (T);
+		unsigned bn_bytes = BUFFER_SIZE * sizeof(T);
 
 		assert(buf.offset() == 0);
 		assert(buf.available() == bn_bytes);
@@ -230,7 +230,7 @@ class TestPacket {
 		assert(buf.padding() == 0);
 	}
 
-	template <typename R, typename W>
+	template<typename R, typename W>
 	static void test_read_write_assign() noexcept {
 		printf("-> test_read_write_assign()\n");
 		DataSet input_false(0x00, 0x00, 0x00, 0x00);
@@ -249,7 +249,7 @@ class TestPacket {
 		test_assign<R, W>(input_dec);
 	}
 
-	template <typename R, typename W>
+	template<typename R, typename W>
 	static void test_read_write_memory() noexcept {
 		printf("-> test_read_write_memory()\n");
 
@@ -280,14 +280,14 @@ class TestPacket {
 		//		}
 	}
 
-	template <typename R, typename W>
+	template<typename R, typename W>
 	static void test_read_write(DataSet& set) noexcept {
 		DataSet copy;
 		unsigned raw_buffer_size = 2;
 		DataSet raw_buffer[raw_buffer_size];
 
 		W writer(as_area(raw_buffer, raw_buffer_size));
-		assert(writer.available() == sizeof (DataSet) * raw_buffer_size);
+		assert(writer.available() == sizeof(DataSet) * raw_buffer_size);
 
 		// writing
 		writer.write(set);
@@ -302,7 +302,7 @@ class TestPacket {
 		assert(copy == set);
 	}
 
-	template <typename R, typename W>
+	template<typename R, typename W>
 	static void test_assign(DataSet& set) noexcept {
 		const DataSet* copy;
 		const char* c_cptr = nullptr;
@@ -310,7 +310,7 @@ class TestPacket {
 		const int* i_ptr = nullptr;
 		const long* l_ptr = nullptr;
 
-		unsigned raw_buffer_size = sizeof (DataSet) * 2;
+		unsigned raw_buffer_size = sizeof(DataSet) * 2;
 		char raw_buffer[raw_buffer_size];
 		W writer(as_area(raw_buffer, raw_buffer_size));
 
@@ -335,32 +335,32 @@ class TestPacket {
 		assert(*l_ptr == set.l);
 	}
 
-	template <typename T, typename R>
+	template<typename T, typename R>
 	static void test_reader() {
-		printf("-> test_reader('%s', '%s')\n", typeid (T).name(), typeid (R).name());
-		test_distances_head<T, R> ();
-		test_distances_tail<T, R> ();
-		test_distances_read<T, R> ();
-		test_distances_as_area<T, R> ();
-		test_distances_reset<T, R> ();
+		printf("-> test_reader('%s', '%s')\n", typeid(T).name(), typeid(R).name());
+		test_distances_head<T, R>();
+		test_distances_tail<T, R>();
+		test_distances_read<T, R>();
+		test_distances_as_area<T, R>();
+		test_distances_reset<T, R>();
 	}
 
-	template <typename T, typename W>
+	template<typename T, typename W>
 	static void test_writer() {
-		printf("-> test_writer('%s', '%s')\n", typeid (T).name(), typeid (W).name());
-		test_distances_write<T, W> ();
-		test_distances_as_area<T, W> ();
-		test_distances_reset<T, W> ();
+		printf("-> test_writer('%s', '%s')\n", typeid(T).name(), typeid(W).name());
+		test_distances_write<T, W>();
+		test_distances_as_area<T, W>();
+		test_distances_reset<T, W>();
 	}
 
-	template <typename R, typename W>
+	template<typename R, typename W>
 	static void test_reader_writer() {
-		printf("-> test_reader_writer('%s', '%s')\n", typeid (R).name(), typeid (W).name());
+		printf("-> test_reader_writer('%s', '%s')\n", typeid(R).name(), typeid(W).name());
 		test_read_write_assign<R, W>();
 		test_read_write_memory<R, W>();
 	}
 
-	template <typename T>
+	template<typename T>
 	static void test_type() {
 		test_reader<T, PacketReader>();
 		test_reader<T, PacketSafeReader>();

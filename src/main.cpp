@@ -3,13 +3,6 @@
 #include "utils/HexDumper.h"
 
 #include <iostream>
-#include <cstdio>
-#include <assert.h>
-
-#include <time.h>
-#include <sys/time.h>
-#include <sys/syscall.h>
-#include <unistd.h>
 
 struct Mtp3Message {
 	uint32_t src = 0;

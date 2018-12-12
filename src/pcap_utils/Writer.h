@@ -15,7 +15,7 @@ class Writer {
 	pcap_dumper_t* pcap_dumper;
 	unsigned frame_index;
 
-	Writer(pcap_dumper_t* pcap_handler = nullptr) noexcept : pcap_dumper(pcap_handler), frame_index(0) { }
+	Writer(pcap_dumper_t* pcap_handler = nullptr) noexcept : pcap_dumper(pcap_handler), frame_index(0) {}
 
 public:
 	Writer(const Writer&) = delete;
@@ -26,7 +26,7 @@ public:
 	}
 
 	Writer& operator=(Writer&& rvalue) noexcept {
-		if (this != &rvalue) {
+		if(this != &rvalue) {
 			close();
 			pcap_dumper = rvalue.pcap_dumper;
 			frame_index = rvalue.frame_index;
@@ -40,14 +40,14 @@ public:
 	}
 
 	inline void close() noexcept {
-		if (pcap_dumper) {
+		if(pcap_dumper) {
 			pcap_dump_close(pcap_dumper);
 			make_empty();
 		}
 	}
 
 	inline void write_next(const Frame& frame) noexcept {
-		pcap_dump((u_char*)pcap_dumper, &(frame.hdr), (const u_char*)frame.data);
+		pcap_dump((u_char*) pcap_dumper, &(frame.hdr), (const u_char*) frame.data);
 		frame_index++;
 	}
 
@@ -55,11 +55,11 @@ public:
 		return frame_index;
 	}
 
-	static Writer open(const char* file_name) throw (std::logic_error) {
+	static Writer open(const char* file_name) throw(std::logic_error) {
 		char error_buffer[PCAP_ERRBUF_SIZE];
 		pcap_t* pcap_handler = pcap_open_dead(DLT_EN10MB, SNAPSHOT_LEN);
 		pcap_dumper_t* result = pcap_dump_open(pcap_handler, file_name);
-		if (result == nullptr) {
+		if(result == nullptr) {
 			throw std::logic_error(error_buffer);
 		}
 		return Writer(result);

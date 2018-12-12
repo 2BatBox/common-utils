@@ -15,9 +15,9 @@ class TestHashMap {
 	struct StructValue {
 		T value;
 
-		StructValue() : value() { }
+		StructValue() : value() {}
 
-		StructValue(unsigned int x) : value(x) { }
+		StructValue(unsigned int x) : value(x) {}
 
 		bool operator==(const StructValue& st_val) const {
 			return value == st_val.value;
@@ -36,13 +36,13 @@ class TestHashMap {
 		}
 	};
 
-	template <typename K, typename V>
+	template<typename K, typename V>
 	struct MapNode : public HashMapHook<K, MapNode<K, V> > {
 		V value;
 
-		MapNode() : value() { }
+		MapNode() : value() {}
 
-		explicit MapNode(V v) : value(v) { }
+		explicit MapNode(V v) : value(v) {}
 
 		bool operator==(const MapNode& data) const {
 			return value == data.value;
@@ -63,15 +63,12 @@ class TestHashMap {
 public:
 
 	TestHashMap(unsigned storage_size, float load_factor)
-	: storage_size(storage_size),
-	storage(new MapNode_t[storage_size]),
-	bucket_list_size((storage_size / load_factor) + 1),
-	map_default(bucket_list_size),
-	map_one_bucket(1) {
-		if (not map_default.allocate())
+		: storage_size(storage_size), storage(new MapNode_t[storage_size]), bucket_list_size(
+		(storage_size / load_factor) + 1), map_default(bucket_list_size), map_one_bucket(1) {
+		if(not map_default.allocate())
 			throw std::logic_error("Cannot allocate 'default map' instance");
 
-		if (not map_one_bucket.allocate())
+		if(not map_one_bucket.allocate())
 			throw std::logic_error("Cannot allocate 'map with one bucket' instance");
 	}
 
@@ -85,18 +82,18 @@ public:
 		// The map must be empty before the storage has been destroyed.
 		map_default.clear();
 		map_one_bucket.clear();
-		delete [] storage;
+		delete[] storage;
 	}
 
 	size_t storage_bytes() {
-		return storage_size * sizeof (MapNode_t) + bucket_list_size * sizeof (Bucket_t);
+		return storage_size * sizeof(MapNode_t) + bucket_list_size * sizeof(Bucket_t);
 	}
 
 	void test() {
 		printf("<intrusive::MapTest>...\n");
-		printf("sizeof(Value_t)=%zu\n", sizeof (Value_t));
-		printf("sizeof(MapData_t)=%zu\n", sizeof (MapNode_t));
-		printf("sizeof(Bucket_t)=%zu\n", sizeof (Bucket_t));
+		printf("sizeof(Value_t)=%zu\n", sizeof(Value_t));
+		printf("sizeof(MapData_t)=%zu\n", sizeof(MapNode_t));
+		printf("sizeof(Bucket_t)=%zu\n", sizeof(Bucket_t));
 		printf("storage_size=%zu\n", storage_size);
 		printf("bucket_list_size=%zu\n", bucket_list_size);
 		printf("memory used %zu Kb\n", storage_bytes() / (1024));
@@ -125,13 +122,13 @@ public:
 		printf("-> test_put_remove_forward()\n");
 		assert(map.size() == 0);
 
-		for (size_t i = 0; i < storage_size; i++) {
+		for(size_t i = 0; i < storage_size; i++) {
 			put_one(map, i, i * step, i + step);
 		}
-		for (size_t i = 0; i < storage_size; i++) {
+		for(size_t i = 0; i < storage_size; i++) {
 			find_one(map, i * step, i + step);
 		}
-		for (size_t i = 0; i < storage_size; i++) {
+		for(size_t i = 0; i < storage_size; i++) {
 			remove_one(map, i * step, i + step);
 			miss_one(map, i * step);
 		}
@@ -143,14 +140,14 @@ public:
 		printf("-> test_put_remove_backward()\n");
 		assert(map.size() == 0);
 
-		for (size_t i = 0; i < storage_size; i++) {
+		for(size_t i = 0; i < storage_size; i++) {
 			size_t index = storage_size - i - 1;
 			put_one(map, index, i * step, i + step);
 		}
-		for (size_t i = 0; i < storage_size; i++) {
+		for(size_t i = 0; i < storage_size; i++) {
 			find_one(map, i * step, i + step);
 		}
-		for (size_t i = 0; i < storage_size; i++) {
+		for(size_t i = 0; i < storage_size; i++) {
 			remove_one(map, i * step, i + step);
 			miss_one(map, i * step);
 		}
@@ -162,28 +159,28 @@ public:
 		printf("-> test_put_remove_odd_even()\n");
 		assert(map.size() == 0);
 
-		for (size_t i = 0; i < storage_size; i++) {
-			if (i % 2 != 0) {
+		for(size_t i = 0; i < storage_size; i++) {
+			if(i % 2 != 0) {
 				put_one(map, i, i * step, i + step);
 			}
 		}
 
-		for (size_t i = 0; i < storage_size; i++) {
-			if (i % 2 == 0) {
+		for(size_t i = 0; i < storage_size; i++) {
+			if(i % 2 == 0) {
 				put_one(map, i, i * step, i + step + 1);
 			}
 		}
 
-		for (size_t i = 0; i < storage_size; i++) {
-			if (i % 2 != 0) {
+		for(size_t i = 0; i < storage_size; i++) {
+			if(i % 2 != 0) {
 				find_one(map, i * step, i + step);
 			} else {
 				find_one(map, i * step, i + step + 1);
 			}
 		}
 
-		for (size_t i = 0; i < storage_size; i++) {
-			if (i % 2 != 0) {
+		for(size_t i = 0; i < storage_size; i++) {
+			if(i % 2 != 0) {
 				remove_one(map, i * step, i + step);
 			} else {
 				remove_one(map, i * step, i + step + 1);
@@ -198,15 +195,15 @@ public:
 		printf("-> test_put_remove_same_key()\n");
 		assert(map.size() == 0);
 
-		for (size_t i = 0; i < storage_size; i++) {
+		for(size_t i = 0; i < storage_size; i++) {
 			put_one(map, i, step, i + step);
 		}
 
-		for (size_t i = 0; i < storage_size; i++) {
+		for(size_t i = 0; i < storage_size; i++) {
 			find_multi(map, step, i + step);
 		}
 
-		for (size_t i = 0; i < storage_size; i++) {
+		for(size_t i = 0; i < storage_size; i++) {
 			remove_multi(map, step, i + step);
 		}
 
@@ -219,7 +216,7 @@ public:
 	void test_clear(Map_t& map, unsigned step) noexcept {
 		printf("-> test_clear()\n");
 
-		for (size_t i = 0; i < storage_size; i++) {
+		for(size_t i = 0; i < storage_size; i++) {
 			put_one(map, i, i + step, i + step);
 		}
 		map.clear();
@@ -231,7 +228,7 @@ public:
 		printf("-> test_raii()\n");
 
 		assert(map.size() == 0);
-		for (size_t i = 0; i < storage_size; i++) {
+		for(size_t i = 0; i < storage_size; i++) {
 			put_one(map, i, i, i);
 		}
 		Map_t tmp_map(std::move(map));
@@ -241,7 +238,7 @@ public:
 		map = std::move(tmp_map);
 		std::swap(map, tmp_map);
 		std::swap(map, tmp_map);
-		for (size_t i = 0; i < storage_size; i++) {
+		for(size_t i = 0; i < storage_size; i++) {
 			find_one(map, i, i);
 			remove_one(map, i, i);
 		}
@@ -251,9 +248,9 @@ public:
 
 	void dump(Map_t& map) noexcept {
 		std::cout << "map has " << map.size() << " elements \n";
-		for (size_t bucket = 0; bucket < map.buckets(); ++bucket) {
+		for(size_t bucket = 0; bucket < map.buckets(); ++bucket) {
 			std::cout << "B[" << bucket << "] ";
-			for (auto it = map.cbegin(bucket); it != map.cend(); ++it) {
+			for(auto it = map.cbegin(bucket); it != map.cend(); ++it) {
 				std::cout << "[" << &(*it) << "] " << (*it).im_key << ":" << (*it).value.value << " -> ";
 			}
 			std::cout << "\n";
@@ -263,7 +260,7 @@ public:
 private:
 
 	void test_sanity() {
-		for (unsigned i = 0; i < storage_size; i++) {
+		for(unsigned i = 0; i < storage_size; i++) {
 			assert(not storage[i].im_linked);
 		}
 	}
@@ -291,10 +288,10 @@ private:
 	void find_multi(Map_t& map, const Key_t& key, const Value_t& value) noexcept {
 		auto it = map.find(key);
 		assert(it != map.end());
-		for (; it != map.end(); it.next(key)) {
+		for(; it != map.end(); it.next(key)) {
 			assert(it->im_key == key);
 			assert(it->im_linked);
-			if (it->value == value) {
+			if(it->value == value) {
 				return;
 			}
 		}
@@ -319,10 +316,10 @@ private:
 	void remove_multi(Map_t& map, const Key_t& key, const Value_t& value) noexcept {
 		auto it = map.find(key);
 		assert(it != map.end());
-		for (; it != map.end(); it.next(key)) {
+		for(; it != map.end(); it.next(key)) {
 			assert(it->im_key == key);
 			assert(it->im_linked);
-			if (it->value == value) {
+			if(it->value == value) {
 				map.remove(it);
 				assert(not it->im_linked);
 				return;

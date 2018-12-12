@@ -14,7 +14,7 @@ public:
 
 	static int init(int& argc, char**& argv) noexcept {
 		int ret = rte_eal_init(argc, argv);
-		if (ret < 0)
+		if(ret < 0)
 			rte_panic("Cannot init EAL\n");
 		argc -= ret;
 		argv += ret;
@@ -23,20 +23,16 @@ public:
 	}
 
 	static int create_rings(
-		rte_ring** buffer,
-		unsigned buffer_len,
-		unsigned ring_size,
-		int socket_id,
-		unsigned flags
-		) noexcept {
+		rte_ring** buffer, unsigned buffer_len, unsigned ring_size, int socket_id, unsigned flags
+	                       ) noexcept {
 		static unsigned global_index = 0;
 		char ring_name[32];
-		for (unsigned i = 0; i < buffer_len; ++i) {
-			snprintf(ring_name, sizeof (ring_name), "ring_%u", global_index++);
+		for(unsigned i = 0; i < buffer_len; ++i) {
+			snprintf(ring_name, sizeof(ring_name), "ring_%u", global_index++);
 			buffer[i] = rte_ring_create(ring_name, ring_size, socket_id, flags);
-			if (!buffer[i]) {
+			if(!buffer[i]) {
 				// Free all allocated rings
-				for (unsigned j = 0; j < i; j++) {
+				for(unsigned j = 0; j < i; j++) {
 					rte_ring_free(buffer[j]);
 				}
 				return -1;
@@ -56,7 +52,7 @@ public:
 
 		do {
 			next = rte_pktmbuf_alloc(mem_pool);
-			if (next) {
+			if(next) {
 
 				next->data_off = 0;
 				capacity = RTE_MIN(next->buf_len, data_len - loaded);
@@ -66,19 +62,19 @@ public:
 				next->data_len = capacity;
 				next->pkt_len = pkt_len;
 
-				if (current)
+				if(current)
 					current->next = next;
 
 				current = next;
 
-				if (root == nullptr)
+				if(root == nullptr)
 					root = current;
 			} else {
-				if (root)
+				if(root)
 					rte_pktmbuf_free(root);
 				return nullptr;
 			}
-		} while (loaded < data_len);
+		} while(loaded < data_len);
 
 		return root;
 	}
@@ -87,7 +83,7 @@ public:
 		dst_solid->data_off = 0;
 		dst_solid->data_len = 0;
 
-		while (src && (src->data_len + dst_solid->data_len) <= dst_solid->buf_len) {
+		while(src && (src->data_len + dst_solid->data_len) <= dst_solid->buf_len) {
 			rte_memcpy(rte_ctrlmbuf_data(dst_solid) + dst_solid->data_len, rte_ctrlmbuf_data(src), src->data_len);
 			dst_solid->data_len += src->data_len;
 			src = src->next;

@@ -7,8 +7,6 @@
 #include "TestHashQueuePool.h"
 #include "TestDequePool.h"
 
-#include <iostream>
-
 using namespace intrusive;
 
 //int main(int, char**) {

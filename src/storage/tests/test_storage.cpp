@@ -6,8 +6,6 @@
 #include "TestTimedQueue.h"
 #include "TestRateLimiter.h"
 
-#include <iostream>
-
 using namespace storage;
 
 int main(int argc, char** argv) {
