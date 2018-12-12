@@ -13,17 +13,16 @@
 
 namespace storage {
 
-template <typename K, typename V>
-struct RateLimiterNode : public intrusive::LinkedListHook<RateLimiterNode<K, V> >, intrusive::HashMapHook<K, RateLimiterNode<K, V> > {
+template <typename K>
+struct RateLimiterNode : public intrusive::LinkedListHook<RateLimiterNode<K> >, intrusive::HashMapHook<K, RateLimiterNode<K> > {
 	template <typename Tmp1, typename Tmp2>
 	friend class RateLimiter;
 private:
 	uint64_t time;
 public:
 	using Key_t = K;
-	V user_value;
 
-	RateLimiterNode() : user_value() { }
+	RateLimiterNode() = default;
 
 	RateLimiterNode(const RateLimiterNode&) = delete;
 	RateLimiterNode& operator=(const RateLimiterNode&) = delete;

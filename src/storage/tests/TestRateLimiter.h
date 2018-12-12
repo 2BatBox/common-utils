@@ -29,9 +29,8 @@ class TestRateLimiter {
 	};
 
 	using Key_t = unsigned;
-	using Value_t = StructValue<long long unsigned>;
 
-	using Node_t = RateLimiterNode<Key_t, Value_t>;
+	using Node_t = RateLimiterNode<Key_t>;
 	using RateLimiter_t = RateLimiter<Node_t>;
 
 	RateLimiter_t m_limiter;
