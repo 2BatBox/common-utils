@@ -126,8 +126,8 @@ class TestPacketSafe {
 
 		Writer buf(as_area(raw_buffer, raw_buffer_size));
 
-		DataType value0;
-		DataType value1;
+		DataType value0 = 0;
+		DataType value1 = 0;
 
 		assert(buf.available() == raw_buffer_size * sizeof(DataType));
 		assert(buf.bounds());
@@ -339,9 +339,62 @@ class TestPacketSafe {
 		assert(wa.bounds());
 	}
 
+	template<typename T>
+	static void read_write_endian(Reader& reader, Writer& writer, T input) noexcept {
+		printf("-> read_write_endian('%s')\n", typeid(T).name());
+		T output;
+		T bit_mask;
+
+		assert(writer.write_little_endian(input));
+		assert(reader.read_little_endian(output));
+		assert(output == input);
+		assert(writer.write_big_endian(input));
+		assert(reader.read_big_endian(output));
+		assert(output == input);
+
+		for(unsigned i = 0; i < sizeof(T) + 1; ++i) {
+			bit_mask = ~T(0);
+			if(i < sizeof(T)) {
+				bit_mask <<= (i * 8);
+				bit_mask = ~T(bit_mask);
+			}
+			assert(writer.write_little_endian(input, i));
+			assert(reader.read_little_endian(output, i));
+			if(i) {
+				assert(output == (input & bit_mask));
+			}
+			assert(writer.write_big_endian(input, i));
+			assert(reader.read_big_endian(output, i));
+			if(i) {
+				assert(output == (input & bit_mask));
+			}
+		}
+	}
+
+	static void test_endian() {
+		printf("-> test_endian()\n");
+		const unsigned buffer_size = 1024;
+		char raw_buffer[buffer_size];
+		for(unsigned i = 0; i < buffer_size; ++i) {
+			raw_buffer[i] = i;
+		}
+		Reader reader(as_const_area(raw_buffer, buffer_size));
+		Writer writer(as_area(raw_buffer, buffer_size));
+
+		read_write_endian<uint8_t>(reader, writer, 0x01);
+		read_write_endian<int8_t>(reader, writer, 0x01);
+		read_write_endian<uint16_t>(reader, writer, 0x0102);
+		read_write_endian<int16_t>(reader, writer, 0x0102);
+		read_write_endian<uint32_t>(reader, writer, 0x01020304);
+		read_write_endian<int32_t>(reader, writer, 0x01020304);
+		read_write_endian<uint64_t>(reader, writer, 0x0102030405060708);
+		read_write_endian<int64_t>(reader, writer, 0x0102030405060708);
+	}
+
 public:
 
 	static void test() {
+		printf("TestPacketSafe is running...\n");
 		test_distances_head();
 		test_distances_tail();
 		test_distances_read();
@@ -351,6 +404,8 @@ public:
 		test_read_write_assign();
 		test_read_write_marea();
 		test_input_data();
+		test_endian();
+		printf("*** done\n");
 	}
 
 };

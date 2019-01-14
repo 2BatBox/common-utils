@@ -33,6 +33,74 @@ public:
 	}
 
 	/**
+	 * Write @value as a little endian one.
+  	 * The head moves to the new position.
+  	 * @param value - variable to write from.
+  	 */
+	template<typename V>
+	inline void write_little_endian(V value) noexcept {
+		size_t bytes_left = sizeof(value);
+		while (bytes_left--) {
+			*Base::m_head = value & 0xFF;
+			value >>= 8;
+			Base::m_head++;
+		}
+		Base::m_available -= sizeof(value);
+	}
+
+	/**
+	 * Write @bytes wide integer @value as a little endian one.
+	 * The head moves to the new position.
+	 * @param value - variable to write from.
+	 */
+	template<typename V>
+	inline void write_little_endian(V value, const uint8_t bytes) noexcept {
+		size_t bytes_left = bytes;
+		while (bytes_left--) {
+			*Base::m_head = value & 0xFF;
+			value >>= 8;
+			Base::m_head++;
+		}
+		Base::m_available -= bytes;
+	}
+
+	/**
+	 * Write @bytes wide integer @value as a big endian one.
+ 	 * The head moves to the new position.
+ 	 * @param value - variable to write from.
+ 	 */
+	template<typename V>
+	inline void write_big_endian(V value) noexcept {
+		size_t bytes_left = sizeof(value);
+		Base::m_head += bytes_left;
+		while (bytes_left--) {
+			Base::m_head--;
+			*Base::m_head = value & 0xFF;
+			value >>= 8;
+		}
+		Base::m_head += sizeof(value);
+		Base::m_available -= sizeof(value);
+	}
+
+	/**
+	* Write @bytes wide integer @value as a big endian one.
+ 	* The head moves to the new position.
+ 	* @param value - variable to write from.
+ 	*/
+	template<typename V>
+	inline void write_big_endian(V value, const uint8_t bytes) noexcept {
+		size_t bytes_left = bytes;
+		Base::m_head += bytes_left;
+		while (bytes_left--) {
+			Base::m_head--;
+			*Base::m_head = value & 0xFF;
+			value >>= 8;
+		}
+		Base::m_head += bytes;
+		Base::m_available -= bytes;
+	}
+
+	/**
 	 * Write @value and @args to the packet.
 	 * The head moves to the new position.
 	 * @param value - variable to write from.

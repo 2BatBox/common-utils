@@ -87,6 +87,78 @@ public:
 	}
 
 	/**
+	 * Read @value as a little endian one.
+ 	 * The head moves to the new position.
+ 	 * @param value - variable to read to.
+ 	 */
+	template<typename V>
+	inline void read_little_endian(V& value) noexcept {
+		value = 0;
+		Base::m_head += sizeof(value);
+		uint8_t bytes_left = sizeof(value);
+		while(bytes_left--) {
+			Base::m_head--;
+			value <<= 8;
+			value |= *Base::m_head & 0xFF;
+		}
+		Base::m_head += sizeof(value);
+		Base::m_available -= sizeof(value);
+	}
+
+	/**
+	 * Read @bytes wide integer @value as a little endian one.
+	 * The head moves to the new position.
+	 * @param value - variable to read to.
+	 */
+	template<typename V>
+	inline void read_little_endian(V& value, const uint8_t bytes) noexcept {
+		value = 0;
+		Base::m_head += bytes;
+		uint8_t bytes_left = bytes;
+		while(bytes_left--) {
+			Base::m_head--;
+			value <<= 8;
+			value |= *Base::m_head & 0xFF;
+		}
+		Base::m_head += bytes;
+		Base::m_available -= bytes;
+	}
+
+	/**
+	 * Read @bytes wide integer @value as a big endian one.
+ 	 * The head moves to the new position.
+ 	 * @param value - variable to read to.
+ 	 */
+	template<typename V>
+	inline void read_big_endian(V& value) noexcept {
+		value = 0;
+		uint8_t bytes_left = sizeof(value);
+		while(bytes_left--) {
+			value <<= 8;
+			value |= *Base::m_head & 0xFF;
+			Base::m_head++;
+		}
+		Base::m_available -= sizeof(value);
+	}
+
+	/**
+	* Read @bytes wide integer @value as a big endian one.
+ 	* The head moves to the new position.
+ 	* @param value - variable to read to.
+ 	*/
+	template<typename V>
+	inline void read_big_endian(V& value, const uint8_t bytes) noexcept {
+		value = 0;
+		uint8_t bytes_left = bytes;
+		while(bytes_left--) {
+			value <<= 8;
+			value |= *Base::m_head & 0xFF;
+			Base::m_head++;
+		}
+		Base::m_available -= bytes;
+	}
+
+	/**
 	 * Read @value and @args from the packet.
 	 * The head moves to the new position.
 	 * @param value - a variable to read to.

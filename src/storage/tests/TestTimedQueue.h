@@ -54,8 +54,8 @@ public:
 
 	void test() noexcept {
 		printf("<TestTimedHashQueue>...\n");
-		printf("sizeof(Node_t)=%zu\n", sizeof(Node_t));
-		printf("capacity=%zu\n", m_capacity);
+		printf("sizeof(NodeAddr_t)=%zu\n", sizeof(Node_t));
+		printf("capacity_addr=%zu\n", m_capacity);
 
 		unsigned step = 1;
 		test_push_pop(step++);
@@ -80,7 +80,7 @@ public:
 
 		assert(m_queue.size() == 0);
 
-		// test with full capacity
+		// test with full capacity_addr
 		for(size_t i = 0; i < m_capacity * 2; i++) {
 			if(i < m_capacity) {
 				push_back(i * step, i + step);
@@ -108,7 +108,7 @@ public:
 
 		assert(m_queue.size() == 0);
 
-		// test with full capacity
+		// test with full capacity_addr
 		for(size_t i = 0; i < m_capacity * 2; i++) {
 			if(i < m_capacity) {
 				push_back(step, i + step);
@@ -136,7 +136,7 @@ public:
 
 		assert(m_queue.size() == 0);
 
-		// test with full capacity
+		// test with full capacity_addr
 		for(size_t i = 0; i < m_capacity * 2; i++) {
 			if(i < m_capacity) {
 				push_back(i * step, i + step);
@@ -164,7 +164,7 @@ public:
 
 		assert(m_queue.size() == 0);
 
-		// test with full capacity
+		// test with full capacity_addr
 		for(size_t i = 0; i < m_capacity * 2; i++) {
 			if(i < m_capacity) {
 				push_back(step, i + step);
@@ -184,7 +184,7 @@ public:
 		printf("-> test_push_remove_all()\n");
 		assert(m_queue.size() == 0);
 
-		// test with full capacity
+		// test with full capacity_addr
 		for(size_t i = 0; i < m_capacity; i++) {
 			if(i % 2 == 0) {
 				push_back(i * step, i + step);
@@ -201,7 +201,7 @@ public:
 			}
 		}
 
-		//        assert(m_queue.size() == 0);
+		//        assert(m_queue.size_addr() == 0);
 	}
 
 	void test_push_pop_timeout(unsigned step) {
@@ -228,8 +228,8 @@ public:
 
 		assert(m_queue.size() == 0);
 
-		printf("test with full capacity\n");
-		// test with full capacity
+		printf("test with full capacity_addr\n");
+		// test with full capacity_addr
 		for(size_t i = 0; i < time_slots; i++) {
 			push_back(i * step, i + step);
 			printf("push_back(%zu)\n", i);

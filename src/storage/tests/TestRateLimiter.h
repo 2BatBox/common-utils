@@ -54,8 +54,8 @@ public:
 
 	void test() noexcept {
 		printf("<TestRateLimiter>...\n");
-		printf("capacity=%zu\n", m_capacity);
-		printf("sizeof(Node_t)=%zu\n", sizeof(Node_t));
+		printf("capacity_addr=%zu\n", m_capacity);
+		printf("sizeof(NodeAddr_t)=%zu\n", sizeof(Node_t));
 		printf("storage_bytes=%.2f Kb\n", m_limiter.storage_bytes() / (float) 1024.0);
 		m_limiter.set_period(rte_get_tsc_hz() * 10/*10 sec*/);
 
@@ -68,7 +68,7 @@ public:
 
 	void test_check(unsigned step) noexcept {
 		m_limiter.set_period(rte_get_tsc_hz() * 10/*10 sec*/);
-		printf("-> test_check(step=%u)\n", step);
+		printf("-> test_check_addr(step=%u)\n", step);
 		assert(m_limiter.size() == 0);
 
 		// test with one item
@@ -80,14 +80,14 @@ public:
 		m_limiter.reset();
 		assert(m_limiter.size() == 0);
 
-		// test with full capacity
+		// test with full capacity_addr
 		for(size_t i = 0; i < m_capacity; i++) {
 			assert(m_limiter.check(i));
 		}
 		m_limiter.reset();
 		assert(m_limiter.size() == 0);
 
-		// test with double capacity
+		// test with double capacity_addr
 		for(size_t i = 0; i < m_capacity * 2; i++) {
 			assert(m_limiter.check(i));
 			assert(not m_limiter.check(i));
@@ -126,7 +126,7 @@ public:
 			assert(m_limiter.remove(i) == m_limiter.end());
 		}
 
-		// test with full capacity
+		// test with full capacity_addr
 		for(size_t i = 0; i < m_capacity; i++) {
 			assert(m_limiter.check(i));
 			assert(m_limiter.remove(i) != m_limiter.end());
@@ -134,7 +134,7 @@ public:
 		}
 		assert(m_limiter.size() == 0);
 
-		// test with double capacity
+		// test with double capacity_addr
 		for(size_t i = 0; i < m_capacity * 2; i++) {
 			assert(m_limiter.check(i));
 			assert(m_limiter.remove(i) != m_limiter.end());
@@ -142,7 +142,7 @@ public:
 		}
 		assert(m_limiter.size() == 0);
 
-		// test with double capacity
+		// test with double capacity_addr
 		for(size_t i = 0; i < m_capacity * 2; i++) {
 			assert(m_limiter.check(i));
 		}

@@ -7,9 +7,9 @@
 
 using namespace binio;
 
-//int main(int, char**) {
+int main(int, char**) {
 
-int main_binio(int, char**) {
+//int main_binio(int, char**) {
 
 	TestMArea byte_marea;
 	byte_marea.test();

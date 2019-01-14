@@ -264,7 +264,7 @@ class TestPacket {
 		//		}
 		//
 		//		Writer writer(as_area(raw_buffer, buf_size));
-		//		assert(writer.size() == sizeof (RawType) * buf_size);
+		//		assert(writer.size_addr() == sizeof (RawType) * buf_size);
 		//
 		//		for (int i = 0; i < buf_size; i += 4) {
 		//			writer.write_area(as_const_area(raw_input + i, 4));
@@ -304,7 +304,7 @@ class TestPacket {
 
 	template<typename R, typename W>
 	static void test_assign(DataSet& set) noexcept {
-		const DataSet* copy;
+		const DataSet* copy = nullptr;
 		const char* c_cptr = nullptr;
 		const short* s_cptr = nullptr;
 		const int* i_ptr = nullptr;
@@ -368,6 +368,58 @@ class TestPacket {
 		test_writer<T, PacketSafeWriter>();
 	}
 
+	template<typename T>
+	static void read_write_endian(Reader& reader, Writer& writer, T input) noexcept {
+		printf("-> read_write_endian('%s')\n", typeid(T).name());
+		T output;
+		T bit_mask;
+
+		writer.write_little_endian(input);
+		reader.read_little_endian(output);
+		assert(output == input);
+		writer.write_big_endian(input);
+		reader.read_big_endian(output);
+		assert(output == input);
+
+		for(unsigned i = 0; i < sizeof(T) + 1; ++i) {
+			bit_mask = ~T(0);
+			if(i < sizeof(T)){
+				bit_mask <<= (i * 8);
+				bit_mask = ~T(bit_mask);
+			}
+			writer.write_little_endian(input, i);
+			reader.read_little_endian(output, i);
+			if(i) {
+				assert(output == (input & bit_mask));
+			}
+			writer.write_big_endian(input, i);
+			reader.read_big_endian(output, i);
+			if(i) {
+				assert(output == (input & bit_mask));
+			}
+		}
+	}
+
+	static void test_endian() {
+		printf("-> test_endian()\n");
+		const unsigned buffer_size = 1024;
+		char raw_buffer[buffer_size];
+		for(unsigned i = 0; i < buffer_size; ++i) {
+			raw_buffer[i] = i;
+		}
+		Reader reader(as_const_area(raw_buffer, buffer_size));
+		Writer writer(as_area(raw_buffer, buffer_size));
+
+		read_write_endian<uint8_t>(reader, writer, 0x01);
+		read_write_endian<int8_t>(reader, writer, 0x01);
+		read_write_endian<uint16_t>(reader, writer, 0x0102);
+		read_write_endian<int16_t>(reader, writer, 0x0102);
+		read_write_endian<uint32_t>(reader, writer, 0x01020304);
+		read_write_endian<int32_t>(reader, writer, 0x01020304);
+		read_write_endian<uint64_t>(reader, writer, 0x0102030405060708);
+		read_write_endian<int64_t>(reader, writer, 0x0102030405060708);
+	}
+
 
 public:
 
@@ -387,6 +439,8 @@ public:
 		test_reader_writer<PacketSafeReader, PacketWriter>();
 		test_reader_writer<PacketReader, PacketSafeWriter>();
 		test_reader_writer<PacketSafeReader, PacketSafeWriter>();
+
+		test_endian();
 
 		printf("*** done\n");
 	}

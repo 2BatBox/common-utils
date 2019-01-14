@@ -18,7 +18,7 @@ namespace binio {
  *   | <-------------------- size -------------------> |
  * begin                                              end
  * 
- * R - already read/write.
+ * R - already read/written.
  * A - available to read/write.
  * P - padding bytes, they're not available to read/write.
  * 
@@ -36,9 +36,9 @@ template<typename T>
 class BasicPacket {
 protected:
 	T* m_head;
-	size_t m_available; // bytes available to read/write
+	size_t m_available; // bytes available_addr to read/write
 	size_t m_padding; // padding bytes
-	size_t m_size; // size of the packet in bytes
+	size_t m_size; // size_addr of the packet in bytes
 
 	BasicPacket(T* buf, size_t len) noexcept
 		: m_head(buf)

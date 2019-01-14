@@ -43,6 +43,79 @@ public:
 		return Base::in_bounds;
 	}
 
+
+	/**
+	 * Write @value as a little endian one.
+  	 * The head moves to the new position.
+  	 * @param value - variable to write from.
+  	 * @return true - if the buffer is in its bounds after writing.
+  	 */
+	template<typename V>
+	bool write_little_endian(V value) noexcept {
+		if(Base::in_bounds) {
+			if(sizeof(V) > Base::m_available) {
+				Base::in_bounds = false;
+			} else {
+				write_little_endian_impl(value);
+			}
+		}
+		return Base::in_bounds;
+	}
+
+	/**
+	 * Write @bytes wide integer @value as a little endian one.
+	 * The head moves to the new position.
+	 * @param value - variable to write from.
+	 * @return true - if the buffer is in its bounds after writing.
+	 */
+	template<typename V>
+	bool write_little_endian(V value, const uint8_t bytes) noexcept {
+		if(Base::in_bounds) {
+			if(bytes > Base::m_available) {
+				Base::in_bounds = false;
+			} else {
+				write_little_endian_impl(value, bytes);
+			}
+		}
+		return Base::in_bounds;
+	}
+
+	/**
+	 * Write @bytes wide integer @value as a big endian one.
+ 	 * The head moves to the new position.
+ 	 * @param value - variable to write from.
+ 	 * @return true - if the buffer is in its bounds after writing.
+ 	 */
+	template<typename V>
+	bool write_big_endian(V value) noexcept {
+		if(Base::in_bounds) {
+			if(sizeof(V) > Base::m_available) {
+				Base::in_bounds = false;
+			} else {
+				write_big_endian_impl(value);
+			}
+		}
+		return Base::in_bounds;
+	}
+
+	/**
+	* Write @bytes wide integer @value as a big endian one.
+ 	* The head moves to the new position.
+ 	* @param value - variable to write from.
+	* @return true - if the buffer is in its bounds after writing.
+ 	*/
+	template<typename V>
+	bool write_big_endian(V value, const uint8_t bytes) noexcept {
+		if(Base::in_bounds) {
+			if(bytes > Base::m_available) {
+				Base::in_bounds = false;
+			} else {
+				write_big_endian_impl(value, bytes);
+			}
+		}
+		return Base::in_bounds;
+	}
+
 	/**
 	 * Write @value and @args to the packet.
 	 * The head moves to the new position.
@@ -133,6 +206,54 @@ protected:
 	inline void write_impl(const V& value, const Args& ... args) noexcept {
 		write_impl(value);
 		write_impl(args...);
+	}
+
+	template<typename V>
+	inline void write_little_endian_impl(V value) noexcept {
+		size_t bytes_left = sizeof(value);
+		while(bytes_left--) {
+			*Base::m_head = value & 0xFF;
+			value >>= 8;
+			Base::m_head++;
+		}
+		Base::m_available -= sizeof(value);
+	}
+
+	template<typename V>
+	inline void write_little_endian_impl(V value, const uint8_t bytes) noexcept {
+		size_t bytes_left = bytes;
+		while(bytes_left--) {
+			*Base::m_head = value & 0xFF;
+			value >>= 8;
+			Base::m_head++;
+		}
+		Base::m_available -= bytes;
+	}
+
+	template<typename V>
+	inline void write_big_endian_impl(V value) noexcept {
+		size_t bytes_left = sizeof(value);
+		Base::m_head += bytes_left;
+		while(bytes_left--) {
+			Base::m_head--;
+			*Base::m_head = value & 0xFF;
+			value >>= 8;
+		}
+		Base::m_head += sizeof(value);
+		Base::m_available -= sizeof(value);
+	}
+
+	template<typename V>
+	inline void write_big_endian_impl(V value, const uint8_t bytes) noexcept {
+		size_t bytes_left = bytes;
+		Base::m_head += bytes_left;
+		while(bytes_left--) {
+			Base::m_head--;
+			*Base::m_head = value & 0xFF;
+			value >>= 8;
+		}
+		Base::m_head += bytes;
+		Base::m_available -= bytes;
 	}
 };
 

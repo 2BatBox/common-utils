@@ -152,6 +152,79 @@ public:
 		return in_bounds;
 	}
 
+
+	/**
+	 * Read @value as a little endian one.
+ 	 * The head moves to the new position.
+ 	 * @param value - variable to read to.
+ 	 * @return true - if the packet is in its bounds after reading.
+ 	 */
+	template<typename V>
+	bool read_little_endian(V& value) noexcept {
+		if(in_bounds) {
+			if(sizeof(V) > Base::m_available) {
+				in_bounds = false;
+			} else {
+				read_little_endian_impl(value);
+			}
+		}
+		return in_bounds;
+	}
+
+	/**
+	 * Read @bytes wide integer @value as a little endian one.
+	 * The head moves to the new position.
+	 * @param value - variable to read to.
+	 * @return true - if the packet is in its bounds after reading.
+	 */
+	template<typename V>
+	bool read_little_endian(V& value, const uint8_t bytes) noexcept {
+		if(in_bounds) {
+			if(bytes > Base::m_available) {
+				in_bounds = false;
+			} else {
+				read_little_endian_impl(value, bytes);
+			}
+		}
+		return in_bounds;
+	}
+
+	/**
+	 * Read @bytes wide integer @value as a big endian one.
+ 	 * The head moves to the new position.
+ 	 * @param value - variable to read to.
+ 	 * @return true - if the packet is in its bounds after reading.
+ 	 */
+	template<typename V>
+	bool read_big_endian(V& value) noexcept {
+		if(in_bounds) {
+			if(sizeof(V) > Base::m_available) {
+				in_bounds = false;
+			} else {
+				read_big_endian_impl(value);
+			}
+		}
+		return in_bounds;
+	}
+
+	/**
+	* Read @bytes wide integer @value as a big endian one.
+ 	* The head moves to the new position.
+ 	* @param value - variable to read to.
+	* @return true - if the packet is in its bounds after reading.
+ 	*/
+	template<typename V>
+	bool read_big_endian(V& value, const uint8_t bytes) noexcept {
+		if(in_bounds) {
+			if(bytes > Base::m_available) {
+				in_bounds = false;
+			} else {
+				read_big_endian_impl(value, bytes);
+			}
+		}
+		return in_bounds;
+	}
+
 	/**
 	 * Read @value and @args from the packet.
 	 * The head moves to the new position.
@@ -289,6 +362,58 @@ protected:
 	inline void read_impl(V& value, Args& ... args) noexcept {
 		read_impl(value);
 		read_impl(args...);
+	}
+
+	template<typename V>
+	inline void read_little_endian_impl(V& value) noexcept {
+		value = 0;
+		Base::m_head += sizeof(value);
+		uint8_t bytes_left = sizeof(value);
+		while(bytes_left--) {
+			Base::m_head--;
+			value <<= 8;
+			value |= *Base::m_head & 0xFF;
+		}
+		Base::m_head += sizeof(value);
+		Base::m_available -= sizeof(value);
+	}
+
+	template<typename V>
+	inline void read_little_endian_impl(V& value, const uint8_t bytes) noexcept {
+		value = 0;
+		Base::m_head += bytes;
+		uint8_t bytes_left = bytes;
+		while(bytes_left--) {
+			Base::m_head--;
+			value <<= 8;
+			value |= *Base::m_head & 0xFF;
+		}
+		Base::m_head += bytes;
+		Base::m_available -= bytes;
+	}
+
+	template<typename V>
+	inline void read_big_endian_impl(V& value) noexcept {
+		value = 0;
+		uint8_t bytes_left = sizeof(value);
+		while(bytes_left--) {
+			value <<= 8;
+			value |= *Base::m_head & 0xFF;
+			Base::m_head++;
+		}
+		Base::m_available -= sizeof(value);
+	}
+
+	template<typename V>
+	inline void read_big_endian_impl(V& value, const uint8_t bytes) noexcept {
+		value = 0;
+		uint8_t bytes_left = bytes;
+		while(bytes_left--) {
+			value <<= 8;
+			value |= *Base::m_head & 0xFF;
+			Base::m_head++;
+		}
+		Base::m_available -= bytes;
 	}
 
 };
