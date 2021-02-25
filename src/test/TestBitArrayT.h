@@ -2,7 +2,7 @@
 #define TOP_N_PROBLEM_TESTBITARRAYT_H
 
 #include "test_environment.h"
-#include "../src/impl_v2/containers/BitArrayT.h"
+#include <containers/BitArrayT.h>
 
 template <uint8_t Width>
 class TestBitArrayTInternal {
