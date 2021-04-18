@@ -8,7 +8,7 @@
  * Header-only. No dependencies.
  *
  * BitArrayT template class implements an array of bits sized unsigned integer variables called Items.
- * Items are packed in in a Chunk array with no gaps between them,
+ * Items are packed in a Chunk array with no bit gaps between them,
  * which means an Item is not a byte alignment structure.
  * The bit size of the Item must be in [1:BIT_WIDTH_LIMIT] range.
  *

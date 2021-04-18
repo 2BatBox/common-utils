@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Integer.h"
+
 #include <vector>
 #include <cstdint>
 #include <cstdio>
@@ -17,10 +19,6 @@ struct RangeSet {
 	std::set<ITEM_TYPE> items;
 	static constexpr char DELIM = ',';
 	static constexpr char RANGE = '-';
-
-	RangeSet() noexcept {
-
-	}
 
 	void print(FILE* out = stdout) const noexcept {
 		for(const auto item : items) {
@@ -41,7 +39,7 @@ struct RangeSet {
 		while(1) {
 			switch(state) {
 				case WF_PAIR: {
-					const size_t read = parse_offset_u32(arg + offset, &item, 10);
+					const size_t read = Integer::parse_offset(arg + offset, item, 10);
 					if(read) {
 						offset += read;
 						state = WF_FIRST;
@@ -70,7 +68,7 @@ struct RangeSet {
 					break;
 
 				case WF_SECOND: {
-					const size_t read = parse_offset_u32(arg + offset, &item_range, 10);
+					const size_t read = Integer::parse_offset(arg + offset, item_range, 10);
 					if(read && item_range >= item) {
 						for(ITEM_TYPE i = item; i <= item_range; ++i) {
 							items.insert(i);
@@ -101,17 +99,6 @@ struct RangeSet {
 			}
 		}
 		assert(false);
-	}
-
-private:
-
-	size_t parse_offset_u32(const char* arg, uint32_t* value, int base) {
-		char* endptr;
-		if(*arg == '-') {
-			return 0;
-		}
-		*value = (uint32_t) strtoull(arg, &endptr, base);
-		return endptr - arg;
 	}
 
 };

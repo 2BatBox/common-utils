@@ -17,6 +17,24 @@ struct MacAddress {
 		clear();
 	}
 
+	template <typename T>
+	MacAddress(const T* ar, size_t ar_nb) noexcept {
+		clear();
+		const auto size = ADDR_SIZE < ar_nb ? ADDR_SIZE : ar_nb;
+		for(size_t i = 0; i < size; ++i) {
+			addr[i] = ar[i];
+		}
+	}
+
+	bool operator<(const MacAddress& rv) const noexcept {
+		for(size_t i = 0; i < ADDR_SIZE; ++i) {
+			if(addr[i] < rv.addr[i]){
+				return true;
+			}
+		}
+		return false;
+	}
+
 	bool operator==(const MacAddress& rv) const noexcept {
 		for(size_t i = 0; i < ADDR_SIZE; ++i) {
 			if(addr[i] != rv.addr[i]){
@@ -63,11 +81,20 @@ struct MacAddress {
 			}
 			offset += read;
 			addr[i] = acc;
-			if(str[offset] == '.'){
+			if(str[offset] == '.' || str[offset] == ':'){
 				offset++;
 			}
 		}
 		return offset;
+	}
+
+	template <typename T>
+	size_t copy_to(T* ar, size_t ar_nb) const noexcept {
+		const auto size = ADDR_SIZE < ar_nb ? ADDR_SIZE : ar_nb;
+		for(size_t i = 0; i < size; ++i) {
+			ar[i] = addr[i];
+		}
+		return size;
 	}
 
 private:
