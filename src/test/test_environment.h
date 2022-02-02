@@ -1,11 +1,8 @@
-#ifndef QLIBS_TEST_ENVIRONMENT_H
-#define QLIBS_TEST_ENVIRONMENT_H
+#pragma once
 
-#include <stdio.h>
-#include <assert.h>
+#include <cstdio>
+#include <cassert>
 
 #ifndef TRACE_CALL
 #define TRACE_CALL {printf("-> %s::%s()\n", typeid(*this).name(), __FUNCTION__);}
 #endif // TRACE_CALL
-
-#endif //QLIBS_TEST_ENVIRONMENT_H

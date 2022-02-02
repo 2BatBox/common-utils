@@ -1,49 +1,37 @@
-#include "../lib/cli/types/RangeSet.h"
-#include "../lib/cli/types/MacAddress.h"
-#include "../lib/cli/types/Integer.h"
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstdint>
 #include <climits>
 #include <cassert>
+#include <list>
+#include <string>
 
-using namespace cli;
+// The 'builtin_clzll()' implementation depends on the GCC version currently used,
+// it may use either BSF/BSR or LZCNT/TZCNT instructions.
+// That's why X is needed to be checked for zero value to provide the same results regardless implementation difference.
+#define LZCNTLL(X) (unsigned((X) ? __builtin_clzll(X) : (sizeof(X) << 3ull)))
+#define TZCNTLL(X) (unsigned((X) ? __builtin_ctzll(X) : (sizeof(X) << 3ull)))
+
+
+
+#include <cstdio>
+#include <cassert>
+
+#ifndef SB_CALL_TRACE
+#define SB_CALL_TRACE { printf("-> %s()\n", __FUNCTION__);};
+#endif // TRACE_TEST
+
+#ifndef SB_CLASS_TRACE
+#define SB_CLASS_TRACE(CLASS)  { printf("[%s]\n", CLASS);};
+#endif // SB_CLASS_TRACE
+
+#ifndef SB_ASSERT
+#define SB_ASSERT(X) { assert(X); }
+#endif // SB_ASSERT
+
 
 int main(int argc, char** argv) {
-
-	RangeSet rs;
-	MacAddress ms;
-
-//	uint8_t u8 = 0;
-//	int8_t i8 = 0;
-//
-//	uint16_t u16 = 0;
-//	int16_t i16 = 0;
-//
-//	uint32_t u32 = 0;
-	int32_t i32 = 0;
-//
-//	uint64_t u64 = 0;
-	int64_t i64 = 0;
-//
-//	assert(Integer::parse("0", i8) && i8 == 0);
-//	assert(Integer::parse("1", i8) && i8 == 1);
-//	assert(Integer::parse("127", i8) && i8 == 127);
-//	assert(not Integer::parse("128", i8));
-//
-//	assert(Integer::parse("0", i64) && i64 == 0);
-//	assert(Integer::parse("1", i64) && i64 == 1);
-//	assert(Integer::parse("9223372036854775807", i64) && i64 == 9223372036854775807ll);
-	assert(Integer::parse("0", i64, 16));
-//	assert(Integer::parse("7fffffff", i32, 16));
-	printf("value=%zx\n", i64);
-
-//	Integer::parse("127", i16);
-//	Integer::parse("127", i32);
-//	Integer::parse("127", i64);
-//	const auto offset = Integer::parse("127", i64);
-
+	TestLinearAligner tla;
 
 	printf("<---- the end of main() ---->\n");
 	return EXIT_SUCCESS;

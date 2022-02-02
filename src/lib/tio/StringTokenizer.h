@@ -6,10 +6,11 @@
 namespace tio {
 
 /**
- * No dependencies. No virtual functions.  
- * @tparam Capacity - the token length limit including the terminal zero byte.
+ * No dependencies. No virtual functions.
+ * @tparam Capacity - The token length limit including the terminal zero byte.
+ * @tparam LowCase - Translate tokens to lower case.
  */
-template<size_t Capacity>
+template<size_t Capacity, bool LowCase = false>
 class StringTokenizer {
 	static_assert(Capacity > 1, "StringTokenizer::Capacity > 1");
 	enum class CharClass : uint8_t {
@@ -52,7 +53,7 @@ public:
 		}
 		while(char_class(*m_str) == CharClass::REGULAR) {
 			if(m_acc_next < Capacity - 1ull) {
-				m_acc[m_acc_next++] = *m_str;
+				m_acc[m_acc_next++] = LowCase ? tolower(*m_str) : *m_str;
 				m_str++;
 				continue;
 			}

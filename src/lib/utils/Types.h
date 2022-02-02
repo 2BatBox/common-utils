@@ -1,82 +1,73 @@
 #pragma once
 
-#include <cstdio>
 #include <string>
+#include <cstring>
+#include <limits>
 
 namespace utils {
 
 class Types {
 public:
 
-	// long long int
+	template<typename T>
+	inline static bool parse_signed(const char* str, T& value) noexcept {
+		using SLLI = signed long long int;
+		static_assert(std::is_integral<T>::value);
+		static_assert(std::is_signed<T>::value);
+		static_assert(sizeof(SLLI) >= sizeof(value));
+		constexpr SLLI VMin = std::numeric_limits<T>::lowest();
+		constexpr SLLI VMax = std::numeric_limits<T>::max();
 
-	static long long int str_to_ll(const std::string& str, int base = 0) throw(std::logic_error) {
-		long long int result;
-		if(not str_to_ll(str, result, base)) {
-			fprintf(stderr, "cannot parse long long int value '%s'\n", str.c_str());
-			throw std::logic_error("cannot parse long long int value");
+		char* end;
+		errno = EXIT_SUCCESS;
+		const SLLI slli = strtoll(str, &end, 0);
+		bool result = (str != end) && (errno == EXIT_SUCCESS) && (*end == '\0') && (slli >= VMin) && (slli <= VMax);
+		if(result) {
+			value = T(slli);
 		}
 		return result;
 	}
 
-	static bool str_to_ll(const std::string& str, long long int& value, int base = 0) noexcept {
-		const char* strptr = str.c_str();
-		char* endptr;
-		long long int result = strtoll(strptr, &endptr, base);
-		if(str.size() && size_t(endptr - strptr) == strlen(strptr)) {
-			value = result;
-			return true;
+	template<typename T>
+	inline static bool parse_unsigned(const char* str, T& value) noexcept {
+		using ULLI = unsigned long long int;
+		static_assert(std::is_integral<T>::value);
+		static_assert(std::is_unsigned<T>::value);
+		static_assert(sizeof(ULLI) >= sizeof(value));
+		constexpr ULLI VMax = std::numeric_limits<T>::max();
+
+		// 'strtoull()' does accept negative value
+		if(strchr(str, '-')) {
+			return false;
 		}
-		return false;
-	}
 
-	// long int
-
-	static long int str_to_l(const std::string& str, int base = 0) throw(std::logic_error) {
-		long int result;
-		if(not str_to_l(str, result, base)) {
-			fprintf(stderr, "cannot parse long int value '%s'\n", str.c_str());
-			throw std::logic_error("cannot parse long int value");
-		}
-		return result;
-	}
-
-	static bool str_to_l(const std::string& str, long int& value, int base = 0) noexcept {
-		const char* strptr = str.c_str();
-		char* endptr;
-		long int result = strtol(strptr, &endptr, base);
-		if(str.size() && size_t(endptr - strptr) == strlen(strptr)) {
-			value = result;
-			return true;
-		}
-		return false;
-	}
-
-	// unsigned long int
-
-	static unsigned long int str_to_ul(const std::string& str, int base = 0) throw(std::logic_error) {
-		unsigned long int result;
-		if(not str_to_ul(str, result, base)) {
-			fprintf(stderr, "cannot parse unsigned long int value '%s'\n", str.c_str());
-			throw std::logic_error("cannot parse unsigned long int value");
+		char* end;
+		errno = EXIT_SUCCESS;
+		const ULLI ulli = strtoull(str, &end, 0);
+		bool result = (str != end) && (errno == EXIT_SUCCESS) && (*end == '\0') && (ulli <= VMax);
+		if(result) {
+			value = T(ulli);
 		}
 		return result;
 	}
 
-	static bool str_to_ul(const std::string& str, unsigned long int& value, int base = 0) noexcept {
-		const char* strptr = str.c_str();
-		char* endptr;
-		unsigned long int result = strtoul(strptr, &endptr, base);
-		if(str.size() && size_t(endptr - strptr) == strlen(strptr)) {
-			value = result;
-			return true;
+	template<typename T>
+	inline static bool parse_float(const char* str, T& value) noexcept {
+		using LD = long double;
+		static_assert(std::is_floating_point<T>::value);
+		static_assert(sizeof(LD) >= sizeof(value));
+
+		char* end;
+		errno = EXIT_SUCCESS;
+		const LD ld = strtold(str, &end);
+		bool result = (str != end) && (errno == EXIT_SUCCESS) && (*end == '\0');
+		if(result) {
+			value = T(ld);
 		}
-		return false;
+		return result;
 	}
 
 };
 
 }; // namespace utils
-
-#endif /* UTILS_TYPES_H */
 
