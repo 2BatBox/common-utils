@@ -15,7 +15,11 @@
  * Sample of packing 3-bit items on 8-bit chunks.
  *
  * iZ:X - X'th bit of the Z'th item.
- * chunk index | <----           8 bit chunk            ---- > |
+ *
+ *             | <----           8 bit chunk            ---- > |
+ *   bit index |  7  |  6  |  5  |  4  |  3  |  2  |  1  |  0  |
+ *             -------------------------------------------------
+ * chunk index
  *           0 |i3:2 |i3:1 |i1:2 |i1:1 |i1:0 |i0:2 |i0:1 |i0:0 |
  *           1 |i6:2 |i5:2 |i5:1 |i5:0 |i4:2 |i4:1 |i4:0 |i3:0 |
  *           2 |i8:2 |i8:1 |i8:0 |i7:2 |i7:1 |i7:0 |i6:1 |i6:0 |

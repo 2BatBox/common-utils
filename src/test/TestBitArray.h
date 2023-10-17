@@ -1,22 +1,22 @@
 #pragma once
 
 #include "test_environment.h"
-#include <containers/bits/BitArrayT.h>
+#include <containers/bits/BitArray.h>
 
-template <uint8_t Width>
-class TestBitArrayTInternal {
-	BitArrayT<Width> m_bat;
+template <uint8_t Width, typename Chunk>
+class TestBitArrayInternal {
+	BitArray<Width, Chunk> m_bat;
 
 public:
-	TestBitArrayTInternal(const TestBitArrayTInternal&) = delete;
-	TestBitArrayTInternal(TestBitArrayTInternal&&) = delete;
+	TestBitArrayInternal(const TestBitArrayInternal&) = delete;
+	TestBitArrayInternal(TestBitArrayInternal&&) = delete;
 
-	TestBitArrayTInternal& operator=(const TestBitArrayTInternal&) = delete;
-	TestBitArrayTInternal& operator=(TestBitArrayTInternal&&) = delete;
+	TestBitArrayInternal& operator=(const TestBitArrayInternal&) = delete;
+	TestBitArrayInternal& operator=(TestBitArrayInternal&&) = delete;
 
-	virtual ~TestBitArrayTInternal() = default;
+	virtual ~TestBitArrayInternal() = default;
 
-	TestBitArrayTInternal(size_t capacity) noexcept {
+	TestBitArrayInternal(size_t capacity) noexcept {
 		unsigned step = 1;
 		m_bat.allocate(capacity);
 		store_load_seq(step++);
@@ -27,7 +27,7 @@ private:
 
 	void store_load_seq(unsigned step) {
 		const auto range = m_bat.range();
-		const auto item_nb = m_bat.items_capacity();
+		const auto item_nb = m_bat.capacity();
 		assert(range);
 		assert(item_nb);
 		m_bat.fill(0);
@@ -56,7 +56,7 @@ private:
 
 	void store_load_rnd(unsigned step) {
 		const auto range = m_bat.range();
-		const auto item_nb = m_bat.items_capacity();
+		const auto item_nb = m_bat.capacity();
 		assert(range);
 		assert(item_nb);
 		m_bat.fill(0);
@@ -91,15 +91,15 @@ private:
 //		char buffer[999];
 //		const size_t buffer_nb = sizeof(buffer) / sizeof(*buffer);
 //
-//		BitArrayT<Width> barray(buffer, buffer_nb);
+//		BitArraySeqT<Width> barray(buffer, buffer_nb);
 //		barray.fill(0);
-//		const BitArrayTChunk_t range = barray.range();
+//		const BitArraySeqTChunk_t range = barray.range();
 //
 //		uint64_t before = rdtsc();
 //		uint64_t sum = 0;
 //		for(size_t i = 0; i < rounds; ++i){
 //			const size_t index = i % barray.items_capacity();
-//			const BitArrayTChunk_t val = barray.load(index);
+//			const BitArraySeqTChunk_t val = barray.load(index);
 //			barray.store(index, (val + 1) % range);
 //			sum += val;
 //		}
@@ -112,19 +112,39 @@ private:
 
 };
 
-class TestBitArrayT {
+class TestBitArray {
 public:
-	explicit TestBitArrayT(size_t capacity) noexcept {
+	explicit TestBitArray(size_t capacity) noexcept {
 		TRACE_CALL;
-		TestBitArrayTInternal<2> bit_arrayt2(capacity);
-		TestBitArrayTInternal<3> bit_arrayt3(capacity);
-		TestBitArrayTInternal<4> bit_arrayt4(capacity);
-		TestBitArrayTInternal<5> bit_arrayt5(capacity);
-		TestBitArrayTInternal<15> bit_arrayt15(capacity);
-		TestBitArrayTInternal<16> bit_arrayt16(capacity);
-		TestBitArrayTInternal<31> bit_arrayt31(capacity);
-		TestBitArrayTInternal<32> bit_arrayt32(capacity);
-		TestBitArrayTInternal<40> bit_arrayt40(capacity);
-		TestBitArrayTInternal<63> bit_arrayt63(capacity);
+		chunk_type_iteration<2>(capacity);
+		chunk_type_iteration<3>(capacity);
+		chunk_type_iteration<7>(capacity);
+		chunk_type_iteration<8>(capacity);
+		chunk_type_iteration<9>(capacity);
+		chunk_type_iteration<15>(capacity);
+		chunk_type_iteration<16>(capacity);
+		chunk_type_iteration<17>(capacity);
+		chunk_type_iteration<31>(capacity);
+		chunk_type_iteration<32>(capacity);
+		chunk_type_iteration<33>(capacity);
+		chunk_type_iteration<63>(capacity);
 	}
+
+private:
+
+	template <uint8_t Width>
+	void chunk_type_iteration(const size_t capacity) noexcept {
+		if constexpr (Width < 8) {
+			TestBitArrayInternal<Width, uint8_t> bit_array_8(capacity);
+		}
+		if constexpr (Width < 16) {
+			TestBitArrayInternal<Width, uint16_t> bit_array_16(capacity);
+		}
+		if constexpr (Width < 32) {
+			TestBitArrayInternal<Width, uint32_t> bit_array_32(capacity);
+		}
+
+		TestBitArrayInternal<Width, uint64_t> bit_array_64(capacity);
+	}
+
 };

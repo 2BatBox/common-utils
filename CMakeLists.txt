@@ -7,7 +7,7 @@ set(PROJECT_NAME "common-utils")
 ##################
 set(DEBUG_LEVEL "-g3")
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${DEBUG_LEVEL} -Wall")
 
 include_directories(src/lib)
