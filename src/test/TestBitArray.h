@@ -115,7 +115,7 @@ private:
 class TestBitArray {
 public:
 	explicit TestBitArray(size_t capacity) noexcept {
-		TRACE_CALL;
+		TEST_TRACE;
 		chunk_type_iteration<2>(capacity);
 		chunk_type_iteration<3>(capacity);
 		chunk_type_iteration<7>(capacity);

@@ -1,7 +1,7 @@
 #ifndef INTRUSIVEPOOL_TESTS_TESTDEQUEPOOL_h
 #define INTRUSIVEPOOL_TESTS_TESTDEQUEPOOL_h
 
-#include "containers/intrusive_pool/DequePool.h"
+#include "intrusive/DequePool.h"
 
 #include <assert.h>
 #include <iostream>

@@ -1,7 +1,7 @@
 #ifndef INTRUSIVE_TESTS_TESTHASHMAP_H
 #define INTRUSIVE_TESTS_TESTHASHMAP_H
 
-#include "containers/intrusive/HashMap.h"
+#include <intrusive/HashMap.h>
 
 #include <assert.h>
 #include <cstdio>

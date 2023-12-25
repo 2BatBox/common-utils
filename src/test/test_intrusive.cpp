@@ -3,8 +3,6 @@
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 #pragma GCC diagnostic ignored "-Weffc++"
 
-#include "TestLinkedList.h"
-#include "TestHashMap.h"
 
 typedef unsigned Key_t;
 

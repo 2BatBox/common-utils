@@ -2,7 +2,7 @@
 #define STORAGE_RATELIMITER_H
 
 #include "RateLimiterStat.h"
-#include "../intrusive_pool/HashQueuePool.h"
+#include "intrusive/HashQueuePool.h"
 #include "../dpdk/Allocator.h"
 
 #include <rte_cycles.h>

@@ -27,7 +27,7 @@ private:
 	}
 
 	void case_0() noexcept {
-		TRACE_CALL;
+		TEST_TRACE;
 		enum Token : tio::StreamTokenizer::Token_t {
 			CL_EOS,
 			CL_UNKNOWN,

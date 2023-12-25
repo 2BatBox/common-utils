@@ -18,7 +18,7 @@ public:
 private:
 
 	void test_empty_input() noexcept {
-		TRACE_CALL;
+		TEST_TRACE;
 
 		constexpr size_t Capacity = 32;
 		const char* input = "";
@@ -29,7 +29,7 @@ private:
 	}
 
 	void test_empty_separator_seq() noexcept {
-		TRACE_CALL;
+		TEST_TRACE;
 
 		constexpr size_t Capacity = 32;
 		const char* input = "void* vptr = nullptr;";
@@ -42,7 +42,7 @@ private:
 	}
 
 	void test_overflow_accumulator() noexcept {
-		TRACE_CALL;
+		TEST_TRACE;
 
 		constexpr size_t Capacity = 3; // two chars + zero byte
 		const char* input = "a bb ccc dddd";
@@ -76,7 +76,7 @@ private:
 	}
 
 	void test_separators() noexcept {
-		TRACE_CALL;
+		TEST_TRACE;
 
 		constexpr size_t Capacity = 32;
 		const char* input = " This is\n\ta token sequence.\t \t";

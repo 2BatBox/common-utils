@@ -1,7 +1,7 @@
 #ifndef INTRUSIVEPOOL_TESTS_TESTHASHQUEUEPOOL_H
 #define INTRUSIVEPOOL_TESTS_TESTHASHQUEUEPOOL_H
 
-#include "containers/intrusive_pool/HashQueuePool.h"
+#include "intrusive/HashQueuePool.h"
 
 #include <assert.h>
 #include <iostream>

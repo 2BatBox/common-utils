@@ -2,8 +2,8 @@
 #define IPTABLE_H
 
 #include "../stack_ip/procotols/IPv4.h"
-#include "../intrusive_pool/HashQueuePool.h"
-#include "../intrusive_pool/DequePool.h"
+#include "intrusive/HashQueuePool.h"
+#include "intrusive/DequePool.h"
 #include "../dpdk/Allocator.h"
 
 #include <arpa/inet.h>

@@ -138,7 +138,7 @@ class TestTypes {
 	}
 
 	void test_signed() noexcept {
-		TRACE_CALL;
+		TEST_TRACE;
 		test_parse_signed<int8_t>();
 		test_parse_signed<int16_t>();
 		test_parse_signed<int32_t>();
@@ -151,7 +151,7 @@ class TestTypes {
 	}
 
 	void test_unsigned() noexcept {
-		TRACE_CALL;
+		TEST_TRACE;
 		test_parse_unsigned<uint8_t>();
 		test_parse_unsigned<uint16_t>();
 		test_parse_unsigned<uint32_t>();
@@ -164,7 +164,7 @@ class TestTypes {
 	}
 
 	void test_float() noexcept {
-		TRACE_CALL;
+		TEST_TRACE;
 		test_parse_float<float>();
 		test_parse_float<double>();
 		test_parse_float<long double>();

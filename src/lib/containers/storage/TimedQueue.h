@@ -2,7 +2,7 @@
 #define STORAGE_TIMEDQUEUE_H
 
 #include "TimedQueueStat.h"
-#include "../intrusive_pool/HashQueuePool.h"
+#include "intrusive/HashQueuePool.h"
 #include "../dpdk/Allocator.h"
 
 #include <cstdint>

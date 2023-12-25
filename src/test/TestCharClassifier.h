@@ -29,7 +29,7 @@ private:
 	}
 
 	void case_0() noexcept {
-		TRACE_CALL;
+		TEST_TRACE;
 		enum CClassId : tio::CharClassifier::CharClassId {
 			EOS,
 			UNKNOWN,
@@ -53,7 +53,7 @@ private:
 	}
 
 	void case_1() noexcept {
-		TRACE_CALL;
+		TEST_TRACE;
 		enum CClassId : tio::CharClassifier::CharClassId {
 			EOS,
 			UNKNOWN,
@@ -85,7 +85,7 @@ private:
 	}
 
 	void case_2() noexcept {
-		TRACE_CALL;
+		TEST_TRACE;
 		enum CClassId : tio::CharClassifier::CharClassId {
 			EOS,
 			UNKNOWN,

@@ -115,7 +115,7 @@ private:
 class TestBitArrayT {
 public:
 	explicit TestBitArrayT(size_t capacity) noexcept {
-		TRACE_CALL;
+		TEST_TRACE;
 		TestBitArrayTInternal<2> bit_arrayt2(capacity);
 		TestBitArrayTInternal<3> bit_arrayt3(capacity);
 		TestBitArrayTInternal<4> bit_arrayt4(capacity);

@@ -14,7 +14,7 @@ public:
 		: m_array(new uint8_t[capacity])
 		, m_bs(m_array.get(), capacity) {
 
-		TRACE_CALL;
+		TEST_TRACE;
 
 		const uint64_t seed = 1717;
 		fill_rnd(m_bs, seed);

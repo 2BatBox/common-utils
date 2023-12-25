@@ -22,7 +22,7 @@ public:
 private:
 
 	void test_resize() noexcept {
-		TRACE_CALL;
+		TEST_TRACE;
 		fill_monotonic(0, 0, 0);
 		validate_monotonic(0, 0, 0);
 
@@ -49,7 +49,7 @@ private:
 	}
 
 	void test_head_move() noexcept {
-		TRACE_CALL;
+		TEST_TRACE;
 		const auto center = _dut.max_head_index() / 2u;
 		fill_monotonic(_dut.capacity(), center, 1);
 		validate_monotonic(_dut.capacity(), center, 1);
