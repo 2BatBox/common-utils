@@ -161,6 +161,7 @@ public:
 
 	void reset() noexcept {
 		m_list_cached.clear();
+		// TODO: wtf?
 		for(unsigned i = 0; i < m_capacity; i++) {
 			m_list_freed.push_back(m_storage[i]);
 		}

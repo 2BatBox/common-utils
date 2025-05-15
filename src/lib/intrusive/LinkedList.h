@@ -7,11 +7,11 @@ namespace intrusive {
 
 template<typename N>
 struct LinkedListHook {
-	N* __il_next;
-	N* __il_prev;
-	bool __il_linked;
+	N* next;
+	N* prev;
+	bool linked;
 
-	LinkedListHook() noexcept : __il_next(nullptr), __il_prev(nullptr), __il_linked(false) {}
+	LinkedListHook() noexcept : next(nullptr), prev(nullptr), linked(false) {}
 
 	LinkedListHook(const LinkedListHook&) = delete;
 	LinkedListHook& operator=(const LinkedListHook&) = delete;
@@ -45,18 +45,18 @@ protected:
 
 		IteratorBasic& operator++() noexcept {
 			if constexpr (IsForward) {
-				node_ptr = node_ptr->__il_next;
+				node_ptr = node_ptr->__ill.next;
 			} else {
-				node_ptr = node_ptr->__il_prev;
+				node_ptr = node_ptr->__ill.prev;
 			}
 			return *this;
 		}
 
 		IteratorBasic operator++(int)noexcept {
 			if constexpr (IsForward) {
-				node_ptr = node_ptr->__il_next;
+				node_ptr = node_ptr->__ill.next;
 			} else {
-				node_ptr = node_ptr->__il_prev;
+				node_ptr = node_ptr->__ill.prev;
 			}
 			return IteratorBasic(node_ptr);
 		}
@@ -254,99 +254,99 @@ private:
 
 	inline static void check_free(ListNode& node) noexcept {
 		if constexpr (SanityCheck) {
-			assert(not node.__il_linked);
+			assert(not node.__ill.linked);
 		}
 	}
 
 	inline static void check_linked(ListNode& node) noexcept {
 		if constexpr (SanityCheck) {
-			assert(node.__il_linked);
+			assert(node.__ill.linked);
 		}
 	}
 
 	inline void link_first(ListNode& node) noexcept {
-		node.__il_next = nullptr;
-		node.__il_prev = nullptr;
-		node.__il_linked = true;
+		node.__ill.next = nullptr;
+		node.__ill.prev = nullptr;
+		node.__ill.linked = true;
 		_head = _tail = &node;
 		_size++;
 	}
 
 	inline void link_head(ListNode& node) noexcept {
-		node.__il_next = _head;
-		node.__il_prev = nullptr;
-		node.__il_linked = true;
-		_head->__il_prev = &node;
+		node.__ill.next = _head;
+		node.__ill.prev = nullptr;
+		node.__ill.linked = true;
+		_head->__ill.prev = &node;
 		_head = &node;
 		_size++;
 	}
 
 	inline void link_tail(ListNode& node) noexcept {
-		node.__il_next = nullptr;
-		node.__il_prev = _tail;
-		node.__il_linked = true;
-		_tail->__il_next = &node;
+		node.__ill.next = nullptr;
+		node.__ill.prev = _tail;
+		node.__ill.linked = true;
+		_tail->__ill.next = &node;
 		_tail = &node;
 		_size++;
 	}
 
 	inline void link_before(ListNode& before, ListNode& node) noexcept {
-		node.__il_next = &before;
-		node.__il_prev = before.__il_prev;
-		node.__il_linked = true;
-		before.__il_prev->__il_next = &node;
-		before.__il_prev = &node;
+		node.__ill.next = &before;
+		node.__ill.prev = before.__ill.prev;
+		node.__ill.linked = true;
+		before.__ill.prev->__ill.next = &node;
+		before.__ill.prev = &node;
 		_size++;
 	}
 
 	inline void link_after(ListNode& after, ListNode& node) noexcept {
-		node.__il_next = after.__il_next;
-		node.__il_prev = &after;
-		node.__il_linked = true;
-		after.__il_next->__il_prev = &node;
-		after.__il_next = &node;
+		node.__ill.next = after.__ill.next;
+		node.__ill.prev = &after;
+		node.__ill.linked = true;
+		after.__ill.next->__ill.prev = &node;
+		after.__ill.next = &node;
 		_size++;
 	}
 
 	inline ListNode* unlink_last() noexcept {
-		ListNode* result = _head;
-		_head->__il_next = nullptr;
-		_head->__il_prev = nullptr;
-		_head->__il_linked = false;
+		ListNode* node = _head;
+		_head->__ill.next = nullptr;
+		_head->__ill.prev = nullptr;
+		_head->__ill.linked = false;
 		_head = nullptr;
 		_tail = nullptr;
 		_size--;
-		return result;
+		return node;
 	}
 
 	inline ListNode* unlink_head() noexcept {
-		ListNode* result = _head;
-		_head = _head->__il_next;
-		_head->__il_prev = nullptr;
-		result->__il_next = nullptr;
-		result->__il_prev = nullptr;
-		result->__il_linked = false;
+		ListNode* node = _head;
+		_head = _head->__ill.next;
+		_head->__ill.prev = nullptr;
+		node->__ill.next = nullptr;
+		node->__ill.prev = nullptr;
+		node->__ill.linked = false;
 		_size--;
-		return result;
+		return node;
 	}
 
 	inline ListNode* unlink_tail() noexcept {
-		ListNode* result = _tail;
-		_tail = _tail->__il_prev;
-		_tail->__il_next = nullptr;
-		result->__il_next = nullptr;
-		result->__il_prev = nullptr;
-		result->__il_linked = false;
+		ListNode* node = _tail;
+		_tail = _tail->__ill.prev;
+		_tail->__ill.next = nullptr;
+		node->__ill.next = nullptr;
+		node->__ill.prev = nullptr;
+		node->__ill.linked = false;
 		_size--;
-		return result;
+		return node;
 	}
 
 	inline void unlink(ListNode& node) noexcept {
-		node.__il_prev->__il_next = node.__il_next;
-		node.__il_next->__il_prev = node.__il_prev;
-		node.__il_next = nullptr;
-		node.__il_prev = nullptr;
-		node.__il_linked = false;
+		node.__ill.prev->__ill.next = node.__ill.next;
+		node.__ill.next->__ill.prev = node.__ill.prev;
+		node.__ill.next = nullptr;
+		node.__ill.prev = nullptr;
+		node.__ill.linked = false;
 		_size--;
 	}
 

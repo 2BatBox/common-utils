@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cassert>
+#include <typeinfo>
 
 #include "utils/DiceMachine.h"
 

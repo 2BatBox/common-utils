@@ -5,7 +5,7 @@
 #include <cstring>
 
 template <size_t Capacity>
-class TestRinArrayBuffer {
+class TestRingArrayBuffer {
 
 	using Value_t = ssize_t;
 	using SlidingArray_t = RingArrayBuffer<Value_t, Capacity>;
@@ -15,7 +15,7 @@ class TestRinArrayBuffer {
 
 public:
 
-	TestRinArrayBuffer() noexcept : _dut(EmptyValue) {
+	TestRingArrayBuffer() noexcept : _dut(EmptyValue) {
 		test_fill();
 		test_head_move_right();
 	}

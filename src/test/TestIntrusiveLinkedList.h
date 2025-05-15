@@ -12,8 +12,9 @@
 class TestIntrusiveLinkedList {
 
 	template<typename T>
-	struct StructValue : public intrusive::LinkedListHook<StructValue<T> > {
+	struct StructValue {
 		T value;
+		intrusive::LinkedListHook<StructValue<T> > __ill;
 
 		StructValue() : value() {}
 
@@ -271,7 +272,7 @@ private:
 
 	void test_sanity() {
 		for(unsigned i = 0; i < storage_size; i++) {
-			assert(not storage[i].__il_linked);
+			assert(not storage[i].__ill.linked);
 		}
 		assert(list.size() == 0);
 	}
